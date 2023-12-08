@@ -12,9 +12,6 @@ md"""
 # Numerical Analysis and Optimization Homework Project 1
 """
 
-# ╔═╡ cd334bf1-14a1-4437-84e5-006a3e46b23f
-
-
 # ╔═╡ a5832cb4-5225-469c-96c6-52d08b68409a
 md"""
 This assignment is done using the Julia programming language. To easy the task, we load Julia's linear algebra standard library:
@@ -36,11 +33,32 @@ function lufact(A::AbstractMatrix)
 	if size(A, 1) != size(A, 2)
 		throw(ArgumentError("The matrix is not squared."))
 	end
+	n = size(A, 1)
 	U = copy(A)
 	L = UnitLowerTriangular(copy(A))
 	γ = 0
-	# algorithm
+	for k in 1:n-1
+		for i in k+1:n
+			L[i,k] = U[i,k]/U[i,i]
+		end
+		for j in k+1:n
+			for i in k+1:n
+				U[i,j] -= L[i,k]*U[k,j]
+			end
+		end
+	end
+	# lacks the gamma computation
+	return L,U,γ
 end
+
+# ╔═╡ d486292d-5462-4e70-9f32-2e725c1f6d15
+A = rand(8,8)
+
+# ╔═╡ 02a5ce36-4273-47bc-bdb1-191596aa85d4
+U,L,_=lufact(A)
+
+# ╔═╡ 0c6a0565-fb81-4271-9d7a-5f2f87d0eca2
+U*L - A
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -84,11 +102,13 @@ version = "5.8.0+0"
 
 # ╔═╡ Cell order:
 # ╟─b8f31bda-95d7-11ee-29fe-9f2acb543f4a
-# ╠═cd334bf1-14a1-4437-84e5-006a3e46b23f
 # ╟─a5832cb4-5225-469c-96c6-52d08b68409a
 # ╠═71fb6b39-125d-481f-ad19-affa7c04d226
 # ╟─2d793d4f-6ca9-4551-b5ce-89d994bfc762
 # ╟─7340ab2e-f583-48c4-a2d9-df1e0e3ec2c2
 # ╠═7010b1ae-7bb8-453a-ae37-718db11c74da
+# ╠═d486292d-5462-4e70-9f32-2e725c1f6d15
+# ╠═02a5ce36-4273-47bc-bdb1-191596aa85d4
+# ╠═0c6a0565-fb81-4271-9d7a-5f2f87d0eca2
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
