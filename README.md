@@ -28,3 +28,15 @@ using DrWatson
 @quickactivate "NAOAssignments"
 ```
 which auto-activate the project and enable local path handling from DrWatson.
+
+### Running the Pluto notebooks
+
+To run Pluto notebooks, simply use these commands:
+```julia
+using DrWatson
+@quickactivate "NAOAssignments"
+using Pluto
+Pluto.run("path/to/your/notebook.jl")
+```
+And then edit the blocks as usual. Remember to save the exported pdf in the `reports` directory.
+
