@@ -44,16 +44,23 @@ function lufact(A::AbstractMatrix{T}) where T <: Real
 		# For the U L computation, we exploit Julia's bootstrap syntax.
 		# L computation
 		a[i+1:end,i] .= a[i+1:end,i] ./ a[i,i]
-		if any(isnan, a[i+1:end,i])
-			throw(DomainError("Something happened but to know we have to compute grow factor."))
-		end
 		# U computation
 		a[i+1:end,i+1:end] .-= a[i+1:end,i] .* a[i+1:end,i+1:end]
-		# lacks the gamma computation
+		
 	end
 	# Note that UpperTriangular and UnitLowerTriangular are not
 	# copies of a, but views instead.
-	return UnitLowerTriangular(a), UpperTriangular(a), γ
+	L = UnitLowerTriangular(a)
+	U = UpperTriangular(a)
+
+	# Growth factor computation
+	G = abs.(L) .* abs.(U)
+	γ = maximum(G) / maximum(abs.(A))
+		
+	if isnan(γ)
+		throw(DomainError("Factorization failed."))
+	end
+	return L, U, γ
 end
 
 # ╔═╡ ceca4721-8711-42ad-b7b6-d85a9a3bfee0
