@@ -24,15 +24,23 @@ md"""
 
 # ╔═╡ 7340ab2e-f583-48c4-a2d9-df1e0e3ec2c2
 md"""
-Here we define the function `lufact` that takes as input a squatre matrix and compute the non-pivoted LU factorization and its grow factor:
+Here we define the function `lufact` that takes as input a square matrix and compute the non-pivoted LU factorization and its grow factor:
 """
 
 # ╔═╡ 289e0844-63e3-45a0-93e9-96c9ac5a885b
 function lufact(A::AbstractMatrix{T}) where T <: Real
 	# Sanity checks
 	if size(A, 1) != size(A, 2)
-		throw(ArgumentError("The matrix is not squared."))
+		throw(ArgumentError("The matrix is not square."))
 	end
+	# add a check on the submatrix determinant to see if LU exists 
+	# and is unique 
+	# NOTE : for now this is commented out as it's an expensive check not required by the assignment
+	# for i in 1:size(A, 1)
+	# 	if det(A[1:i, 1:i]) == 0
+	# 		throw(ArgumentError("The matrix does not allow a unique LU factorization."))
+	# 	end
+	# end
 	n = size(A, 1)
 	a = copy(A)
 	γ = zero(T)
@@ -57,7 +65,7 @@ function lufact(A::AbstractMatrix{T}) where T <: Real
 	G = abs.(L) .* abs.(U)
 	γ = maximum(G) / maximum(abs.(A))
 		
-	if isnan(γ)
+	if isnan(γ) || isinf(γ)
 		throw(DomainError("Factorization failed."))
 	end
 	return L, U, γ
@@ -83,6 +91,11 @@ end
 # ╔═╡ c6e79210-d8e1-4c6d-a5cb-6304765cc6a6
 function print_summary(g, b, f)
 	println("Failure rate: $f")
+	# add check if g, b are empty
+	if length(g) == 0 || length(b) == 0
+		println("No data to show.")
+		return
+	end
 	println("GROWTH FACTOR")
 	println("Min:    $(minimum(g))")
 	println("Max:    $(maximum(g))")
@@ -130,9 +143,28 @@ md"""
 """
 
 # ╔═╡ 49cd5b24-bc60-4c36-98d2-f5c04ebbc2df
-md"""
-Per/con Francesco ;)
-"""
+begin 
+	local f2 = 0
+	g2 = Float64[]
+	b2 = Float64[]
+	for _ in 1:100
+		N = rand(2:100)
+		A = [1 / (i + j - 1) for i in 1:N, j in 1:N]
+		try
+			L, U, γ = lufact(A)
+			β = relative_backward_error(A, L, U)
+			push!(g2, γ)
+			push!(b2, β)
+		catch e
+			if isa(e, DomainError)
+				f2 += 1
+			else
+				throw(e)
+			end
+		end
+	end
+	print_summary(g2, b2, f2)
+end
 
 # ╔═╡ 71eb0c07-8f46-47c3-92cb-8558d870e5d5
 md"""
@@ -164,6 +196,12 @@ begin
 	print_summary(g3, b3, f3)
 end
 
+# ╔═╡ 3e6e046a-cf73-4b59-8069-97521832f3f5
+md"""
+#### Check growth factor plots
+Ideally, the growth factor should be close to 1. This indicates that the LU decomposition did not significantly increase the magnitude of the matrix's elements, suggesting a stable decomposition. It's important to note that a low growth factor does not guarantee a good decomposition. It's just one of several indicators of the quality and stability of the decomposition.
+"""
+
 # ╔═╡ eec1b069-474a-44e4-a25b-3bd4cec4adb5
 plot_summary(g3, b3)
 
@@ -171,6 +209,25 @@ plot_summary(g3, b3)
 md"""
 FORSE SAREBBE GANZO FARE UN PLOT DI CORRELAZIONE??
 """
+
+# ╔═╡ 1eb71bbc-0af7-41c8-8561-54fc65130c28
+# a function to compute the correlations between growth factor and relative backward error
+# then plot them
+function plot_correlation(g, b)
+	# add check if g, b are empty
+	if length(g) == 0 || length(b) == 0
+		println("No data to show.")
+		return
+	end
+	# compute correlation
+	corr = cor(g, b)
+	# plot
+	scatter(g, b, xlabel="Growth factor", ylabel="Relative backward error",  label="Correlation: $(round(corr, digits=3))")
+end
+
+
+# ╔═╡ 82e2cb53-a87a-431f-a537-4cd61286638e
+plot_correlation(g3, b3)
 
 # ╔═╡ 40c9f9be-eb94-40f3-ac14-727432d9ade9
 md"""
@@ -201,6 +258,11 @@ begin
 	end
 	print_summary(g4, b4, f4)
 end
+
+# ╔═╡ bbc23ac8-9706-412e-bdc0-4e6ed3dc94c7
+md"""
+test
+"""
 
 # ╔═╡ 9af51aca-53f4-4568-927f-0ca185613408
 md"""
@@ -238,24 +300,91 @@ function wilkin(N::Integer)
     return [wilkinson_element(i,j,N) for i in 1:N, j in 1:N]
 end
 
+# ╔═╡ 84bc6ce3-41bd-4056-b98b-d0e56423f972
+md"""
+LU decomposition of a Wilkinson Matrix $W_5$
+
+$$W_5 = \begin{bmatrix}
+1 & 0 & 0 & 0 & 1 \\
+-1 & 1 & 0 & 0 & 1 \\
+-1 & -1 & 1 & 0 & 1 \\
+-1 & -1 & -1 & 1 & 1 \\
+-1 & -1 & -1 & -1 & 1
+\end{bmatrix} = LU = \begin{bmatrix}
+1 & 0 & 0 & 0 & 0 \\
+-1 & 1 & 0 & 0 & 0 \\
+-1 & -1 & 1 & 0 & 0 \\
+-1 & -1 & -1 & 1 & 0 \\
+-1 & -1 & -1 & -1 & 1
+\end{bmatrix}\begin{bmatrix}
+1 & 0 & 0 & 0 & 1 \\
+0 & 1 & 0 & 0 & 2 \\
+0 & 0 & 1 & 0 & 4 \\
+0 & 0 & 0 & 1 & 8 \\
+0 & 0 & 0 & 0 & 16
+\end{bmatrix}$$
+"""
+
+# ╔═╡ 606f9f6c-9e5d-45d4-bb3d-35f0dcefc121
+md"""
+Guess of the LU factorization of $W_n$ for a generic $n$
+
+$$L = \begin{bmatrix}
+1 & 0 & 0 & \cdots & 0 \\
+-1 & 1 & 0 & \cdots & 0 \\
+-1 & -1 & 1 & \cdots & 0 \\
+\vdots & \vdots & \vdots & \ddots & \vdots \\
+-1 & -1 & -1 & \cdots & 1
+\end{bmatrix}$$
+
+$$U = \begin{bmatrix}
+1 & 0 & 0 & \cdots & 0 & 1 \\
+0 & 1 & 0 & \cdots & 0 & 2 \\
+0 & 0 & 1 & \cdots & 0 & 2^2 \\
+\vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
+0 & 0 & 0 & \cdots & 1 & 2^{n-1}
+\end{bmatrix}$$
+
+or 
+
+$$L = I_n - \sum_{i=2}^{n} \sum_{j=1}^{i-1} e_i e_j^T$$
+
+$$U = I_n + \sum_{i=1}^{n-1} 2^{i-1} e_i e_n^T$$
+
+"""
+
+# ╔═╡ 63f2fc3e-f29a-414e-a560-dad7139981f1
+svg_joinpathsplit__FILE__1assetslogosvg = let
+    import PlutoUI
+    PlutoUI.LocalResource(joinpath(split(@__FILE__, '#')[1] * ".assets", "logo.svg"))
+end
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
 Plots = "~1.39.0"
+PlutoUI = "~0.7.54"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.4"
+julia_version = "1.9.0"
 manifest_format = "2.0"
-project_hash = "95a0ca02fe72c34d312c66d304bb11319661595d"
+project_hash = "d22afbd44a4e28a6917baaf4c8addcbaa9e409d4"
+
+[[deps.AbstractPlutoDingetjes]]
+deps = ["Pkg"]
+git-tree-sha1 = "793501dcd3fa7ce8d375a2c878dca2296232686e"
+uuid = "6e696c72-6542-2067-7265-42206c756150"
+version = "1.2.2"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -333,7 +462,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.5+0"
+version = "1.0.2+0"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
@@ -494,6 +623,24 @@ git-tree-sha1 = "129acf094d168394e80ee1dc4bc06ec835e510a3"
 uuid = "2e76f6c2-a576-52d4-95c1-20adfe4de566"
 version = "2.8.1+1"
 
+[[deps.Hyperscript]]
+deps = ["Test"]
+git-tree-sha1 = "8d511d5b81240fc8e6802386302675bdf47737b9"
+uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
+version = "0.0.4"
+
+[[deps.HypertextLiteral]]
+deps = ["Tricks"]
+git-tree-sha1 = "7134810b1afce04bbc1045ca1985fbe81ce17653"
+uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
+version = "0.9.5"
+
+[[deps.IOCapture]]
+deps = ["Logging", "Random"]
+git-tree-sha1 = "d75853a0bdbfb1ac815478bacd89cd27b550ace6"
+uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
+version = "0.2.3"
+
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
@@ -573,12 +720,12 @@ version = "0.16.1"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.4.0+0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -587,7 +734,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.0+1"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -668,6 +815,11 @@ deps = ["Dates", "Logging"]
 git-tree-sha1 = "c1dd6d7978c12545b4179fb6153b9250c96b0075"
 uuid = "e6f89c97-d47a-5376-807f-9c37f3926c36"
 version = "1.0.3"
+
+[[deps.MIMEs]]
+git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
+uuid = "6c6e2e6c-3030-632d-7369-2d6c69616d65"
+version = "0.1.4"
 
 [[deps.MacroTools]]
 deps = ["Markdown", "Random"]
@@ -782,7 +934,7 @@ version = "0.42.2+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.9.2"
+version = "1.9.0"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]
@@ -815,6 +967,12 @@ version = "1.39.0"
     IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a"
     ImageInTerminal = "d8c32880-2388-543b-8c61-d9f865259254"
     Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+
+[[deps.PlutoUI]]
+deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
+git-tree-sha1 = "bd7c69c7f7173097e7b5e1be07cee2b8b7447f51"
+uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+version = "0.7.54"
 
 [[deps.PrecompileTools]]
 deps = ["Preferences"]
@@ -962,6 +1120,11 @@ weakdeps = ["Random", "Test"]
 
     [deps.TranscodingStreams.extensions]
     TestExt = ["Test", "Random"]
+
+[[deps.Tricks]]
+git-tree-sha1 = "eae1bb484cd63b36999ee58be2de6c178105112f"
+uuid = "410a4b4d-49e4-4fbc-ab6d-cb71b17b3775"
+version = "0.1.8"
 
 [[deps.URIs]]
 git-tree-sha1 = "67db6cc7b3821e19ebe75791a9dd19c9b1188f2b"
@@ -1230,7 +1393,7 @@ version = "0.15.1+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.8.0+0"
+version = "5.7.0+0"
 
 [[deps.libevdev_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1271,7 +1434,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.52.0+1"
+version = "1.48.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1310,17 +1473,24 @@ version = "1.4.1+1"
 # ╠═c6e79210-d8e1-4c6d-a5cb-6304765cc6a6
 # ╟─a3c4d104-a92a-4706-895c-052f954818d8
 # ╠═19208ed5-d8db-4eee-933c-4e0a735e7c37
-# ╟─430999b7-c693-4280-8325-6e6f6c6bd732
-# ╟─49cd5b24-bc60-4c36-98d2-f5c04ebbc2df
+# ╠═430999b7-c693-4280-8325-6e6f6c6bd732
+# ╠═49cd5b24-bc60-4c36-98d2-f5c04ebbc2df
 # ╟─71eb0c07-8f46-47c3-92cb-8558d870e5d5
 # ╠═731efdaf-e0db-41c1-80d3-92523ecd02bf
+# ╟─3e6e046a-cf73-4b59-8069-97521832f3f5
 # ╠═eec1b069-474a-44e4-a25b-3bd4cec4adb5
 # ╟─939b524f-7f30-43a4-af42-25dd90c58f58
+# ╠═1eb71bbc-0af7-41c8-8561-54fc65130c28
+# ╠═82e2cb53-a87a-431f-a537-4cd61286638e
 # ╟─40c9f9be-eb94-40f3-ac14-727432d9ade9
 # ╠═257f07b9-9505-4f48-a1ab-0984e1fb0b21
+# ╠═bbc23ac8-9706-412e-bdc0-4e6ed3dc94c7
 # ╟─9af51aca-53f4-4568-927f-0ca185613408
 # ╟─a37d2a18-510f-4217-b77e-9055e4531869
 # ╠═4d8a697c-9b26-417f-b0f2-e8c1bac3a4a2
 # ╠═c2270a41-ce15-4670-9937-25a6a7d3f304
+# ╟─84bc6ce3-41bd-4056-b98b-d0e56423f972
+# ╟─606f9f6c-9e5d-45d4-bb3d-35f0dcefc121
+# ╠═63f2fc3e-f29a-414e-a560-dad7139981f1
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
