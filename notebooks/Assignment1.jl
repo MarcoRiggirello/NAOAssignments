@@ -5,7 +5,7 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ 71fb6b39-125d-481f-ad19-affa7c04d226
-using LinearAlgebra, Plots, Statistics
+using LinearAlgebra, Plots, Statistics, BenchmarkTools
 
 # ╔═╡ b8f31bda-95d7-11ee-29fe-9f2acb543f4a
 md"""
@@ -29,10 +29,11 @@ Here we define the function `lufact` that takes as input a square matrix and com
 
 # ╔═╡ 289e0844-63e3-45a0-93e9-96c9ac5a885b
 function lufact(A::AbstractMatrix{T}) where T <: Real
-	# Sanity checks
-	if size(A, 1) != size(A, 2)
-		throw(ArgumentError("The matrix is not square."))
-	end
+    # Ensure the matrix is square; otherwise, LU factorization is not defined.
+    if size(A, 1) != size(A, 2)
+        throw(ArgumentError("The matrix is not square."))
+    end
+
 	# add a check on the submatrix determinant to see if LU exists 
 	# and is unique 
 	# NOTE : for now this is commented out as it's an expensive check not required by the assignment
@@ -41,35 +42,59 @@ function lufact(A::AbstractMatrix{T}) where T <: Real
 	# 		throw(ArgumentError("The matrix does not allow a unique LU factorization."))
 	# 	end
 	# end
-	n = size(A, 1)
-	a = copy(A)
-	γ = zero(T)
-	for i in 1:n-1
-		# Sanity checks
-		if abs(a[i,i]) <= eps(T)
-			throw(DomainError("Trying to divide by a number smaller than the machine precision."))
-		end
-		# For the U L computation, we exploit Julia's bootstrap syntax.
-		# L computation
-		a[i+1:end,i] .= a[i+1:end,i] ./ a[i,i]
-		# U computation
-		a[i+1:end,i+1:end] .-= a[i+1:end,i] .* a[i+1:end,i+1:end]
-		
-	end
+
+    # Determine the size of the matrix for iteration purposes.
+    n = size(A, 1)
+    # Create a copy of A to avoid altering the original matrix during factorization.
+    a = copy(A)
+    # Initialize the growth factor to zero of the appropriate type.
+    γ = zero(T)
+
+    # Perform the LU factorization process.
+    for i in 1:n-1
+		pivot = a[i, i]
+        # Check if the pivot element is too close to zero, 
+		# which would lead to division by a small number.
+        if abs(pivot) <= eps(T)
+            throw(DomainError("Trying to divide by a number smaller than
+								the machine precision."))
+        end
+        
+        # Compute the factors of L in place by dividing the 
+		# subcolumn elements by the pivot.
+        a[i+1:end,i] .= a[i+1:end,i] ./ pivot
+        # Update the remaining submatrix to form U, subtracting the 
+		# outer product of the L factor and the row of U.
+        a[i+1:end,i+1:end] .-= a[i+1:end,i] .* a[i+1:end,i+1:end]
+    end
+
+    # Construct L and U from the mutated matrix a; L is unit lower triangular, 
+	# U is upper triangular.
 	# Note that UpperTriangular and UnitLowerTriangular are not
 	# copies of a, but views instead.
-	L = UnitLowerTriangular(a)
-	U = UpperTriangular(a)
+    L = UnitLowerTriangular(a)
+    U = UpperTriangular(a)
 
-	# Growth factor computation
-	G = abs.(L) .* abs.(U)
-	γ = maximum(G) / maximum(abs.(A))
-		
-	if isnan(γ) || isinf(γ)
-		throw(DomainError("Factorization failed."))
+    # Calculate the growth factor γ, which is the maximum absolute entry of 
+	# the element-wise product of L and U,
+    # divided by the maximum absolute entry of the original matrix A.
+    G = abs.(L) .* abs.(U)
+    γ = maximum(G) / maximum(abs.(A))
+    
+    # Check if the growth factor is a number; if not, the factorization has failed.
+    if isnan(γ) || isinf(γ)
+        throw(DomainError("Factorization failed."))
+    end
+	
+	# Check for NaNs in the entries of L and U
+	if any(isnan.(L)) || any(isnan.(U))
+	    throw(DomainError("The LU factorization resulted in NaN entries."))
 	end
-	return L, U, γ
+
+    # Return the lower and upper triangular matrices along with the growth factor.
+    return L, U, γ
 end
+
 
 # ╔═╡ ceca4721-8711-42ad-b7b6-d85a9a3bfee0
 md"""
@@ -107,6 +132,22 @@ function print_summary(g, b, f)
 	println("Mean:   $(mean(b))")
 	println("StdDev: $(std(b))")
 end
+
+# ╔═╡ b5311164-24ca-4a8f-90f5-40422b8c72c9
+# a function to compute the correlations between growth factor and relative backward error
+# then plot them
+function plot_correlation(g, b)
+	# add check if g, b are empty
+	if length(g) == 0 || length(b) == 0
+		println("No data to show.")
+		return
+	end
+	# compute correlation (we use Pearson)
+	corr = cor(g, b)
+	# plot
+	scatter(g, b, xlabel="Growth factor", ylabel="Relative backward error",  label="Correlation: $(round(corr, digits=3))")
+end
+
 
 # ╔═╡ a3c4d104-a92a-4706-895c-052f954818d8
 md"""
@@ -207,24 +248,8 @@ plot_summary(g3, b3)
 
 # ╔═╡ 939b524f-7f30-43a4-af42-25dd90c58f58
 md"""
-FORSE SAREBBE GANZO FARE UN PLOT DI CORRELAZIONE??
+FORSE SAREBBE GANZO FARE UN PLOT DI CORRELAZIONE?? a lei messere ;)
 """
-
-# ╔═╡ 1eb71bbc-0af7-41c8-8561-54fc65130c28
-# a function to compute the correlations between growth factor and relative backward error
-# then plot them
-function plot_correlation(g, b)
-	# add check if g, b are empty
-	if length(g) == 0 || length(b) == 0
-		println("No data to show.")
-		return
-	end
-	# compute correlation
-	corr = cor(g, b)
-	# plot
-	scatter(g, b, xlabel="Growth factor", ylabel="Relative backward error",  label="Correlation: $(round(corr, digits=3))")
-end
-
 
 # ╔═╡ 82e2cb53-a87a-431f-a537-4cd61286638e
 plot_correlation(g3, b3)
@@ -259,11 +284,6 @@ begin
 	print_summary(g4, b4, f4)
 end
 
-# ╔═╡ bbc23ac8-9706-412e-bdc0-4e6ed3dc94c7
-md"""
-test
-"""
-
 # ╔═╡ 9af51aca-53f4-4568-927f-0ca185613408
 md"""
 ## Problem 2
@@ -284,24 +304,9 @@ $\begin{bmatrix}
 e qui ci mettiamo due o tre conticini. Sono le otto di sabato, non lo farò ora.
 """
 
-# ╔═╡ 4d8a697c-9b26-417f-b0f2-e8c1bac3a4a2
-function wilkinson_element(i, j, N)
-    if i == j || j == N
-        return 1.
-    elseif i < j
-        return 0.
-    else
-         return -1.
-     end
-end
-
-# ╔═╡ c2270a41-ce15-4670-9937-25a6a7d3f304
-function wilkin(N::Integer)
-    return [wilkinson_element(i,j,N) for i in 1:N, j in 1:N]
-end
-
 # ╔═╡ 84bc6ce3-41bd-4056-b98b-d0e56423f972
 md"""
+### Task 1
 LU decomposition of a Wilkinson Matrix $W_5$
 
 $$W_5 = \begin{bmatrix}
@@ -327,6 +332,7 @@ $$W_5 = \begin{bmatrix}
 
 # ╔═╡ 606f9f6c-9e5d-45d4-bb3d-35f0dcefc121
 md"""
+### Task 2
 Guess of the LU factorization of $W_n$ for a generic $n$
 
 $$L = \begin{bmatrix}
@@ -353,6 +359,123 @@ $$U = I_n + \sum_{i=1}^{n-1} 2^{i-1} e_i e_n^T$$
 
 """
 
+# ╔═╡ 7e182a84-e584-4681-b112-d6e7251e771c
+md"""
+### Task 3
+"""
+
+# ╔═╡ 4d8a697c-9b26-417f-b0f2-e8c1bac3a4a2
+function wilkinson_element(i, j, N)
+    if i == j || j == N
+        return 1.
+    elseif i < j
+        return 0.
+    else
+         return -1.
+     end
+end
+
+# ╔═╡ c2270a41-ce15-4670-9937-25a6a7d3f304
+function wilkin(N::Integer)
+    return [wilkinson_element(i,j,N) for i in 1:N, j in 1:N]
+end
+
+# ╔═╡ 0be4f60d-9727-4d6d-b192-e9f60e7bbca2
+md"""
+### Task 4
+The vector $\mathbf{b}$ formed by $\mathbf{b} = A\mathbf{e}$ for the Wilkinson matrix $W_n$ where $\mathbf{e}$ is a column vector of ones is given by:
+
+$$\mathbf{b} = \begin{bmatrix}
+2 \\
+1 \\
+0 \\
+-1 \\
+-2 \\
+\vdots \\
+1
+\end{bmatrix}$$
+
+With each entry $b_i$ defined as:
+
+$$b_i = 
+\begin{cases} 
+2 & \text{for } i = 1 \\
+- (i -3) & \text{for } 2 \leq i < n \\
+1 & \text{for } i = n
+\end{cases}$$
+
+We thus define a function to store in memory the exact solution to the problem:
+"""
+
+# ╔═╡ 657dd31e-005e-414f-8570-0b1e59c5538e
+function generate_b_vector(n::Int)
+    # Initialize b as a vector of zeros with length n
+    b = zeros(Int, n)
+    
+    # Set the first and last elements according to the provided rules
+    b[1] = 2
+    if n > 1
+    	b[end] = 1
+	end
+    
+    # Fill in the remaining elements of b based on the given formula
+    for i in 2:n-1
+        b[i] = -(i - 3)
+    end
+    
+    return b
+end
+
+
+# ╔═╡ 2edcd1c7-9164-423a-9f2c-30c47b5ed143
+md"""
+but we can also employ Julia's list comprehension for a neat, smaller function:
+"""
+
+# ╔═╡ 6984ee74-9581-4a3b-9016-f92b33ac26e7
+function generate_b_vector_comprehension(n::Int)
+    return [i == 1 ? 2 : i == n ? 1 : -(i - 3) for i in 1:n]
+end
+
+
+# ╔═╡ 89efa9bd-3c04-47f5-926f-cc028ff29336
+md"""
+Are the two actually equivalent? Which is faster?
+
+Note that @btime aims to spend at least 100 milliseconds on benchmarking, which means it will run the function as many times as it can within that time frame to get a reliable average. Alternatively we can set:
+
+`@btime func() setup=(evals=1000)`
+"""
+
+# ╔═╡ 5faa176b-ad4e-4282-a8ec-0b17e47cc666
+# assert that the two functions are equivalent
+begin
+for n in 1:100
+	@assert generate_b_vector(n) == generate_b_vector_comprehension(n)
+end
+
+# see which one is faster
+
+@btime b100 = generate_b_vector(100)
+@btime b100v = generate_b_vector_comprehension(100)
+end
+
+# ╔═╡ a65ddcf4-bc95-4801-8709-d633b6849598
+md"""
+#### Not final , to revise
+In task 4, we are asked to perform a numerical experiment with the Wilkinson matrix \( W_n \) and the vector \( e \), which leads to the following steps:
+
+1. Generate \( A = W_n \), the Wilkinson matrix of size \( n \times n \).
+2. Let \( e \) be the column vector with all entries equal to 1, then form \( b = Ae \), resulting in a specific pattern as described above.
+3. Solve the linear system \( Ax = b \) using the backslash operator, which in Julia (or MATLAB) leverages optimized algorithms for solving linear equations.
+4. The computed solution \( x \) is then compared to the exact solution, which should be the vector \( e \).
+
+Given the specific structure of \( W_n \), the backslash operator should ideally find the exact solution without difficulty for smaller values of \( n \). However, as \( n \) becomes large, numerical instability can occur due to the ill-conditioning of the Wilkinson matrix. This can lead to a computed solution \( x \) that deviates from the exact solution \( e \), especially in the presence of round-off errors in floating-point arithmetic.
+
+The success of this numerical experiment heavily depends on the numerical stability of the algorithms used by the backslash operator and the conditioning of the matrix \( W_n \). For \( W_{60} \), we would need to assess the accuracy of the computed solution by comparing it to \( e \) and examining the residual \( r = b - Ax \), which should be close to the zero vector for an accurate solution.
+
+"""
+
 # ╔═╡ 63f2fc3e-f29a-414e-a560-dad7139981f1
 svg_joinpathsplit__FILE__1assetslogosvg = let
     import PlutoUI
@@ -362,12 +485,14 @@ end
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
+BenchmarkTools = "~1.4.0"
 Plots = "~1.39.0"
 PlutoUI = "~0.7.54"
 """
@@ -378,7 +503,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.0"
 manifest_format = "2.0"
-project_hash = "d22afbd44a4e28a6917baaf4c8addcbaa9e409d4"
+project_hash = "8f69ae7a7372615b1067222977e7e33a03b3d8ec"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -395,6 +520,12 @@ uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 
 [[deps.Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
+
+[[deps.BenchmarkTools]]
+deps = ["JSON", "Logging", "Printf", "Profile", "Statistics", "UUIDs"]
+git-tree-sha1 = "f1f03a9fa24271160ed7e73051fba3c1a759b53f"
+uuid = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+version = "1.4.0"
 
 [[deps.BitFlags]]
 git-tree-sha1 = "2dc09997850d68179b69dafb58ae806167a32b1b"
@@ -990,6 +1121,10 @@ version = "1.4.1"
 deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
+[[deps.Profile]]
+deps = ["Printf"]
+uuid = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
+
 [[deps.Qt6Base_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Vulkan_Loader_jll", "Xorg_libSM_jll", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_cursor_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "libinput_jll", "xkbcommon_jll"]
 git-tree-sha1 = "37b7bb7aabf9a085e0044307e1717436117f2b3b"
@@ -1471,6 +1606,7 @@ version = "1.4.1+1"
 # ╠═029c1d1f-cc52-4c3d-b0e3-4c252e847878
 # ╠═4c97f6d2-846b-4d7a-93f9-53ddb6125a33
 # ╠═c6e79210-d8e1-4c6d-a5cb-6304765cc6a6
+# ╠═b5311164-24ca-4a8f-90f5-40422b8c72c9
 # ╟─a3c4d104-a92a-4706-895c-052f954818d8
 # ╠═19208ed5-d8db-4eee-933c-4e0a735e7c37
 # ╠═430999b7-c693-4280-8325-6e6f6c6bd732
@@ -1480,17 +1616,23 @@ version = "1.4.1+1"
 # ╟─3e6e046a-cf73-4b59-8069-97521832f3f5
 # ╠═eec1b069-474a-44e4-a25b-3bd4cec4adb5
 # ╟─939b524f-7f30-43a4-af42-25dd90c58f58
-# ╠═1eb71bbc-0af7-41c8-8561-54fc65130c28
 # ╠═82e2cb53-a87a-431f-a537-4cd61286638e
 # ╟─40c9f9be-eb94-40f3-ac14-727432d9ade9
 # ╠═257f07b9-9505-4f48-a1ab-0984e1fb0b21
-# ╠═bbc23ac8-9706-412e-bdc0-4e6ed3dc94c7
 # ╟─9af51aca-53f4-4568-927f-0ca185613408
 # ╟─a37d2a18-510f-4217-b77e-9055e4531869
-# ╠═4d8a697c-9b26-417f-b0f2-e8c1bac3a4a2
-# ╠═c2270a41-ce15-4670-9937-25a6a7d3f304
 # ╟─84bc6ce3-41bd-4056-b98b-d0e56423f972
 # ╟─606f9f6c-9e5d-45d4-bb3d-35f0dcefc121
-# ╠═63f2fc3e-f29a-414e-a560-dad7139981f1
+# ╟─7e182a84-e584-4681-b112-d6e7251e771c
+# ╠═4d8a697c-9b26-417f-b0f2-e8c1bac3a4a2
+# ╠═c2270a41-ce15-4670-9937-25a6a7d3f304
+# ╟─0be4f60d-9727-4d6d-b192-e9f60e7bbca2
+# ╠═657dd31e-005e-414f-8570-0b1e59c5538e
+# ╟─2edcd1c7-9164-423a-9f2c-30c47b5ed143
+# ╠═6984ee74-9581-4a3b-9016-f92b33ac26e7
+# ╟─89efa9bd-3c04-47f5-926f-cc028ff29336
+# ╠═5faa176b-ad4e-4282-a8ec-0b17e47cc666
+# ╟─a65ddcf4-bc95-4801-8709-d633b6849598
+# ╟─63f2fc3e-f29a-414e-a560-dad7139981f1
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
