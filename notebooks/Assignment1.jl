@@ -34,15 +34,6 @@ function lufact(A::AbstractMatrix{T}) where T <: Real
         throw(ArgumentError("The matrix is not square."))
     end
 
-	# add a check on the submatrix determinant to see if LU exists 
-	# and is unique 
-	# NOTE : for now this is commented out as it's an expensive check not required by the assignment
-	# for i in 1:size(A, 1)
-	# 	if det(A[1:i, 1:i]) == 0
-	# 		throw(ArgumentError("The matrix does not allow a unique LU factorization."))
-	# 	end
-	# end
-
     # Determine the size of the matrix for iteration purposes.
     n = size(A, 1)
     # Create a copy of A to avoid altering the original matrix during factorization.
@@ -188,8 +179,8 @@ begin
 	local f2 = 0
 	g2 = Float64[]
 	b2 = Float64[]
-	for _ in 1:100
-		N = rand(2:100)
+	for N in 2:100
+		#N = rand(2:100)
 		A = [1 / (i + j - 1) for i in 1:N, j in 1:N]
 		try
 			L, U, γ = lufact(A)
@@ -392,7 +383,7 @@ $$\mathbf{b} = \begin{bmatrix}
 -1 \\
 -2 \\
 \vdots \\
-1
+- (n - 2)
 \end{bmatrix}$$
 
 With each entry $b_i$ defined as:
@@ -400,8 +391,8 @@ With each entry $b_i$ defined as:
 $$b_i = 
 \begin{cases} 
 2 & \text{for } i = 1 \\
-- (i -3) & \text{for } 2 \leq i < n \\
-1 & \text{for } i = n
+- (i - 3) & \text{for } 2 \leq i < n \\
+- (i - 2) & \text{for } i = n
 \end{cases}$$
 
 We thus define a function to store in memory the exact solution to the problem:
@@ -470,21 +461,27 @@ function generate_b_vector_third(n)
 	b = [-(i-3) for i in 1:n]
 	b[1] = 2
 	if n > 1
-		b[end] = 1
+		b[end] = - (n - 2)
 	end
 	return b
 end
 
+# ╔═╡ b9d1498c-0c82-423e-a19a-dbd5f6543d93
+md"""
+Which is actually faster.
+"""
+
 # ╔═╡ 56d246d3-9113-4681-8a82-10c33664554e
 begin
-for n in 1:100
-	@assert generate_b_vector(n) == generate_b_vector_third(n)
+for n in 2:100
+	@assert wilkin(n)*[1 for i in 1:n] == generate_b_vector_third(n)
+	#@show wilkin(n)*[1 for i in 1:n]
 end
 
 # see which one is faster
 
-@btime b100 = generate_b_vector(100)
-@btime b100v = generate_b_vector_third(100)
+#@btime b100 = generate_b_vector(100)
+#@btime b100v = generate_b_vector_third(100)
 end
 
 # ╔═╡ a65ddcf4-bc95-4801-8709-d633b6849598
@@ -1636,7 +1633,7 @@ version = "1.4.1+1"
 # ╠═b5311164-24ca-4a8f-90f5-40422b8c72c9
 # ╟─a3c4d104-a92a-4706-895c-052f954818d8
 # ╠═19208ed5-d8db-4eee-933c-4e0a735e7c37
-# ╠═430999b7-c693-4280-8325-6e6f6c6bd732
+# ╟─430999b7-c693-4280-8325-6e6f6c6bd732
 # ╠═49cd5b24-bc60-4c36-98d2-f5c04ebbc2df
 # ╟─71eb0c07-8f46-47c3-92cb-8558d870e5d5
 # ╠═731efdaf-e0db-41c1-80d3-92523ecd02bf
@@ -1661,6 +1658,7 @@ version = "1.4.1+1"
 # ╠═5faa176b-ad4e-4282-a8ec-0b17e47cc666
 # ╟─4c914206-8d7b-40e7-a3fa-f7e59e5cf615
 # ╠═e597f8cc-be2f-435f-8d10-9befa36fdbd6
+# ╟─b9d1498c-0c82-423e-a19a-dbd5f6543d93
 # ╠═56d246d3-9113-4681-8a82-10c33664554e
 # ╟─a65ddcf4-bc95-4801-8709-d633b6849598
 # ╟─63f2fc3e-f29a-414e-a560-dad7139981f1
