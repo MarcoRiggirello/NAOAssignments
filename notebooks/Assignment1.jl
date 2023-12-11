@@ -460,6 +460,33 @@ end
 @btime b100v = generate_b_vector_comprehension(100)
 end
 
+# ╔═╡ 4c914206-8d7b-40e7-a3fa-f7e59e5cf615
+md"""
+The time difference is probably due to the fact that `generate_b_vector` has to make a comparison for each index, while the "unneat" version not. There is a third way in between. 
+"""
+
+# ╔═╡ e597f8cc-be2f-435f-8d10-9befa36fdbd6
+function generate_b_vector_third(n)
+	b = [-(i-3) for i in 1:n]
+	b[1] = 2
+	if n > 1
+		b[end] = 1
+	end
+	return b
+end
+
+# ╔═╡ 56d246d3-9113-4681-8a82-10c33664554e
+begin
+for n in 1:100
+	@assert generate_b_vector(n) == generate_b_vector_third(n)
+end
+
+# see which one is faster
+
+@btime b100 = generate_b_vector(100)
+@btime b100v = generate_b_vector_third(100)
+end
+
 # ╔═╡ a65ddcf4-bc95-4801-8709-d633b6849598
 md"""
 #### Not final , to revise
@@ -501,7 +528,7 @@ PlutoUI = "~0.7.54"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.0"
+julia_version = "1.9.4"
 manifest_format = "2.0"
 project_hash = "8f69ae7a7372615b1067222977e7e33a03b3d8ec"
 
@@ -593,7 +620,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.2+0"
+version = "1.0.5+0"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
@@ -851,12 +878,12 @@ version = "0.16.1"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.3"
+version = "0.6.4"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "7.84.0+0"
+version = "8.4.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -865,7 +892,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.10.2+0"
+version = "1.11.0+1"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1065,7 +1092,7 @@ version = "0.42.2+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.9.0"
+version = "1.9.2"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]
@@ -1528,7 +1555,7 @@ version = "0.15.1+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.7.0+0"
+version = "5.8.0+0"
 
 [[deps.libevdev_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1569,7 +1596,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.48.0+0"
+version = "1.52.0+1"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1632,6 +1659,9 @@ version = "1.4.1+1"
 # ╠═6984ee74-9581-4a3b-9016-f92b33ac26e7
 # ╟─89efa9bd-3c04-47f5-926f-cc028ff29336
 # ╠═5faa176b-ad4e-4282-a8ec-0b17e47cc666
+# ╟─4c914206-8d7b-40e7-a3fa-f7e59e5cf615
+# ╠═e597f8cc-be2f-435f-8d10-9befa36fdbd6
+# ╠═56d246d3-9113-4681-8a82-10c33664554e
 # ╟─a65ddcf4-bc95-4801-8709-d633b6849598
 # ╟─63f2fc3e-f29a-414e-a560-dad7139981f1
 # ╟─00000000-0000-0000-0000-000000000001
