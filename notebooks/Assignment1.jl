@@ -565,11 +565,12 @@ begin
 	@show x
 	diff = x - e
 	@show norm(diff, Inf)
+	@assert x == e
 end
 
 # ╔═╡ 7dc2d822-5a69-404b-9a27-d28dfcc4caf7
 md"""
-### Task 5
+### Task 5 and 6
 Repeat the experiment for smaller values of $n$. What is the largest value of $n$ for which $W_n x = b$ can be solved accurately by GEPP when $b = W_n e$? Provide an explanation of the observed behavior.
 
 """
@@ -579,19 +580,53 @@ Repeat the experiment for smaller values of $n$. What is the largest value of $n
 # NOTE: for 1 it is false
 begin
 	for n in 2:60
-		A = wilkin(n)
+		Wₙ = wilkin(n)
 		b = generate_b_vector_third(n)
 		e = ones(n)
-		x = A \ b
-		diff = x - e
+		x = Wₙ \ b
+	
+		Δ = x - e
+		ϵ_rel = norm(Δ, Inf) / norm(e, Inf)
+		if ϵ_rel != 0
+			@show ϵ_rel
+			throw(DomainError("relative error introduced at step n = $n"))	
+		end
+		@assert x == e
 		println("n = $n")
-		@assert norm(diff, Inf) < eps(Float64)
 	end
 end
 
 # ╔═╡ 9617629e-b286-412e-b526-0d911946deba
 md"""
-remeber from pages 58 and 60 some propertiesabout wilkinson matrices and accuracy of computed solutions
+The Wilkinson matrix is specifically designed to be a challenging test case for numerical algorithms due to its structure, which induces a large growth factor in the elements of the LU decomposition without pivoting. As the size of the matrix grows, the condition number of the Wilkinson matrix increases exponentially, making it more susceptible to round-off errors. 
+
+At $n=55$ we have a transition due to algorithm limitation, error propagation and precision limits. We get a first non-zero entry for the relative error, which becomes 1 under the Infinity norm.
+
+It's important to note that while $n=55$ is the threshold in this particular case, the exact value can vary depending on the computational environment, such as the machine epsilon of the system, the specific implementation of the backslash operator, and any underlying optimizations in the linear algebra library being used.
+
+However, in order to investigate further this problem, we can recall Theorem 4.29 of the lectures, which states that the relative error for our case is bounded by:
+
+$$\frac{\left\lVert \mathbf{x}^* - \tilde{\mathbf{x}} \right\rVert}{\left\lVert \mathbf{x}^*\right\rVert}  \leq O(\gamma u) \kappa(W_n)$$
+
+where $\gamma = 2^{n-1}$ for the Wilkinson matrix. We can at least compute the upper bound of ϵ_rel in the vicinity of $n = 55$ to convince ourselves that the problem is unstable in this regime:
+"""
+
+# ╔═╡ ebd06076-421a-4687-85c4-4284f98559cb
+begin
+	for n in 45:60
+	Wₙ = wilkin(n)
+	κ = cond(Wₙ, Inf)
+	γ = 2^(n-1)
+	ϵ_bound = γ * eps()/2 * κ
+	println("At n = $n ϵ_bound ≈ $ϵ_bound")
+	end
+end
+
+# ╔═╡ a1be1f55-cff5-4251-863f-fd23e276c479
+md"""
+We see that the relative error bound, ϵ_bound, is of order 1 at about $n = 48$. After that, numerical optimizations make so that the solution can still be computed accurately, but we do not have an guarantee from theory. Finally, we lose the accurate solution to the problem at $n = 55$. 
+
+Interestingly, $n = 55$ concides with the point from where the error bound is at least 2 orders of magnitude bigger than 1, suggesting that the optimizations of the backslash operator are capable of handling relative errors with theoretical bounds of about 1 order of magnitude bigger than the error observed.
 """
 
 # ╔═╡ 63f2fc3e-f29a-414e-a560-dad7139981f1
@@ -1770,6 +1805,8 @@ version = "1.4.1+1"
 # ╟─7dc2d822-5a69-404b-9a27-d28dfcc4caf7
 # ╠═45fffdc2-8815-4c0b-9b5f-41b8da706b06
 # ╟─9617629e-b286-412e-b526-0d911946deba
+# ╠═ebd06076-421a-4687-85c4-4284f98559cb
+# ╟─a1be1f55-cff5-4251-863f-fd23e276c479
 # ╟─63f2fc3e-f29a-414e-a560-dad7139981f1
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
