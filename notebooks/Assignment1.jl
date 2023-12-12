@@ -5,16 +5,21 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ 71fb6b39-125d-481f-ad19-affa7c04d226
-using LinearAlgebra, Plots, Statistics, BenchmarkTools
+using LinearAlgebra, Plots, Statistics, Random, BenchmarkTools
 
 # ╔═╡ b8f31bda-95d7-11ee-29fe-9f2acb543f4a
 md"""
 # Numerical Analysis and Optimization Homework Project 1
 """
 
+# ╔═╡ 5ebf2ce4-f878-4cd4-8491-c4304c751be5
+md"""
+*Marco Riggirello, Francesco Vaselli*
+"""
+
 # ╔═╡ a5832cb4-5225-469c-96c6-52d08b68409a
 md"""
-This assignment is done using the Julia programming language. To easy the task, we load Julia's linear algebra standard library:
+This assignment is done using the Julia programming language. To easy the task, we load some Julia package:
 """
 
 # ╔═╡ 2d793d4f-6ca9-4551-b5ce-89d994bfc762
@@ -24,11 +29,11 @@ md"""
 
 # ╔═╡ 7340ab2e-f583-48c4-a2d9-df1e0e3ec2c2
 md"""
-Here we define the function `lufact` that takes as input a square matrix and compute the non-pivoted LU factorization and its grow factor:
+### Task 1
 """
 
 # ╔═╡ 289e0844-63e3-45a0-93e9-96c9ac5a885b
-function lufact(A::AbstractMatrix{T}) where T <: Real
+#=function lufact(A::AbstractMatrix{T}) where T
     # Ensure the matrix is square; otherwise, LU factorization is not defined.
     if size(A, 1) != size(A, 2)
         throw(ArgumentError("The matrix is not square."))
@@ -53,14 +58,17 @@ function lufact(A::AbstractMatrix{T}) where T <: Real
         
         # Compute the factors of L in place by dividing the 
 		# subcolumn elements by the pivot.
-        a[i+1:end,i] .= a[i+1:end,i] ./ pivot
+        a[i+1:end,i] = a[i+1:end,i] / pivot
         # Update the remaining submatrix to form U, subtracting the 
 		# outer product of the L factor and the row of U.
-        a[i+1:end,i+1:end] .-= a[i+1:end,i] .* a[i+1:end,i+1:end]
+        a[i+1:end,i+1:end] -= a[i+1:end,i] * a[i,i+1:end]'
+		# Sanity check
+		if any(isnan, a[i+1:end, i:end])
+			throw(DomainError("The LU factorization resulted in NaN entries."))
+		end
     end
 
-    # Construct L and U from the mutated matrix a; L is unit lower triangular, 
-	# U is upper triangular.
+    # Construct L and U from the mutated matrix a.
 	# Note that UpperTriangular and UnitLowerTriangular are not
 	# copies of a, but views instead.
     L = UnitLowerTriangular(a)
@@ -69,44 +77,96 @@ function lufact(A::AbstractMatrix{T}) where T <: Real
     # Calculate the growth factor γ, which is the maximum absolute entry of 
 	# the element-wise product of L and U,
     # divided by the maximum absolute entry of the original matrix A.
-    G = abs.(L) .* abs.(U)
+    G = abs.(L) * abs.(U)
     γ = maximum(G) / maximum(abs.(A))
     
     # Check if the growth factor is a number; if not, the factorization has failed.
-    if isnan(γ) || isinf(γ)
-        throw(DomainError("Factorization failed."))
-    end
+    #if isnan(γ) || isinf(γ)
+    #    throw(DomainError("Factorization failed."))
+    #end
 	
 	# Check for NaNs in the entries of L and U
-	if any(isnan.(L)) || any(isnan.(U))
-	    throw(DomainError("The LU factorization resulted in NaN entries."))
-	end
+	#if any(isnan.(L)) || any(isnan.(U))
+	#    throw(DomainError("The LU factorization resulted in NaN entries."))
+	#end
 
     # Return the lower and upper triangular matrices along with the growth factor.
     return L, U, γ
 end
+=#
 
+# ╔═╡ cad47d12-5d44-45f3-a4c4-85f033a97009
+md"""
+Here we define the function `lufact` that takes as input a square matrix and computes the non-pivoted LU factorization and its grow factor.
+
+The $L$ and $U$ matrices are computed via Gaussian elimination, as presented in the class, while the growth factor $\gamma$ is defined as the ratio of the largest entry in the matrix $G \equiv |L||U|$ and the largest entry in the matrix $|A|$ (absolute values are element-wise).
+
+In our implementation, Gaussian elimination is carried on by storing both $L$ and $U$  in a single matrix $A_k$, where the upper triangular part of $A_n$ represents the nonzero elements of $U$ while the lower part represent the $L$ matrix, diagonal excluded. The $Ak$ updated is done using the slicing syntax of Julia's array (note that if `u` and `v` are vectors then `u * v'` is their outer product).
+
+We made our implementation more robust in various ways: in the first place, the Julia idiomatic type declaration (`function lufact(A::AbstractMatrix{T}) where T <: Union{Real, Complex}`) allowed us to know how to correcly initialize $A_k$ and $\gamma$; furthermore, a preliminary check on the matrix squareness is performed.
+At every $A_k$ update, we checked that the pivot is greater than the machine epsilon to ensure a sensible reslut and the presence of `NaN`s, sign of numerical instability in this non-pivoted variant of the LU factorization.
+"""
+
+# ╔═╡ 8637fdcd-8f66-436e-9ea6-6bfdf439e7f0
+function lufact(A::AbstractMatrix{T}) where T <: Union{Real, Complex}
+	m, n = size(A)
+    # Ensures the matrix is square.
+    if m != n
+        throw(ArgumentError("Matrix is not square."))
+    end
+
+    # Creates a copy of A
+	U = T <: Real ? Float64 : Complex{Float64}
+	
+	Ak = map(U, A)
+    γ = zero(U)
+
+    # Performs the LU factorization.
+    for k in 1:n-1
+		pivot = Ak[k, k]
+		# Sanity check
+        if abs(pivot) <= eps(Float64)
+            throw(DomainError("Matrix is ill-conditioned."))
+        end
+        # Compute i-th column of L
+        Ak[k+1:n,k] = Ak[k+1:n,k] / pivot
+		# Update Ak
+        Ak[k+1:n,k+1:n] -= Ak[k+1:n,k] * Ak[k,k+1:n]'
+		# Sanity check
+		if any(isnan, Ak[k+1:n,k:n])
+			throw(DomainError("Factorization is numerically unstable for this matrix."))
+		end
+    end
+
+    # Constructs L and U from the updated matrix Ak.
+    L = UnitLowerTriangular(Ak)
+    U = UpperTriangular(Ak)
+
+    # Computes the growth factor γ.
+    G = abs.(L) * abs.(U)
+    γ = maximum(G) / maximum(abs.(A))
+    
+    return L, U, γ
+end
+
+# ╔═╡ 404cc770-47b6-4dac-9ea6-549a8cf8be12
+md"""
+### Task 2 and 3
+"""
 
 # ╔═╡ ceca4721-8711-42ad-b7b6-d85a9a3bfee0
 md"""
-Now we want to test the performances of this alogirthm over various matrix types. Before we proceed, we define a bunch of utility functions:
+Now we want to test the performances of this algorithm over various matrix types. Before we proceed, we define a bunch of utility functions:
 """
 
 # ╔═╡ 029c1d1f-cc52-4c3d-b0e3-4c252e847878
 function relative_backward_error(A, L, U)
-	return opnorm(A - L*U, Inf)/opnorm(A, Inf)
-end
-
-# ╔═╡ 4c97f6d2-846b-4d7a-93f9-53ddb6125a33
-function plot_summary(g, b)
-	hg = histogram(g, xlabel="Growth factor", ylabel="Frequency")
-	hb = histogram(b, xlabel="Relative backward error", ylabel="Frequency")
-	plot(hg, hb, layout=(1,2))
+	return opnorm(A - L * U, Inf)/opnorm(A, Inf)
 end
 
 # ╔═╡ c6e79210-d8e1-4c6d-a5cb-6304765cc6a6
-function print_summary(g, b, f)
-	println("Failure rate: $f")
+function print_summary(g, b, f, t)
+	println("Failure rate: $(100*f/t) %")
 	# add check if g, b are empty
 	if length(g) == 0 || length(b) == 0
 		println("No data to show.")
@@ -116,15 +176,52 @@ function print_summary(g, b, f)
 	println("Min:    $(minimum(g))")
 	println("Max:    $(maximum(g))")
 	println("Mean:   $(mean(g))")
+	println("Median: $(median(g))")
 	println("StdDev: $(std(g))")
 	println("RELATIVE BACKWARD ERROR")
 	println("Min:    $(minimum(b))")
 	println("Max:    $(maximum(b))")
 	println("Mean:   $(mean(b))")
+	println("Median: $(median(b))")
 	println("StdDev: $(std(b))")
 end
 
+# ╔═╡ 4c97f6d2-846b-4d7a-93f9-53ddb6125a33
+function plot_summary(g, b, pq=1.)
+	hg = histogram(g[g.<=quantile(g, pq)], xlabel="Growth factor", ylabel="Frequency")
+	hb = histogram(b[b.<=quantile(g, pq)], xlabel="Relative backward error", ylabel="Frequency")
+	plot(hg, hb, layout=(1,2))
+end
+
+# ╔═╡ 54744193-84bb-4f7f-9d65-692e00b26142
+function test_dataset(dataset_generator, t, plot_quantile=1.)
+	Random.seed!(42)
+	f = 0
+	g = Float64[]
+	b = Float64[]
+	for i in 1:t
+		A = dataset_generator(i)
+		try
+			L, U, γ = lufact(A)
+			β = relative_backward_error(A, L, U)
+			push!(g, γ)
+			push!(b, β)
+		catch e
+			if isa(e, DomainError)
+				f += 1
+			else
+				throw(e)
+			end
+		end
+	end
+	print_summary(g, b, f, t)
+	plot_summary(g, b, plot_quantile)
+	#return g, b
+end
+
 # ╔═╡ b5311164-24ca-4a8f-90f5-40422b8c72c9
+# ╠═╡ disabled = true
+#=╠═╡
 # a function to compute the correlations between growth factor and relative backward error
 # then plot them
 function plot_correlation(g, b)
@@ -139,64 +236,46 @@ function plot_correlation(g, b)
 	scatter(g, b, xlabel="Growth factor", ylabel="Relative backward error",  label="Correlation: $(round(corr, digits=3))")
 end
 
+  ╠═╡ =#
 
 # ╔═╡ a3c4d104-a92a-4706-895c-052f954818d8
 md"""
-### Random matrices
+#### Random matrices
+"""
+
+# ╔═╡ a25a170c-7f91-4b88-88c3-1f41a929d7ac
+md"""
+We generate complex matrices of uniformly distributed sizes and normal distributed elements.
 """
 
 # ╔═╡ 19208ed5-d8db-4eee-933c-4e0a735e7c37
-begin
-	f = 0
-	g = Float64[]
-	b = Float64[]
-	for _ in 1:100
-		N = rand(2:100)
-		A = randn(N, N)
-		try
-			L, U, γ = lufact(A)
-			β = relative_backward_error(A, L, U)
-			push!(g, γ)
-			push!(b, β)
-		catch e
-			if isa(e, DomainError)
-				f += 1
-			else
-				throw(e)
-			end
-		end
-	end
-	print_summary(g, b, f)
+function generate_random(i)
+	N = rand(2:100)
+	return randn(Complex{Float64}, N, N)
 end
+
+# ╔═╡ 432078ea-9a58-4b3f-bf6f-7b22d41490c3
+test_dataset(generate_random, 1000, 0.8)
 
 # ╔═╡ 430999b7-c693-4280-8325-6e6f6c6bd732
 md"""
 ### Hilbert matrices
 """
 
+# ╔═╡ b03a8b8f-456c-4174-bdc6-70e93fa1f584
+md"""
+Hilber matrices are defined as
+
+$è tardi non ne ho voglia$
+"""
+
 # ╔═╡ 49cd5b24-bc60-4c36-98d2-f5c04ebbc2df
-begin 
-	local f2 = 0
-	g2 = Float64[]
-	b2 = Float64[]
-	for N in 2:100
-		#N = rand(2:100)
-		A = [1 / (i + j - 1) for i in 1:N, j in 1:N]
-		try
-			L, U, γ = lufact(A)
-			β = relative_backward_error(A, L, U)
-			push!(g2, γ)
-			push!(b2, β)
-		catch e
-			if isa(e, DomainError)
-				f2 += 1
-			else
-				throw(e)
-			end
-		end
-	end
-	print_summary(g2, b2, f2)
+function generate_hilbert(N)
+	return [1 / (i + j - 1) for i in 1:N, j in 1:N]
 end
+
+# ╔═╡ aa93a02f-e063-47b2-8d01-ed37b50a50df
+test_dataset(generate_hilbert, 300)
 
 # ╔═╡ 71eb0c07-8f46-47c3-92cb-8558d870e5d5
 md"""
@@ -204,76 +283,52 @@ md"""
 """
 
 # ╔═╡ 731efdaf-e0db-41c1-80d3-92523ecd02bf
-begin
-	f3 = 0
-	g3 = Float64[]
-	b3 = Float64[]
-	for _ in 1:100
-		N = rand(2:100)
-		A = rand(N, N)
-		A += diagm([N+1 for _ in 1:N])
-		try
-			L, U, γ = lufact(A)
-			β = relative_backward_error(A, L, U)
-			push!(g3, γ)
-			push!(b3, β)
-		catch e
-			if isa(e, DomainError)
-				f3 += 1
-			else
-				throw(e)
-			end
-		end
-	end
-	print_summary(g3, b3, f3)
+function generate_dd(i)
+	N = rand(2:100)
+	A = rand(N, N)
+	A += diagm([N+1 for _ in 1:N])
+	return A
 end
 
+# ╔═╡ e5143618-5d7f-4263-8c21-3e2a5362e893
+test_dataset(generate_dd, 1000)
+
 # ╔═╡ 3e6e046a-cf73-4b59-8069-97521832f3f5
+# ╠═╡ disabled = true
+#=╠═╡
 md"""
 #### Check growth factor plots
 Ideally, the growth factor should be close to 1. This indicates that the LU decomposition did not significantly increase the magnitude of the matrix's elements, suggesting a stable decomposition. It's important to note that a low growth factor does not guarantee a good decomposition. It's just one of several indicators of the quality and stability of the decomposition.
 """
-
-# ╔═╡ eec1b069-474a-44e4-a25b-3bd4cec4adb5
-plot_summary(g3, b3)
+  ╠═╡ =#
 
 # ╔═╡ 939b524f-7f30-43a4-af42-25dd90c58f58
+# ╠═╡ disabled = true
+#=╠═╡
 md"""
 FORSE SAREBBE GANZO FARE UN PLOT DI CORRELAZIONE?? a lei messere ;)
 """
+  ╠═╡ =#
 
 # ╔═╡ 82e2cb53-a87a-431f-a537-4cd61286638e
+#=╠═╡
 plot_correlation(g3, b3)
+  ╠═╡ =#
 
 # ╔═╡ 40c9f9be-eb94-40f3-ac14-727432d9ade9
 md"""
-### SVD matrices
+### SPD matrices
 """
 
 # ╔═╡ 257f07b9-9505-4f48-a1ab-0984e1fb0b21
-begin
-	f4 = 0
-	g4 = Float64[]
-	b4 = Float64[]
-	for _ in 1:100
-		N = rand(2:100)
-		A = randn(N, N)
-		A = A'*A
-		try
-			L, U, γ = lufact(A)
-			β = relative_backward_error(A, L, U)
-			push!(g4, γ)
-			push!(b4, β)
-		catch e
-			if isa(e, DomainError)
-				f4 += 1
-			else
-				throw(e)
-			end
-		end
-	end
-	print_summary(g4, b4, f4)
+function generate_spd(i)
+	N = rand(2:100)
+	A = randn(Complex{Float64}, N, N)
+	return A*A'
 end
+
+# ╔═╡ e4463365-2939-4b0f-878f-e4bc70e80a69
+test_dataset(generate_spd, 1000)
 
 # ╔═╡ 9af51aca-53f4-4568-927f-0ca185613408
 md"""
@@ -513,6 +568,7 @@ BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
@@ -527,7 +583,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.4"
 manifest_format = "2.0"
-project_hash = "8f69ae7a7372615b1067222977e7e33a03b3d8ec"
+project_hash = "2a0d92feb2aaa32ca8a23417682e6fac1d5caec0"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -1621,28 +1677,38 @@ version = "1.4.1+1"
 
 # ╔═╡ Cell order:
 # ╟─b8f31bda-95d7-11ee-29fe-9f2acb543f4a
+# ╟─5ebf2ce4-f878-4cd4-8491-c4304c751be5
 # ╟─a5832cb4-5225-469c-96c6-52d08b68409a
 # ╠═71fb6b39-125d-481f-ad19-affa7c04d226
 # ╟─2d793d4f-6ca9-4551-b5ce-89d994bfc762
 # ╟─7340ab2e-f583-48c4-a2d9-df1e0e3ec2c2
 # ╠═289e0844-63e3-45a0-93e9-96c9ac5a885b
+# ╟─cad47d12-5d44-45f3-a4c4-85f033a97009
+# ╠═8637fdcd-8f66-436e-9ea6-6bfdf439e7f0
+# ╟─404cc770-47b6-4dac-9ea6-549a8cf8be12
 # ╟─ceca4721-8711-42ad-b7b6-d85a9a3bfee0
 # ╠═029c1d1f-cc52-4c3d-b0e3-4c252e847878
-# ╠═4c97f6d2-846b-4d7a-93f9-53ddb6125a33
 # ╠═c6e79210-d8e1-4c6d-a5cb-6304765cc6a6
+# ╠═4c97f6d2-846b-4d7a-93f9-53ddb6125a33
+# ╠═54744193-84bb-4f7f-9d65-692e00b26142
 # ╠═b5311164-24ca-4a8f-90f5-40422b8c72c9
 # ╟─a3c4d104-a92a-4706-895c-052f954818d8
+# ╟─a25a170c-7f91-4b88-88c3-1f41a929d7ac
 # ╠═19208ed5-d8db-4eee-933c-4e0a735e7c37
+# ╠═432078ea-9a58-4b3f-bf6f-7b22d41490c3
 # ╟─430999b7-c693-4280-8325-6e6f6c6bd732
+# ╠═b03a8b8f-456c-4174-bdc6-70e93fa1f584
 # ╠═49cd5b24-bc60-4c36-98d2-f5c04ebbc2df
+# ╠═aa93a02f-e063-47b2-8d01-ed37b50a50df
 # ╟─71eb0c07-8f46-47c3-92cb-8558d870e5d5
 # ╠═731efdaf-e0db-41c1-80d3-92523ecd02bf
-# ╟─3e6e046a-cf73-4b59-8069-97521832f3f5
-# ╠═eec1b069-474a-44e4-a25b-3bd4cec4adb5
-# ╟─939b524f-7f30-43a4-af42-25dd90c58f58
+# ╠═e5143618-5d7f-4263-8c21-3e2a5362e893
+# ╠═3e6e046a-cf73-4b59-8069-97521832f3f5
+# ╠═939b524f-7f30-43a4-af42-25dd90c58f58
 # ╠═82e2cb53-a87a-431f-a537-4cd61286638e
 # ╟─40c9f9be-eb94-40f3-ac14-727432d9ade9
 # ╠═257f07b9-9505-4f48-a1ab-0984e1fb0b21
+# ╠═e4463365-2939-4b0f-878f-e4bc70e80a69
 # ╟─9af51aca-53f4-4568-927f-0ca185613408
 # ╟─a37d2a18-510f-4217-b77e-9055e4531869
 # ╟─84bc6ce3-41bd-4056-b98b-d0e56423f972
