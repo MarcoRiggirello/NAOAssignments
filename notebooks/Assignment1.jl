@@ -101,7 +101,7 @@ Here we define the function `lufact` that takes as input a square matrix and com
 
 The $L$ and $U$ matrices are computed via Gaussian elimination, as presented in the class, while the growth factor $\gamma$ is defined as the ratio of the largest entry in the matrix $G \equiv |L||U|$ and the largest entry in the matrix $|A|$ (absolute values are element-wise).
 
-In our implementation, Gaussian elimination is carried on by storing both $L$ and $U$  in a single matrix $A_k$, where the upper triangular part of $A_n$ represents the nonzero elements of $U$ while the lower part represent the $L$ matrix, diagonal excluded. The $Ak$ updated is done using the slicing syntax of Julia's array (note that if `u` and `v` are vectors then `u * v'` is their outer product).
+In our implementation, Gaussian elimination is carried on by storing both $L$ and $U$  in a single matrix $A_k$, where the upper triangular part of $A_n$ represents the nonzero elements of $U$ while the lower part represent the $L$ matrix, diagonal excluded. The $Ak$ updated is done using the slicing syntax of Julia's arrays.
 
 We made our implementation more robust in various ways: in the first place, the Julia idiomatic type declaration (`function lufact(A::AbstractMatrix{T}) where T <: Union{Real, Complex}`) allowed us to know how to correcly initialize $A_k$ and $\gamma$; furthermore, a preliminary check on the matrix squareness is performed.
 At every $A_k$ update, we checked that the pivot is greater than the machine epsilon to ensure a sensible reslut and the presence of `NaN`s, sign of numerical instability in this non-pivoted variant of the LU factorization.
@@ -116,7 +116,7 @@ function lufact(A::AbstractMatrix{T}) where T <: Union{Real, Complex}
     end
 
     # Creates a copy of A
-	U = T <: Real ? Float64 : Complex{Float64}
+	U = T <: Real ? Float64 : ComplexF64
 	
 	Ak = map(U, A)
     γ = zero(U)
@@ -131,11 +131,10 @@ function lufact(A::AbstractMatrix{T}) where T <: Union{Real, Complex}
         # Compute i-th column of L
         Ak[k+1:n,k] = Ak[k+1:n,k] / pivot
 		# Update Ak
-        Ak[k+1:n,k+1:n] -= Ak[k+1:n,k] * Ak[k,k+1:n]'
-		# Sanity check
+		Ak[k+1:n,k+1:n] -= Ak[k+1:n,k] * transpose(Ak[k,k+1:n])
 		if any(isnan, Ak[k+1:n,k:n])
 			throw(DomainError("Factorization is numerically unstable for this matrix."))
-		end
+		end		
     end
 
     # Constructs L and U from the updated matrix Ak.
@@ -245,28 +244,58 @@ md"""
 
 # ╔═╡ a25a170c-7f91-4b88-88c3-1f41a929d7ac
 md"""
-We generate complex matrices of uniformly distributed sizes and normal distributed elements.
+We generate real matrices of uniformly distributed sizes in the range 2:100 and normal distributed elements.
 """
 
 # ╔═╡ 19208ed5-d8db-4eee-933c-4e0a735e7c37
 function generate_random(i)
 	N = rand(2:100)
-	return randn(Complex{Float64}, N, N)
+	return randn(Float64, N, N)
 end
 
 # ╔═╡ 432078ea-9a58-4b3f-bf6f-7b22d41490c3
-test_dataset(generate_random, 1000, 0.8)
+test_dataset(generate_random, 100, 0.9)
+
+# ╔═╡ c28edc65-ffef-4a71-8ca6-894a70131531
+md"""
+Furthermore, we generate complex matrix with the same size range and elements distribution.
+"""
+
+# ╔═╡ 317031de-331f-4c82-b080-eea8e8bd1134
+function generate_random_complex(i)
+	N = rand(2:100)
+	return randn(ComplexF64, N, N)
+end
+
+# ╔═╡ 4881c984-d042-46eb-b815-ee21ecf9f205
+test_dataset(generate_random_complex, 100, 0.9)
 
 # ╔═╡ 430999b7-c693-4280-8325-6e6f6c6bd732
 md"""
-### Hilbert matrices
+#### Hilbert matrices
 """
 
 # ╔═╡ b03a8b8f-456c-4174-bdc6-70e93fa1f584
 md"""
-Hilber matrices are defined as
+Hilber matrices are defined per-element as
 
-$è tardi non ne ho voglia$
+$H_{ij}=\frac{1}{i + j -1}$
+
+so for example the $4\times 4$ Hilbert matrix is
+
+$\begin{bmatrix}
+1   & 1/2 & 1/3 & 1/4 \\
+1/2 & 1/3 & 1/4 & 1/5 \\
+1/3 & 1/4 & 1/5 & 1/6 \\
+1/4 & 1/5 & 1/6 & 1/7
+\end{bmatrix}$
+
+
+"""
+
+# ╔═╡ ee9f87df-8962-43e8-9851-22b117f03cc3
+md"""
+Hence we define the proper generator function.
 """
 
 # ╔═╡ 49cd5b24-bc60-4c36-98d2-f5c04ebbc2df
@@ -279,7 +308,17 @@ test_dataset(generate_hilbert, 300)
 
 # ╔═╡ 71eb0c07-8f46-47c3-92cb-8558d870e5d5
 md"""
-### Diagonally dominant matrices
+#### Diagonally dominant matrices
+"""
+
+# ╔═╡ a141581a-a197-418f-9fa3-4b05a058f62e
+md"""
+Diagonally dominant matrices are defined as matrices whith absolute value of the diagonal elements $\geq$ of the sum of the absolute values of the other column elements, with at least one diagonal element $>$.
+"""
+
+# ╔═╡ 19840fc1-e07b-42fc-9e9c-f44f285a55bc
+md"""
+We built a diagonally dominant generator function by first generating a $N\times N$ matrix with element uniformly distributed in the range 0:1 and then we summed $N+1$ to the diagonal element.  
 """
 
 # ╔═╡ 731efdaf-e0db-41c1-80d3-92523ecd02bf
@@ -328,7 +367,7 @@ function generate_spd(i)
 end
 
 # ╔═╡ e4463365-2939-4b0f-878f-e4bc70e80a69
-test_dataset(generate_spd, 1000)
+test_dataset(generate_spd, 100)
 
 # ╔═╡ 9af51aca-53f4-4568-927f-0ca185613408
 md"""
@@ -620,7 +659,7 @@ PlutoUI = "~0.7.54"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.0"
+julia_version = "1.9.4"
 manifest_format = "2.0"
 project_hash = "2a0d92feb2aaa32ca8a23417682e6fac1d5caec0"
 
@@ -712,7 +751,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.2+0"
+version = "1.0.5+0"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
@@ -970,12 +1009,12 @@ version = "0.16.1"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.3"
+version = "0.6.4"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "7.84.0+0"
+version = "8.4.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -984,7 +1023,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.10.2+0"
+version = "1.11.0+1"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1184,7 +1223,7 @@ version = "0.42.2+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.9.0"
+version = "1.9.2"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]
@@ -1647,7 +1686,7 @@ version = "0.15.1+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.7.0+0"
+version = "5.8.0+0"
 
 [[deps.libevdev_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1688,7 +1727,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.48.0+0"
+version = "1.52.0+1"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1735,11 +1774,17 @@ version = "1.4.1+1"
 # ╟─a25a170c-7f91-4b88-88c3-1f41a929d7ac
 # ╠═19208ed5-d8db-4eee-933c-4e0a735e7c37
 # ╠═432078ea-9a58-4b3f-bf6f-7b22d41490c3
+# ╠═c28edc65-ffef-4a71-8ca6-894a70131531
+# ╠═317031de-331f-4c82-b080-eea8e8bd1134
+# ╠═4881c984-d042-46eb-b815-ee21ecf9f205
 # ╟─430999b7-c693-4280-8325-6e6f6c6bd732
-# ╠═b03a8b8f-456c-4174-bdc6-70e93fa1f584
+# ╟─b03a8b8f-456c-4174-bdc6-70e93fa1f584
+# ╠═ee9f87df-8962-43e8-9851-22b117f03cc3
 # ╠═49cd5b24-bc60-4c36-98d2-f5c04ebbc2df
 # ╠═aa93a02f-e063-47b2-8d01-ed37b50a50df
 # ╟─71eb0c07-8f46-47c3-92cb-8558d870e5d5
+# ╟─a141581a-a197-418f-9fa3-4b05a058f62e
+# ╟─19840fc1-e07b-42fc-9e9c-f44f285a55bc
 # ╠═731efdaf-e0db-41c1-80d3-92523ecd02bf
 # ╠═e5143618-5d7f-4263-8c21-3e2a5362e893
 # ╠═3e6e046a-cf73-4b59-8069-97521832f3f5
