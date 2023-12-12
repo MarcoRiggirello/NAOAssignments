@@ -555,6 +555,45 @@ The success of this numerical experiment heavily depends on the numerical stabil
 
 """
 
+# ╔═╡ a67d9e5e-9f2a-4da8-861c-b2a008280da9
+begin
+	A = wilkin(60)
+	local b = generate_b_vector_third(60)
+	# a 60 dim vector of ones
+	e = ones(60)
+	x = A \ b
+	@show x
+	diff = x - e
+	@show norm(diff, Inf)
+end
+
+# ╔═╡ 7dc2d822-5a69-404b-9a27-d28dfcc4caf7
+md"""
+### Task 5
+Repeat the experiment for smaller values of $n$. What is the largest value of $n$ for which $W_n x = b$ can be solved accurately by GEPP when $b = W_n e$? Provide an explanation of the observed behavior.
+
+"""
+
+# ╔═╡ 45fffdc2-8815-4c0b-9b5f-41b8da706b06
+# repat the experiment for smaller values of n
+# NOTE: for 1 it is false
+begin
+	for n in 2:60
+		A = wilkin(n)
+		b = generate_b_vector_third(n)
+		e = ones(n)
+		x = A \ b
+		diff = x - e
+		println("n = $n")
+		@assert norm(diff, Inf) < eps(Float64)
+	end
+end
+
+# ╔═╡ 9617629e-b286-412e-b526-0d911946deba
+md"""
+remeber from pages 58 and 60 some propertiesabout wilkinson matrices and accuracy of computed solutions
+"""
+
 # ╔═╡ 63f2fc3e-f29a-414e-a560-dad7139981f1
 svg_joinpathsplit__FILE__1assetslogosvg = let
     import PlutoUI
@@ -581,7 +620,7 @@ PlutoUI = "~0.7.54"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.4"
+julia_version = "1.9.0"
 manifest_format = "2.0"
 project_hash = "2a0d92feb2aaa32ca8a23417682e6fac1d5caec0"
 
@@ -673,7 +712,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.5+0"
+version = "1.0.2+0"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
@@ -931,12 +970,12 @@ version = "0.16.1"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.4.0+0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -945,7 +984,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.0+1"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1145,7 +1184,7 @@ version = "0.42.2+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.9.2"
+version = "1.9.0"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]
@@ -1608,7 +1647,7 @@ version = "0.15.1+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.8.0+0"
+version = "5.7.0+0"
 
 [[deps.libevdev_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1649,7 +1688,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.52.0+1"
+version = "1.48.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1727,6 +1766,10 @@ version = "1.4.1+1"
 # ╟─b9d1498c-0c82-423e-a19a-dbd5f6543d93
 # ╠═56d246d3-9113-4681-8a82-10c33664554e
 # ╟─a65ddcf4-bc95-4801-8709-d633b6849598
+# ╠═a67d9e5e-9f2a-4da8-861c-b2a008280da9
+# ╟─7dc2d822-5a69-404b-9a27-d28dfcc4caf7
+# ╠═45fffdc2-8815-4c0b-9b5f-41b8da706b06
+# ╟─9617629e-b286-412e-b526-0d911946deba
 # ╟─63f2fc3e-f29a-414e-a560-dad7139981f1
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
