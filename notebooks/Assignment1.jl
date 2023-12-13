@@ -19,7 +19,12 @@ md"""
 
 # ╔═╡ a5832cb4-5225-469c-96c6-52d08b68409a
 md"""
-This assignment is done using the Julia programming language. To easy the task, we load some Julia package:
+This assignment is done using the Julia programming language, a high-level, high-performance language for technical computing. To easy the task, we load some Julia packages:
+- **LinearAlgebra.jl**: the standard library for LinearAlgebra routines and utilites, leveragin BLAS subroutines;
+- **Random.jl**: for generating random numbers;
+- **Statistics.jl**: for computing statistics of samples;
+- **Plots.jl**: for plotting our results;
+- **BenchmarkTools.jl**: to provide benchmarking of our implementations.
 """
 
 # ╔═╡ 2d793d4f-6ca9-4551-b5ce-89d994bfc762
@@ -32,79 +37,19 @@ md"""
 ### Task 1
 """
 
-# ╔═╡ 289e0844-63e3-45a0-93e9-96c9ac5a885b
-#=function lufact(A::AbstractMatrix{T}) where T
-    # Ensure the matrix is square; otherwise, LU factorization is not defined.
-    if size(A, 1) != size(A, 2)
-        throw(ArgumentError("The matrix is not square."))
-    end
-
-    # Determine the size of the matrix for iteration purposes.
-    n = size(A, 1)
-    # Create a copy of A to avoid altering the original matrix during factorization.
-    a = copy(A)
-    # Initialize the growth factor to zero of the appropriate type.
-    γ = zero(T)
-
-    # Perform the LU factorization process.
-    for i in 1:n-1
-		pivot = a[i, i]
-        # Check if the pivot element is too close to zero, 
-		# which would lead to division by a small number.
-        if abs(pivot) <= eps(T)
-            throw(DomainError("Trying to divide by a number smaller than
-								the machine precision."))
-        end
-        
-        # Compute the factors of L in place by dividing the 
-		# subcolumn elements by the pivot.
-        a[i+1:end,i] = a[i+1:end,i] / pivot
-        # Update the remaining submatrix to form U, subtracting the 
-		# outer product of the L factor and the row of U.
-        a[i+1:end,i+1:end] -= a[i+1:end,i] * a[i,i+1:end]'
-		# Sanity check
-		if any(isnan, a[i+1:end, i:end])
-			throw(DomainError("The LU factorization resulted in NaN entries."))
-		end
-    end
-
-    # Construct L and U from the mutated matrix a.
-	# Note that UpperTriangular and UnitLowerTriangular are not
-	# copies of a, but views instead.
-    L = UnitLowerTriangular(a)
-    U = UpperTriangular(a)
-
-    # Calculate the growth factor γ, which is the maximum absolute entry of 
-	# the element-wise product of L and U,
-    # divided by the maximum absolute entry of the original matrix A.
-    G = abs.(L) * abs.(U)
-    γ = maximum(G) / maximum(abs.(A))
-    
-    # Check if the growth factor is a number; if not, the factorization has failed.
-    #if isnan(γ) || isinf(γ)
-    #    throw(DomainError("Factorization failed."))
-    #end
-	
-	# Check for NaNs in the entries of L and U
-	#if any(isnan.(L)) || any(isnan.(U))
-	#    throw(DomainError("The LU factorization resulted in NaN entries."))
-	#end
-
-    # Return the lower and upper triangular matrices along with the growth factor.
-    return L, U, γ
-end
-=#
-
 # ╔═╡ cad47d12-5d44-45f3-a4c4-85f033a97009
 md"""
-Here we define the function `lufact` that takes as input a square matrix and computes the non-pivoted LU factorization and its grow factor.
+Here we define the function `lufact()` that takes as input a square matrix and computes the non-pivoted LU factorization and its growth factor.
 
 The $L$ and $U$ matrices are computed via Gaussian elimination, as presented in the class, while the growth factor $\gamma$ is defined as the ratio of the largest entry in the matrix $G \equiv |L||U|$ and the largest entry in the matrix $|A|$ (absolute values are element-wise).
 
-In our implementation, Gaussian elimination is carried on by storing both $L$ and $U$  in a single matrix $A_k$, where the upper triangular part of $A_n$ represents the nonzero elements of $U$ while the lower part represent the $L$ matrix, diagonal excluded. The $Ak$ updated is done using the slicing syntax of Julia's arrays.
+In our implementation, Gaussian elimination is carried on by storing both $L$ and $U$  in a single wokring matrix $A_k$. In the last iteration $n$, the upper triangular part of $A_n$ represents the nonzero elements of $U$ while the lower part represent the $L$ matrix, diagonal excluded. The $A_k$ update is done using the slicing syntax of Julia's arrays.
 
-We made our implementation more robust in various ways: in the first place, the Julia idiomatic type declaration (`function lufact(A::AbstractMatrix{T}) where T <: Union{Real, Complex}`) allowed us to know how to correcly initialize $A_k$ and $\gamma$; furthermore, a preliminary check on the matrix squareness is performed.
-At every $A_k$ update, we checked that the pivot is greater than the machine epsilon to ensure a sensible reslut and the presence of `NaN`s, sign of numerical instability in this non-pivoted variant of the LU factorization.
+We made our implementation more robust in various ways: 
+- in the first place, the Julia idiomatic type declaration (`function lufact(A::AbstractMatrix{T}) where T <: Union{Real, Complex}`) allowed us to know how to correcly initialize $A_k$ and $\gamma$ based on the matrix type. Specifically, for every subtype of `Real`, we initialize the copy to `Float64`, so that integers matrix factorization will not fail due to the creation of floating-point values in an integer matrix; 
+- furthermore, a preliminary check on the matrix squareness is performed;
+- At every $A_k$ update, we check that the pivot is greater than the machine epsilon to ensure a sensible result;
+- Ath the end, we also check for the presence of `NaN`s in $A_k$, sign of numerical instability in this non-pivoted variant of the LU factorization.
 """
 
 # ╔═╡ 8637fdcd-8f66-436e-9ea6-6bfdf439e7f0
@@ -118,28 +63,29 @@ function lufact(A::AbstractMatrix{T}) where T <: Union{Real, Complex}
     # Creates a copy of A
 	U = T <: Real ? Float64 : ComplexF64
 	
-	Ak = map(U, A)
+	Aₖ = map(U, A)
     γ = zero(U)
 
     # Performs the LU factorization.
     for k in 1:n-1
-		pivot = Ak[k, k]
+		pivot = Aₖ[k, k]
 		# Sanity check
         if abs(pivot) <= eps(Float64)
             throw(DomainError("Matrix is ill-conditioned."))
         end
         # Compute i-th column of L
-        Ak[k+1:n,k] = Ak[k+1:n,k] / pivot
-		# Update Ak
-		Ak[k+1:n,k+1:n] -= Ak[k+1:n,k] * transpose(Ak[k,k+1:n])
-		if any(isnan, Ak[k+1:n,k:n])
-			throw(DomainError("Factorization is numerically unstable for this matrix."))
-		end		
-    end
+        Aₖ[k+1:n,k] = Aₖ[k+1:n,k] / pivot
+		# Update Aₖ
+		Aₖ[k+1:n,k+1:n] -= Aₖ[k+1:n,k] * (Aₖ[k,k+1:n])'
 
-    # Constructs L and U from the updated matrix Ak.
-    L = UnitLowerTriangular(Ak)
-    U = UpperTriangular(Ak)
+    end
+	# check if we ended up with NaNs
+	if any(isnan, Aₖ)
+		throw(DomainError("Factorization is numerically unstable for this matrix."))
+	end		
+    # Constructs L and U from the updated matrix Aₖ.
+    L = UnitLowerTriangular(Aₖ)
+    U = UpperTriangular(Aₖ)
 
     # Computes the growth factor γ.
     G = abs.(L) * abs.(U)
@@ -147,6 +93,12 @@ function lufact(A::AbstractMatrix{T}) where T <: Union{Real, Complex}
     
     return L, U, γ
 end
+
+# ╔═╡ 178d03b6-4392-467b-9a6e-f1694c16518f
+md"""
+#### A note on growth factor
+Ideally, the growth factor should be close to 1. This indicates that the LU decomposition did not significantly increase the magnitude of the matrix's elements, suggesting a stable decomposition. It's important to note that a low growth factor does not guarantee a good decomposition. It's just one of several indicators of the quality and stability of the decomposition.
+"""
 
 # ╔═╡ 404cc770-47b6-4dac-9ea6-549a8cf8be12
 md"""
@@ -156,6 +108,9 @@ md"""
 # ╔═╡ ceca4721-8711-42ad-b7b6-d85a9a3bfee0
 md"""
 Now we want to test the performances of this algorithm over various matrix types. Before we proceed, we define a bunch of utility functions:
+- introdurre in elenco?
+
+RICORDIAMOCI DI COMMENTARE I RISULTATI SULLE VARIE MATRICI
 """
 
 # ╔═╡ 029c1d1f-cc52-4c3d-b0e3-4c252e847878
@@ -187,10 +142,17 @@ end
 
 # ╔═╡ 4c97f6d2-846b-4d7a-93f9-53ddb6125a33
 function plot_summary(g, b, pq=1.)
-	hg = histogram(g[g.<=quantile(g, pq)], xlabel="Growth factor", ylabel="Frequency")
-	hb = histogram(b[b.<=quantile(g, pq)], xlabel="Relative backward error", ylabel="Frequency")
-	plot(hg, hb, layout=(1,2))
+    # Adjust the binning for histograms if necessary to make the x-axis less crowded
+    # Adjust the size of the plot or the labels to prevent squeezing
+    hg = histogram(g[g .<= quantile(g, pq)], xlabel="Growth factor", ylabel="Frequency", 
+                   legend=false, xrotation=45, bins=30) # Rotate x-axis labels and set bins
+    hb = histogram(b[b .<= quantile(g, pq)], xlabel="Relative backward error", ylabel="Frequency", 
+                   legend=false, xrotation=45, bins=30) # Rotate x-axis labels and set bins
+
+    # Combine the two histograms into one plot without a legend
+    plot(hg, hb, layout=(1,2), size=(800, 400)) # Adjust the size as needed
 end
+
 
 # ╔═╡ 54744193-84bb-4f7f-9d65-692e00b26142
 function test_dataset(dataset_generator, t, plot_quantile=1.)
@@ -217,25 +179,6 @@ function test_dataset(dataset_generator, t, plot_quantile=1.)
 	plot_summary(g, b, plot_quantile)
 	#return g, b
 end
-
-# ╔═╡ b5311164-24ca-4a8f-90f5-40422b8c72c9
-# ╠═╡ disabled = true
-#=╠═╡
-# a function to compute the correlations between growth factor and relative backward error
-# then plot them
-function plot_correlation(g, b)
-	# add check if g, b are empty
-	if length(g) == 0 || length(b) == 0
-		println("No data to show.")
-		return
-	end
-	# compute correlation (we use Pearson)
-	corr = cor(g, b)
-	# plot
-	scatter(g, b, xlabel="Growth factor", ylabel="Relative backward error",  label="Correlation: $(round(corr, digits=3))")
-end
-
-  ╠═╡ =#
 
 # ╔═╡ a3c4d104-a92a-4706-895c-052f954818d8
 md"""
@@ -270,6 +213,11 @@ end
 # ╔═╡ 4881c984-d042-46eb-b815-ee21ecf9f205
 test_dataset(generate_random_complex, 100, 0.9)
 
+# ╔═╡ d2e5b090-2215-4eea-8db8-9151100065cd
+md"""
+FOR RANDOM IT SEEMS OK. SAY IT BETTER
+"""
+
 # ╔═╡ 430999b7-c693-4280-8325-6e6f6c6bd732
 md"""
 #### Hilbert matrices
@@ -290,7 +238,7 @@ $\begin{bmatrix}
 1/4 & 1/5 & 1/6 & 1/7
 \end{bmatrix}$
 
-
+MENTION ILL-CONDITIONED NATURE OF THESE MATRICES
 """
 
 # ╔═╡ ee9f87df-8962-43e8-9851-22b117f03cc3
@@ -306,6 +254,11 @@ end
 # ╔═╡ aa93a02f-e063-47b2-8d01-ed37b50a50df
 test_dataset(generate_hilbert, 300)
 
+# ╔═╡ 9c44ddd0-825c-4336-8c5c-b87647b4f8c8
+md"""
+FANNO CAAA 	qed
+"""
+
 # ╔═╡ 71eb0c07-8f46-47c3-92cb-8558d870e5d5
 md"""
 #### Diagonally dominant matrices
@@ -313,7 +266,12 @@ md"""
 
 # ╔═╡ a141581a-a197-418f-9fa3-4b05a058f62e
 md"""
-Diagonally dominant matrices are defined as matrices whith absolute value of the diagonal elements $\geq$ of the sum of the absolute values of the other column elements, with at least one diagonal element $>$.
+A square matrix $A$ is said to be diagonally dominant (by rows) if for every row of the matrix, the magnitude of the diagonal entry in a row is greater than or equal to the sum of the magnitudes of all the other (non-diagonal) entries in that row. Mathematically, this can be written as:
+
+$$|a_{ii}| \geq \sum_{j \neq i} |a_{ij}| \quad \text{for all } i.$$
+
+This condition must hold for each $i$ from $1$ to $n$, where $n$ is the size of the $n \times n$ matrix $A$. If the inequality is strict for all rows, then $A$ is said to be strictly diagonally dominant. The LU factorization without pivoting is known to be backward stable for this irreducible DD matrices.
+
 """
 
 # ╔═╡ 19840fc1-e07b-42fc-9e9c-f44f285a55bc
@@ -332,31 +290,32 @@ end
 # ╔═╡ e5143618-5d7f-4263-8c21-3e2a5362e893
 test_dataset(generate_dd, 1000)
 
-# ╔═╡ 3e6e046a-cf73-4b59-8069-97521832f3f5
-# ╠═╡ disabled = true
-#=╠═╡
+# ╔═╡ 17489357-b809-4376-97de-573d3087ae7a
 md"""
-#### Check growth factor plots
-Ideally, the growth factor should be close to 1. This indicates that the LU decomposition did not significantly increase the magnitude of the matrix's elements, suggesting a stable decomposition. It's important to note that a low growth factor does not guarantee a good decomposition. It's just one of several indicators of the quality and stability of the decomposition.
+stable as qed
 """
-  ╠═╡ =#
-
-# ╔═╡ 939b524f-7f30-43a4-af42-25dd90c58f58
-# ╠═╡ disabled = true
-#=╠═╡
-md"""
-FORSE SAREBBE GANZO FARE UN PLOT DI CORRELAZIONE?? a lei messere ;)
-"""
-  ╠═╡ =#
 
 # ╔═╡ 82e2cb53-a87a-431f-a537-4cd61286638e
-#=╠═╡
 plot_correlation(g3, b3)
-  ╠═╡ =#
 
 # ╔═╡ 40c9f9be-eb94-40f3-ac14-727432d9ade9
 md"""
 ### SPD matrices
+"""
+
+# ╔═╡ 9f2232c9-a72e-43cc-884d-a76df21d66df
+md"""
+A symmetric matrix $A$ of size $n \times n$ is said to be positive definite if the following two conditions are met:
+
+1. The matrix is symmetric;
+2. For any non-zero vector $\mathbf{x}$ in $\mathbb{R}^n$, the quadratic form $\mathbf{x}^T A \mathbf{x}$ is positive, i.e., $\mathbf{x}^T A \mathbf{x} > 0$.
+
+Mathematically, this can be expressed as:
+
+$$\mathbf{x}^T A \mathbf{x} > 0, \quad \forall \mathbf{x} \in \mathbb{R}^n \setminus \{\mathbf{0}\}.$$
+
+Additionally, a matrix is positive definite if and only if all its eigenvalues are positive.
+
 """
 
 # ╔═╡ 257f07b9-9505-4f48-a1ab-0984e1fb0b21
@@ -368,6 +327,11 @@ end
 
 # ╔═╡ e4463365-2939-4b0f-878f-e4bc70e80a69
 test_dataset(generate_spd, 100)
+
+# ╔═╡ 8b73be05-23f6-4614-81ba-f59bbb4ec8b2
+md"""
+commento risultati su stabilita'
+"""
 
 # ╔═╡ 9af51aca-53f4-4568-927f-0ca185613408
 md"""
@@ -433,7 +397,7 @@ $$U = \begin{bmatrix}
 0 & 1 & 0 & \cdots & 0 & 2 \\
 0 & 0 & 1 & \cdots & 0 & 2^2 \\
 \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
-0 & 0 & 0 & \cdots & 1 & 2^{n-1}
+0 & 0 & 0 & \cdots & 0 & 2^{n-1}
 \end{bmatrix}$$
 
 or 
@@ -447,6 +411,11 @@ $$U = I_n + \sum_{i=1}^{n-1} 2^{i-1} e_i e_n^T$$
 # ╔═╡ 7e182a84-e584-4681-b112-d6e7251e771c
 md"""
 ### Task 3
+"""
+
+# ╔═╡ 105c3ee3-2d78-4524-89bf-da3b97745842
+md"""
+introduce function. unite in one?
 """
 
 # ╔═╡ 4d8a697c-9b26-417f-b0f2-e8c1bac3a4a2
@@ -484,74 +453,15 @@ With each entry $b_i$ defined as:
 
 $$b_i = 
 \begin{cases} 
-2 & \text{for } i = 1 \\
-- (i - 3) & \text{for } 2 \leq i < n \\
+- (i - 3) & \text{for } 1 \leq i < n \\
 - (i - 2) & \text{for } i = n
 \end{cases}$$
 
 We thus define a function to store in memory the exact solution to the problem:
 """
 
-# ╔═╡ 657dd31e-005e-414f-8570-0b1e59c5538e
-function generate_b_vector(n::Int)
-    # Initialize b as a vector of zeros with length n
-    b = zeros(Int, n)
-    
-    # Set the first and last elements according to the provided rules
-    b[1] = 2
-    if n > 1
-    	b[end] = 1
-	end
-    
-    # Fill in the remaining elements of b based on the given formula
-    for i in 2:n-1
-        b[i] = -(i - 3)
-    end
-    
-    return b
-end
-
-
-# ╔═╡ 2edcd1c7-9164-423a-9f2c-30c47b5ed143
-md"""
-but we can also employ Julia's list comprehension for a neat, smaller function:
-"""
-
-# ╔═╡ 6984ee74-9581-4a3b-9016-f92b33ac26e7
-function generate_b_vector_comprehension(n::Int)
-    return [i == 1 ? 2 : i == n ? 1 : -(i - 3) for i in 1:n]
-end
-
-
-# ╔═╡ 89efa9bd-3c04-47f5-926f-cc028ff29336
-md"""
-Are the two actually equivalent? Which is faster?
-
-Note that @btime aims to spend at least 100 milliseconds on benchmarking, which means it will run the function as many times as it can within that time frame to get a reliable average. Alternatively we can set:
-
-`@btime func() setup=(evals=1000)`
-"""
-
-# ╔═╡ 5faa176b-ad4e-4282-a8ec-0b17e47cc666
-# assert that the two functions are equivalent
-begin
-for n in 1:100
-	@assert generate_b_vector(n) == generate_b_vector_comprehension(n)
-end
-
-# see which one is faster
-
-@btime b100 = generate_b_vector(100)
-@btime b100v = generate_b_vector_comprehension(100)
-end
-
-# ╔═╡ 4c914206-8d7b-40e7-a3fa-f7e59e5cf615
-md"""
-The time difference is probably due to the fact that `generate_b_vector` has to make a comparison for each index, while the "unneat" version not. There is a third way in between. 
-"""
-
 # ╔═╡ e597f8cc-be2f-435f-8d10-9befa36fdbd6
-function generate_b_vector_third(n)
+function generate_b_vector(n)
 	b = [-(i-3) for i in 1:n]
 	b[1] = 2
 	if n > 1
@@ -560,15 +470,10 @@ function generate_b_vector_third(n)
 	return b
 end
 
-# ╔═╡ b9d1498c-0c82-423e-a19a-dbd5f6543d93
-md"""
-Which is actually faster.
-"""
-
 # ╔═╡ 56d246d3-9113-4681-8a82-10c33664554e
 begin
 for n in 2:100
-	@assert wilkin(n)*[1 for i in 1:n] == generate_b_vector_third(n)
+	@assert wilkin(n)*[1 for i in 1:n] == generate_b_vector(n)
 	#@show wilkin(n)*[1 for i in 1:n]
 end
 
@@ -577,6 +482,22 @@ end
 #@btime b100 = generate_b_vector(100)
 #@btime b100v = generate_b_vector_third(100)
 end
+
+# ╔═╡ 9f2c8225-dd97-4144-a170-67f56b360d20
+begin
+	N = 5
+	b = generate_b_vector(N)
+	@show result = -b[end] + sum(-(b[1:end-1]))
+	@show local z = [b[i] - sum(b[1:i-1]) for i in 1:N]
+	u_ii = [1. for i in 1:N]
+	u_ii[end] = 2^(N-1)
+	u_ij = [2^(i-1) for i in 1:N]
+	@show local x = [(z[i] - sum(z[i+1:N].*u_ij[i+1:N]))/u_ii[i] for i in 1:N]
+	@show local x1 = [z[i] - 2.0^(i-N)*z[N] for i in 1:N]
+end
+
+# ╔═╡ db66b883-6313-4574-9cd6-80d6e74060a5
+
 
 # ╔═╡ a65ddcf4-bc95-4801-8709-d633b6849598
 md"""
@@ -597,7 +518,7 @@ The success of this numerical experiment heavily depends on the numerical stabil
 # ╔═╡ a67d9e5e-9f2a-4da8-861c-b2a008280da9
 begin
 	A = wilkin(60)
-	local b = generate_b_vector_third(60)
+	local b = generate_b_vector(60)
 	# a 60 dim vector of ones
 	e = ones(60)
 	x = A \ b
@@ -620,7 +541,7 @@ Repeat the experiment for smaller values of $n$. What is the largest value of $n
 begin
 	for n in 2:60
 		Wₙ = wilkin(n)
-		b = generate_b_vector_third(n)
+		b = generate_b_vector(n)
 		e = ones(n)
 		x = Wₙ \ b
 	
@@ -637,7 +558,7 @@ end
 
 # ╔═╡ 9617629e-b286-412e-b526-0d911946deba
 md"""
-The Wilkinson matrix is specifically designed to be a challenging test case for numerical algorithms due to its structure, which induces a large growth factor in the elements of the LU decomposition without pivoting. As the size of the matrix grows, the condition number of the Wilkinson matrix increases exponentially, making it more susceptible to round-off errors. 
+The Wilkinson matrix is specifically designed to be a challenging test case for numerical algorithms due to its structure, which induces a large growth factor ($2^{n-1}$) in the elements of the LU decomposition without pivoting. As the size of the matrix grows, the condition number of the Wilkinson matrix increases exponentially, making it more susceptible to round-off errors. 
 
 At $n=55$ we have a transition due to algorithm limitation, error propagation and precision limits. We get a first non-zero entry for the relative error, which becomes 1 under the Infinity norm.
 
@@ -663,7 +584,7 @@ end
 
 # ╔═╡ a1be1f55-cff5-4251-863f-fd23e276c479
 md"""
-We see that the relative error bound, ϵ_bound, is of order 1 at about $n = 48$. After that, numerical optimizations make so that the solution can still be computed accurately, but we do not have an guarantee from theory. Finally, we lose the accurate solution to the problem at $n = 55$. 
+We see that the relative error bound, ϵ_bound, is of order 1 at about $n = 48$. After that, numerical optimizations make so that the solution can still be computed accurately, but we do not have any guarantee from theory. Finally, we lose the accurate solution to the problem at $n = 55$. 
 
 Interestingly, $n = 55$ concides with the point from where the error bound is at least 2 orders of magnitude bigger than 1, suggesting that the optimizations of the backslash operator are capable of handling relative errors with theoretical bounds of about 1 order of magnitude bigger than the error observed.
 """
@@ -694,7 +615,7 @@ PlutoUI = "~0.7.54"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.4"
+julia_version = "1.9.0"
 manifest_format = "2.0"
 project_hash = "2a0d92feb2aaa32ca8a23417682e6fac1d5caec0"
 
@@ -786,7 +707,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.5+0"
+version = "1.0.2+0"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
@@ -1044,12 +965,12 @@ version = "0.16.1"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.4.0+0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -1058,7 +979,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.0+1"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1258,7 +1179,7 @@ version = "0.42.2+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.9.2"
+version = "1.9.0"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]
@@ -1721,7 +1642,7 @@ version = "0.15.1+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.8.0+0"
+version = "5.7.0+0"
 
 [[deps.libevdev_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1762,7 +1683,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.52.0+1"
+version = "1.48.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1795,16 +1716,15 @@ version = "1.4.1+1"
 # ╠═71fb6b39-125d-481f-ad19-affa7c04d226
 # ╟─2d793d4f-6ca9-4551-b5ce-89d994bfc762
 # ╟─7340ab2e-f583-48c4-a2d9-df1e0e3ec2c2
-# ╠═289e0844-63e3-45a0-93e9-96c9ac5a885b
 # ╟─cad47d12-5d44-45f3-a4c4-85f033a97009
 # ╠═8637fdcd-8f66-436e-9ea6-6bfdf439e7f0
+# ╟─178d03b6-4392-467b-9a6e-f1694c16518f
 # ╟─404cc770-47b6-4dac-9ea6-549a8cf8be12
-# ╟─ceca4721-8711-42ad-b7b6-d85a9a3bfee0
+# ╠═ceca4721-8711-42ad-b7b6-d85a9a3bfee0
 # ╠═029c1d1f-cc52-4c3d-b0e3-4c252e847878
 # ╠═c6e79210-d8e1-4c6d-a5cb-6304765cc6a6
 # ╠═4c97f6d2-846b-4d7a-93f9-53ddb6125a33
 # ╠═54744193-84bb-4f7f-9d65-692e00b26142
-# ╠═b5311164-24ca-4a8f-90f5-40422b8c72c9
 # ╟─a3c4d104-a92a-4706-895c-052f954818d8
 # ╟─a25a170c-7f91-4b88-88c3-1f41a929d7ac
 # ╠═19208ed5-d8db-4eee-933c-4e0a735e7c37
@@ -1812,39 +1732,38 @@ version = "1.4.1+1"
 # ╠═c28edc65-ffef-4a71-8ca6-894a70131531
 # ╠═317031de-331f-4c82-b080-eea8e8bd1134
 # ╠═4881c984-d042-46eb-b815-ee21ecf9f205
+# ╠═d2e5b090-2215-4eea-8db8-9151100065cd
 # ╟─430999b7-c693-4280-8325-6e6f6c6bd732
 # ╟─b03a8b8f-456c-4174-bdc6-70e93fa1f584
 # ╠═ee9f87df-8962-43e8-9851-22b117f03cc3
 # ╠═49cd5b24-bc60-4c36-98d2-f5c04ebbc2df
 # ╠═aa93a02f-e063-47b2-8d01-ed37b50a50df
+# ╟─9c44ddd0-825c-4336-8c5c-b87647b4f8c8
 # ╟─71eb0c07-8f46-47c3-92cb-8558d870e5d5
 # ╟─a141581a-a197-418f-9fa3-4b05a058f62e
 # ╟─19840fc1-e07b-42fc-9e9c-f44f285a55bc
 # ╠═731efdaf-e0db-41c1-80d3-92523ecd02bf
 # ╠═e5143618-5d7f-4263-8c21-3e2a5362e893
-# ╠═3e6e046a-cf73-4b59-8069-97521832f3f5
-# ╠═939b524f-7f30-43a4-af42-25dd90c58f58
+# ╟─17489357-b809-4376-97de-573d3087ae7a
 # ╠═82e2cb53-a87a-431f-a537-4cd61286638e
 # ╟─40c9f9be-eb94-40f3-ac14-727432d9ade9
+# ╠═9f2232c9-a72e-43cc-884d-a76df21d66df
 # ╠═257f07b9-9505-4f48-a1ab-0984e1fb0b21
 # ╠═e4463365-2939-4b0f-878f-e4bc70e80a69
+# ╟─8b73be05-23f6-4614-81ba-f59bbb4ec8b2
 # ╟─9af51aca-53f4-4568-927f-0ca185613408
 # ╟─a37d2a18-510f-4217-b77e-9055e4531869
 # ╟─84bc6ce3-41bd-4056-b98b-d0e56423f972
 # ╟─606f9f6c-9e5d-45d4-bb3d-35f0dcefc121
 # ╟─7e182a84-e584-4681-b112-d6e7251e771c
+# ╟─105c3ee3-2d78-4524-89bf-da3b97745842
 # ╠═4d8a697c-9b26-417f-b0f2-e8c1bac3a4a2
 # ╠═c2270a41-ce15-4670-9937-25a6a7d3f304
 # ╟─0be4f60d-9727-4d6d-b192-e9f60e7bbca2
-# ╠═657dd31e-005e-414f-8570-0b1e59c5538e
-# ╟─2edcd1c7-9164-423a-9f2c-30c47b5ed143
-# ╠═6984ee74-9581-4a3b-9016-f92b33ac26e7
-# ╟─89efa9bd-3c04-47f5-926f-cc028ff29336
-# ╠═5faa176b-ad4e-4282-a8ec-0b17e47cc666
-# ╟─4c914206-8d7b-40e7-a3fa-f7e59e5cf615
 # ╠═e597f8cc-be2f-435f-8d10-9befa36fdbd6
-# ╟─b9d1498c-0c82-423e-a19a-dbd5f6543d93
 # ╠═56d246d3-9113-4681-8a82-10c33664554e
+# ╠═9f2c8225-dd97-4144-a170-67f56b360d20
+# ╠═db66b883-6313-4574-9cd6-80d6e74060a5
 # ╟─a65ddcf4-bc95-4801-8709-d633b6849598
 # ╠═a67d9e5e-9f2a-4da8-861c-b2a008280da9
 # ╟─7dc2d822-5a69-404b-9a27-d28dfcc4caf7
