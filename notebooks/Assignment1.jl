@@ -669,95 +669,146 @@ We see that the relative error bound, ϵ_bound, is of order 1 at about $n = 48$.
 
 # ╔═╡ 9092521a-d5fc-47ad-9d8c-a79359a4ee49
 md"""
-### Problem 3
+## Problem 3
 
-Point (a) is asking us to prove that the matrix $\hat{A} = A + uv^T$ is nonsingular if and only if $v^T A^{-1} u \neq -1$.
+### Task 1
+
+#### Point a)
+
+We want to prove that the matrix $\tilde{A} = A + \mathbf{uv}^T$ is nonsingular if and only if $\mathbf{v}^T A^{-1} \mathbf{u} \neq -1$.
 
 To start, let's remember that a matrix is nonsingular (or invertible) if it has a nonzero determinant.
 
-Now, we'll use the matrix determinant lemma which states that for any invertible $n \times n$ matrix $A$ and column vectors $u, v \in \mathbb{R}^n$, the determinant of $A + uv^T$ is given by:
+First we introduce the matrix determinant lemma which states that for any invertible $n \times n$ matrix $A$ and column vectors $\mathbf{u}, \mathbf{v} \in \mathbb{R}^n$, the determinant of $A + \mathbf{uv}^T$ is given by:
 
-$$\det(A + uv^T) = \det(A) \cdot (1 + v^T A^{-1} u)$$
-
-
-**Proof of the Matrix Determinant Lemma:**
-
-First the proof of the special case $A = I$ follows from the equality:
-
-$$\begin{aligned}
-\left( \begin{array}{cc}
-I & 0 \\
-v^T & 1 
-\end{array} \right)
-\left( \begin{array}{cc}
-I & u \\
-0 & 1 
-\end{array} \right)
-\left( \begin{array}{cc}
-I & 0 \\
--v^T & 1 
-\end{array} \right)
-&=
-\left( \begin{array}{cc}
-I & u \\
-0 & 1 + v^T u 
-\end{array} \right)
-\end{aligned}$$
-
-The determinant of the left hand side is the product of the determinants of the three matrices. Since the first and third matrix are triangular matrices with unit diagonal, their determinants are just 1. The determinant of the middle matrix is our desired value. The determinant of the right hand side is simply $(1 + v^T u)$. So we have the result:
-
-$$\det(I + uv^T) = (1 + v^T u) .$$
-
-Then the general case can be found as:
-
-$$\begin{aligned}
-\det(A + uv^T) &= \det(A) \det(I + (A^{-1} u)v^T) \\
-&= \det(A)(1 + v^T (A^{-1} u)) .
-\end{aligned}$$
-
-And that completes the proof of the matrix determinant lemma.
-
-For $\hat{A}$ to be nonsingular, $\det(\hat{A})$ must not equal zero. Based on the matrix determinant lemma, this will be the case if and only if:
-
-$$1 + v^T A^{-1} u \neq 0$$
-
-If we rearrange this inequality, we get:
-
-$$v^T A^{-1} u \neq -1$$
-
-So, if $v^T A^{-1} u = -1$, then $\hat{A}$ would be singular, because the determinant would be zero. Conversely, if $v^T A^{-1} u \neq -1$, then the determinant is non-zero, and $\hat{A}$ is nonsingular.
-
-This concludes the proof: we've used the matrix determinant lemma to relate the invertibility of $\hat{A}$ to the condition $v^T A^{-1} u \neq -1$.
+$$\det(A + \mathbf{uv}^T) = \det(A) \cdot (1 + \mathbf{v}^T A^{-1} \mathbf{u})$$
 
 
+!!! info "Proof of the Matrix Determinant Lemma"
+
+	We start from the special case $A = I$. Let's define the bordered matrix
+
+	$$\begin{pmatrix}
+	I + \mathbf{uv}^T & \mathbf{u} \\
+	0 & 1 
+	\end{pmatrix}$$
+
+	the following identity holds:
+
+	$$\begin{equation}
+	\begin{pmatrix}
+	I & 0 \\
+	\mathbf{v}^T & 1 
+	\end{pmatrix}
+	\begin{pmatrix}
+	I + \mathbf{uv}^T & \mathbf{u} \\
+	0 & 1 
+	\end{pmatrix}
+	\begin{pmatrix}
+	I & 0 \\
+	-\mathbf{v}^T & 1 
+	\end{pmatrix}
+	=
+	\begin{pmatrix}
+	I & \mathbf{u} \\
+	0 & 1 + \mathbf{v}^T \mathbf{u} 
+	\end{pmatrix}
+	\end{equation}$$
+
+	The first and third matrix on the left hand side of the equation are unit lower triangular matrices, thus their determinants are 1. Since the determinant of a block triangular matrix is the product of the determinants of the diagonal blocks, we have:
+
+	$$\det(I + \mathbf{uv}^T) = (1 + \mathbf{v}^T \mathbf{u}) .$$
+
+	It is simple the to derive the general case:
+
+	$$\begin{aligned}
+	\det(A + \mathbf{uv}^T) &= \det(A) \det(I + (A^{-1} \mathbf{u})\mathbf{v}^T) \\
+	&= \det(A)(1 + \mathbf{v}^T (A^{-1} \mathbf{u})) .
+	\end{aligned}$$
+
+	And this ends the proof of the Matrix Determinant Lemma.
+
+For $\tilde{A}$ to be nonsingular, $\det(\tilde{A})$ must be nonzero. Based on the matrix determinant lemma, this will be the case if and only if:
+
+$$1 + \mathbf{v}^T A^{-1} \mathbf{u} \neq 0$$
+
+Then, for $\tilde{A}$ to be invertible,
+
+$$\mathbf{v}^T A^{-1} \mathbf{u} \neq -1$$
+
+And this concludes the proof.
 """
 
 # ╔═╡ d8268ca0-8bd3-4c5e-9fa3-a40413ca05ea
 md"""
-#### Sherman morrison formula (point b)
+#### Point b)
 
-Suppose first that the inverse exists. Let $(A + uv^T)^{-1} = A^{-1} + B$. 
+We want to derive the Sherman Morrison formula:
 
-Expanding $(A + uv^T)(A^{-1} + B) = I$, we get $I + uv^TA^{-1} + (A + uv^T)B = I$ and hence
+$$\tilde{A}^{-1} = A^{-1} - \alpha A^{-1}\mathbf{uv}^TA^{-1},\qquad \alpha=\frac{1}{1+\mathbf{v}^T A^{-1}\mathbf{u}}$$
 
-$$B = -(A + uv^T)^{-1}uv^TA^{-1} = -(A^{-1} + B)uv^TA^{-1}. \tag{1}$$
+To do so, let's assume that $\tilde{A}^{-1}$ is of the form $A^{-1} + B$. 
+Then 
 
-Let us define $w = -(A^{-1} + B)u$, so $(1)$ gives $B = wv^TA^{-1}$ and
+$$\begin{align}
+\tilde{A}\tilde{A}^{-1} = I &= (A + \mathbf{uv}^T)(A^{-1} + B) \\
+                            &= I + \mathbf{uv}^TA^{-1} + (A + \mathbf{uv}^T)B
+\end{align}$$ 
 
-$$\begin{align*}
-B &= -(A^{-1} + wv^TA^{-1})uv^TA^{-1}\\
-&= -A^{-1}uv^TA^{-1} - (wv^TA^{-1})uv^TA^{-1}\\
-&= -A^{-1}uv^TA^{-1} - w(v^TA^{-1}u)v^TA^{-1}\\
-&= -A^{-1}uv^TA^{-1} - (v^TA^{-1}u)wv^TA^{-1}\\
-&= -A^{-1}uv^TA^{-1} - (v^TA^{-1}u)B.
-\end{align*}$$
+and hence
+
+$$\begin{align}
+B &= -(A + \mathbf{uv}^T)^{-1}\mathbf{uv}^TA^{-1} \\
+  &= -(A^{-1} + B)\mathbf{uv}^TA^{-1}.
+\end{align}$$
+
+After some manipulation, we find that
+
+$$(1+\mathbf{v}^T A^{-1}\mathbf{u})B = A^{-1}\mathbf{uv}^TA^{-1}$$
 
 Therefore, we can isolate $B$ on one side of the equation:
 
-$$B = \frac{-A^{-1}uv^TA^{-1}}{1 + v^TA^{-1}u}$$
+$$B = - \alpha A^{-1}\mathbf{uv}^TA^{-1}$$
 
-and the inversion formula follows from $(A + uv^T)^{-1} = A^{-1} + B$. We can easily verify by direct calculation that $(A + uv^T)(A^{-1} + B)$ is indeed equal to $I$, and this concludes the proof.
+With $\alpha$ defined as above: the Sherman Morrison formula is found.
+"""
 
+# ╔═╡ a0ae6c10-8e67-4754-8600-f4ceb099a0b9
+md"""
+#### Point c)
+Since we have the $LU$ factorization of $A$, let's define $\mathbf{x}$ as the solution of the problem $A\mathbf{x}=\tilde{\mathbf{b}}$ which can be found by backward-forward susbstitution with a complexity $n^2$.
+
+Now, our goal is to find the solution $\tilde{\mathbf{x}}$ to the problem $\tilde{A}\tilde{\mathbf{x}}=\tilde{\mathbf{b}}$. Formally, we have $\tilde{\mathbf{x}}=\tilde{A}^{-1}\tilde{\mathbf{b}}$ but by using the Sherman Morrison formula we can write
+
+$$\begin{align}
+\tilde{\mathbf{x}}&=(A^{-1} - \alpha A^{-1}\mathbf{uv}^TA^{-1})\tilde{\mathbf{b}}\\
+                  &=A^{-1}\tilde{\mathbf{b}} - \alpha A^{-1}\mathbf{uv}^TA^{-1}\tilde{\mathbf{b}} \\
+                  &=\mathbf{x} - \alpha A^{-1}\mathbf{uv}^T\mathbf{x}
+\end{align}$$
+
+$A^{-1}\mathbf{u}\equiv\mathbf{y}$ can be found using the $LU$ decomposition with backward forward substituion as well (quadratic complexity). The remaining operations are vector dot products or vector sums, which are of linear complexity.
+
+To conclude, the following algorithm then finds $\tilde{\mathbf{x}}$ with $\mathcal{O}(n^2)$ flops:
+	
+1. Find $\mathbf{x}$ by forward backward substitution;
+2. Find $\mathbf{y}$ by forward backward substitution;
+3. Compute $\alpha=1/(1+\mathbf{v}^T\mathbf{y})$;
+4. Compute $\tilde{\mathbf{x}} = \mathbf{x} - \alpha\mathbf{y}(\mathbf{v}^T\mathbf{x})$.
+"""
+
+# ╔═╡ 2f60ab8e-3078-4306-ac4d-20ea864df85b
+md"""
+### Task 2
+
+The bordered system
+
+QUA CI PENSA GPTGPTGPTGPT
+
+corresponds to the system
+
+ANCHE QUA BRUMBRUMBRUM
+
+Then, by substitution of $z$, we can recounduce to the previous case, that has quadratic complexity.
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -778,7 +829,7 @@ Plots = "~1.39.0"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.0"
+julia_version = "1.9.4"
 manifest_format = "2.0"
 project_hash = "77cdee6e3fa2810b18db7ccd6f952128cce67bf4"
 
@@ -864,7 +915,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.2+0"
+version = "1.0.5+0"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
@@ -1104,12 +1155,12 @@ version = "0.16.1"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.3"
+version = "0.6.4"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "7.84.0+0"
+version = "8.4.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -1118,7 +1169,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.10.2+0"
+version = "1.11.0+1"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1313,7 +1364,7 @@ version = "0.42.2+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.9.0"
+version = "1.9.2"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]
@@ -1765,7 +1816,7 @@ version = "0.15.1+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.7.0+0"
+version = "5.8.0+0"
 
 [[deps.libevdev_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1806,7 +1857,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.48.0+0"
+version = "1.52.0+1"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1892,10 +1943,12 @@ version = "1.4.1+1"
 # ╠═a67d9e5e-9f2a-4da8-861c-b2a008280da9
 # ╟─7dc2d822-5a69-404b-9a27-d28dfcc4caf7
 # ╠═45fffdc2-8815-4c0b-9b5f-41b8da706b06
-# ╠═9617629e-b286-412e-b526-0d911946deba
+# ╟─9617629e-b286-412e-b526-0d911946deba
 # ╠═ebd06076-421a-4687-85c4-4284f98559cb
 # ╟─a1be1f55-cff5-4251-863f-fd23e276c479
 # ╟─9092521a-d5fc-47ad-9d8c-a79359a4ee49
 # ╟─d8268ca0-8bd3-4c5e-9fa3-a40413ca05ea
+# ╟─a0ae6c10-8e67-4754-8600-f4ceb099a0b9
+# ╟─2f60ab8e-3078-4306-ac4d-20ea864df85b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
