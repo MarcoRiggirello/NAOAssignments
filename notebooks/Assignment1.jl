@@ -154,6 +154,32 @@ function plot_summary(g, b, pq=1.)
 end
 
 
+# ╔═╡ 54744193-84bb-4f7f-9d65-692e00b26142
+function test_dataset(dataset_generator, t, plot_quantile=1.)
+	Random.seed!(42)
+	f = 0
+	g = Float64[]
+	b = Float64[]
+	for i in 1:t
+		A = dataset_generator(i)
+		try
+			L, U, γ = lufact(A)
+			β = relative_backward_error(A, L, U)
+			push!(g, γ)
+			push!(b, β)
+		catch e
+			if isa(e, DomainError)
+				f += 1
+			else
+				throw(e)
+			end
+		end
+	end
+	print_summary(g, b, f, t)
+	plot_summary(g, b, plot_quantile)
+	#return g, b
+end
+
 # ╔═╡ a3c4d104-a92a-4706-895c-052f954818d8
 md"""
 #### Random matrices
@@ -170,6 +196,9 @@ function generate_random(i)
 	return randn(Float64, N, N)
 end
 
+# ╔═╡ 432078ea-9a58-4b3f-bf6f-7b22d41490c3
+test_dataset(generate_random, 100, 0.9)
+
 # ╔═╡ c28edc65-ffef-4a71-8ca6-894a70131531
 md"""
 Furthermore, we generate complex matrix with the same size range and elements distribution.
@@ -180,6 +209,9 @@ function generate_random_complex(i)
 	N = rand(2:100)
 	return randn(ComplexF64, N, N)
 end
+
+# ╔═╡ 4881c984-d042-46eb-b815-ee21ecf9f205
+test_dataset(generate_random_complex, 100, 0.9)
 
 # ╔═╡ d2e5b090-2215-4eea-8db8-9151100065cd
 md"""
@@ -219,6 +251,9 @@ function generate_hilbert(N)
 	return [1 / (i + j - 1) for i in 1:N, j in 1:N]
 end
 
+# ╔═╡ aa93a02f-e063-47b2-8d01-ed37b50a50df
+test_dataset(generate_hilbert, 300)
+
 # ╔═╡ 9c44ddd0-825c-4336-8c5c-b87647b4f8c8
 md"""
 FANNO CAAA 	qed
@@ -251,6 +286,9 @@ function generate_dd(i)
 	A += diagm([N+1 for _ in 1:N])
 	return A
 end
+
+# ╔═╡ e5143618-5d7f-4263-8c21-3e2a5362e893
+test_dataset(generate_dd, 1000)
 
 # ╔═╡ 17489357-b809-4376-97de-573d3087ae7a
 md"""
@@ -287,6 +325,9 @@ function generate_spd(i)
 	return A*A'
 end
 
+# ╔═╡ e4463365-2939-4b0f-878f-e4bc70e80a69
+test_dataset(generate_spd, 100)
+
 # ╔═╡ 8b73be05-23f6-4614-81ba-f59bbb4ec8b2
 md"""
 commento risultati su stabilita'
@@ -300,14 +341,6 @@ an example of performance profiling
 # ╔═╡ 7d8d1fe8-318b-4f1d-bf21-1da8d05b35a5
 begin
 
-# Function to perform the LU factorization (placeholder, replace with actual implementation)
-function lufact(A)
-    # Your LU factorization code here
-end
-
-# Initial throwaway calculation to force compilation
-lufact(randn(3,3))
-
 # Define the range of matrix sizes
 n_values = 400:400:4000
 # Array to store the benchmark results
@@ -317,7 +350,7 @@ timings = []
 for N in n_values
     A = randn(N, N)
     # Benchmark and get the median time
-    bench = @benchmark lufact($A)
+    bench = @benchmark lufact(A)
     median_time = median(bench).time / 1e9  # Convert to seconds
     push!(timings, median_time)
 end
@@ -327,47 +360,6 @@ scatter(n_values, timings, label="data", legend=:topleft, xscale=:log10, yscale=
 plot!(n_values, timings[end]*n_values./(n_values[end]).^3, label="O(n^3)", linestyle=:dash, xscale=:log10, yscale=:log10)
 
 end
-
-# ╔═╡ 54744193-84bb-4f7f-9d65-692e00b26142
-function test_dataset(dataset_generator, t, plot_quantile=1.)
-	Random.seed!(42)
-	f = 0
-	g = Float64[]
-	b = Float64[]
-	for i in 1:t
-		A = dataset_generator(i)
-		try
-			L, U, γ = lufact(A)
-			β = relative_backward_error(A, L, U)
-			push!(g, γ)
-			push!(b, β)
-		catch e
-			if isa(e, DomainError)
-				f += 1
-			else
-				throw(e)
-			end
-		end
-	end
-	print_summary(g, b, f, t)
-	plot_summary(g, b, plot_quantile)
-	#return g, b
-end
-
-# ╔═╡ 432078ea-9a58-4b3f-bf6f-7b22d41490c3
-test_dataset(generate_random, 100, 0.9)
-
-# ╔═╡ 4881c984-d042-46eb-b815-ee21ecf9f205
-test_dataset(generate_random_complex, 100, 0.9)
-
-# ╔═╡ aa93a02f-e063-47b2-8d01-ed37b50a50df
-test_dataset(generate_hilbert, 300)
-
-# ╔═╡ e5143618-5d7f-4263-8c21-3e2a5362e893
-test_dataset(generate_dd, 1000)
-
-# ╔═╡ e4463365-2939-4b0f-878f-e4bc70e80a69
-test_dataset(generate_spd, 100)
 
 # ╔═╡ 9af51aca-53f4-4568-927f-0ca185613408
 md"""
@@ -482,7 +474,15 @@ $$\mathbf{b} = \begin{bmatrix}
 -1 \\
 -2 \\
 \vdots \\
-- (n - 2)
+- (n - 3)
+\end{bmatrix} + \begin{bmatrix}
+0 \\
+0 \\
+0 \\
+0 \\
+0 \\
+\vdots \\
+- 1
 \end{bmatrix}$$
 
 With each entry $b_i$ defined as:
@@ -583,15 +583,72 @@ end
 md"""
 The Wilkinson matrix is specifically designed to be a challenging test case for numerical algorithms due to its structure, which induces a large growth factor ($2^{n-1}$) in the elements of the LU decomposition without pivoting. As the size of the matrix grows, the condition number of the Wilkinson matrix increases exponentially, making it more susceptible to round-off errors. 
 
-At $n=55$ we have a transition due to algorithm limitation, error propagation and precision limits. We get a first non-zero entry for the relative error, which becomes 1 under the Infinity norm.
+At $n=55$ we have a transition: we get a first non-zero entry for the relative error, which becomes 1 under the Infinity norm. Why is that the case? We consider the analytical solution to the problem using the knonw LU factorization for a Wilkinson matrix. Let $L\mathbf{z} = \mathbf{b}$:
 
-It's important to note that while $n=55$ is the threshold in this particular case, the exact value can vary depending on the computational environment, such as the machine epsilon of the system, the specific implementation of the backslash operator, and any underlying optimizations in the linear algebra library being used.
+We have the following set of equations:
 
-However, in order to investigate further this problem, we can recall Theorem 4.29 of the lectures, which states that the relative error for our case is bounded by:
+$$\begin{align*}
+z_1 &= b_1, \\
+z_2 &= b_2 + z_1 = b_2 + b_1, \\
+z_3 &= b_3 + z_2 + z_1 = b_3 + b_2 + 2b_1, \\
+z_4 &= b_4 + z_3 + z_2 + z_1 = b_4 + b_3 + 2b_2 + 4b_1, \\
+&\vdots
+\end{align*}$$
+
+This pattern continues, and we can generalize it to the equation for any $z_i$:
+
+$$z_i = b_i + b_{i-1} + 2b_{i-2} + \cdots + 2^{i-2}b_1.$$
+
+This can be written more compactly as:
+
+$$z_i = b_i + \sum_{k=1}^{i-1} 2^{k-1}b_{i-k}.$$
+
+We now use the analytical expression for $\mathbf{b}$ to rewrite $z_i$ as:
+
+$$z_i = -(i - 3) - \sum_{k=1}^{i-1} 2^{k-1}(i - k - 3).$$
+
+excpet for the last $z_n$ where $b_n = -(i - 2)$.
+
+We continue from the previous step:
+
+$$-(i-3) - (i-3) \left( \sum_{k=1}^{i-1} 2^{k-1} \right) + \sum_{k=1}^{i-1} k 2^{k-1} = \ldots$$
+
+This simplifies to:
+
+$$- (i-3)(2^{i} - 1) + \sum_{k=1}^{i-1} k 2^{k-1} = \ldots$$
+
+And we can conclude with:
+
+$$z_i = 2^{i-1} + 1$$
+
+and 
+
+$$z_n = 2^{n-1}$$
+
+DA RIMUOVERE?
+Finally, we can relate this to the geometric progression sum formula:
+
+$$\sum_{k=0}^{N} 2^k = 2^{N+1} - 1.$$
+
+For example, adding powers of 2 like $1 + 2 + 4 + 8 + 16 + 32$ can be calculated using the sum formula for a geometric series:
+
+$$\sum_{k=0}^{N} 2^k = 2^{N+1} - 1.$$
+
+Now we continue with the backward substitution step, $U\mathbf{x} = \mathbf{z}$, and we know that the following holds for the specific for of U in the Wilkinson matrix:
+
+$$\begin{align*}
+x_n &= \frac{z_n}{2^{n-1}} = \frac{2^{n-1}}{2^{n-1}} = 1, \\
+\vdots\\
+x_{i} + 2^{i-1}x_n &=  z_i, \rightarrow x_{i} = z_i - 2^{i-1} = 2^{i-1} + 1 - 2^{i-1} \\
+\end{align*}$$
+
+CONTINUARE QUI
+
+The previous is an exact explanation of the loss of accuracy we observe. However, in order to investigate further this problem, we can recall Theorem 4.29 of the lectures, which states that the relative error for our case is bounded by:
 
 $$\frac{\left\lVert \mathbf{x}^* - \tilde{\mathbf{x}} \right\rVert}{\left\lVert \mathbf{x}^*\right\rVert}  \leq O(\gamma u) \kappa(W_n)$$
 
-where $\gamma = 2^{n-1}$ for the Wilkinson matrix. We can at least compute the upper bound of ϵ_rel in the vicinity of $n = 55$ to convince ourselves that the problem is unstable in this regime:
+where $\gamma = 2^{n-1}$ for the Wilkinson matrix. We can thus compute the upper bound of ϵ_rel in the vicinity of $n = 55$ to convince ourselves that the problem is unstable in this regime:
 """
 
 # ╔═╡ ebd06076-421a-4687-85c4-4284f98559cb
@@ -607,9 +664,7 @@ end
 
 # ╔═╡ a1be1f55-cff5-4251-863f-fd23e276c479
 md"""
-We see that the relative error bound, ϵ_bound, is of order 1 at about $n = 48$. After that, numerical optimizations make so that the solution can still be computed accurately, but we do not have any guarantee from theory. Finally, we lose the accurate solution to the problem at $n = 55$. 
-
-Interestingly, $n = 55$ concides with the point from where the error bound is at least 2 orders of magnitude bigger than 1, suggesting that the optimizations of the backslash operator are capable of handling relative errors with theoretical bounds of about 1 order of magnitude bigger than the error observed.
+We see that the relative error bound, ϵ_bound, is of order 1 at about $n = 48$. After that, numerical optimizations make so that the solution can still be computed accurately, but we do not have any guarantee from theory.
 """
 
 # ╔═╡ 9092521a-d5fc-47ad-9d8c-a79359a4ee49
@@ -627,7 +682,7 @@ $$\det(A + uv^T) = \det(A) \cdot (1 + v^T A^{-1} u)$$
 
 **Proof of the Matrix Determinant Lemma:**
 
-First the proof of the special case \( A = I \) follows from the equality:
+First the proof of the special case $A = I$ follows from the equality:
 
 $$\begin{aligned}
 \left( \begin{array}{cc}
@@ -649,7 +704,7 @@ I & u \\
 \end{array} \right)
 \end{aligned}$$
 
-The determinant of the left hand side is the product of the determinants of the three matrices. Since the first and third matrix are triangular matrices with unit diagonal, their determinants are just 1. The determinant of the middle matrix is our desired value. The determinant of the right hand side is simply \( (1 + v^T u) \). So we have the result:
+The determinant of the left hand side is the product of the determinants of the three matrices. Since the first and third matrix are triangular matrices with unit diagonal, their determinants are just 1. The determinant of the middle matrix is our desired value. The determinant of the right hand side is simply $(1 + v^T u)$. So we have the result:
 
 $$\det(I + uv^T) = (1 + v^T u) .$$
 
@@ -677,11 +732,33 @@ This concludes the proof: we've used the matrix determinant lemma to relate the 
 
 """
 
-# ╔═╡ 63f2fc3e-f29a-414e-a560-dad7139981f1
-svg_joinpathsplit__FILE__1assetslogosvg = let
-    import PlutoUI
-    PlutoUI.LocalResource(joinpath(split(@__FILE__, '#')[1] * ".assets", "logo.svg"))
-end
+# ╔═╡ d8268ca0-8bd3-4c5e-9fa3-a40413ca05ea
+md"""
+#### Sherman morrison formula (point b)
+
+Suppose first that the inverse exists. Let $(A + uv^T)^{-1} = A^{-1} + B$. 
+
+Expanding $(A + uv^T)(A^{-1} + B) = I$, we get $I + uv^TA^{-1} + (A + uv^T)B = I$ and hence
+
+$$B = -(A + uv^T)^{-1}uv^TA^{-1} = -(A^{-1} + B)uv^TA^{-1}. \tag{1}$$
+
+Let us define $w = -(A^{-1} + B)u$, so $(1)$ gives $B = wv^TA^{-1}$ and
+
+$$\begin{align*}
+B &= -(A^{-1} + wv^TA^{-1})uv^TA^{-1}\\
+&= -A^{-1}uv^TA^{-1} - (wv^TA^{-1})uv^TA^{-1}\\
+&= -A^{-1}uv^TA^{-1} - w(v^TA^{-1}u)v^TA^{-1}\\
+&= -A^{-1}uv^TA^{-1} - (v^TA^{-1}u)wv^TA^{-1}\\
+&= -A^{-1}uv^TA^{-1} - (v^TA^{-1}u)B.
+\end{align*}$$
+
+Therefore, we can isolate $B$ on one side of the equation:
+
+$$B = \frac{-A^{-1}uv^TA^{-1}}{1 + v^TA^{-1}u}$$
+
+and the inversion formula follows from $(A + uv^T)^{-1} = A^{-1} + B$. We can easily verify by direct calculation that $(A + uv^T)(A^{-1} + B)$ is indeed equal to $I$, and this concludes the proof.
+
+"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -689,29 +766,21 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
 BenchmarkTools = "~1.4.0"
 Plots = "~1.39.0"
-PlutoUI = "~0.7.54"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.4"
+julia_version = "1.9.0"
 manifest_format = "2.0"
-project_hash = "2a0d92feb2aaa32ca8a23417682e6fac1d5caec0"
-
-[[deps.AbstractPlutoDingetjes]]
-deps = ["Pkg"]
-git-tree-sha1 = "793501dcd3fa7ce8d375a2c878dca2296232686e"
-uuid = "6e696c72-6542-2067-7265-42206c756150"
-version = "1.2.2"
+project_hash = "77cdee6e3fa2810b18db7ccd6f952128cce67bf4"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -795,7 +864,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.5+0"
+version = "1.0.2+0"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
@@ -956,24 +1025,6 @@ git-tree-sha1 = "129acf094d168394e80ee1dc4bc06ec835e510a3"
 uuid = "2e76f6c2-a576-52d4-95c1-20adfe4de566"
 version = "2.8.1+1"
 
-[[deps.Hyperscript]]
-deps = ["Test"]
-git-tree-sha1 = "8d511d5b81240fc8e6802386302675bdf47737b9"
-uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
-version = "0.0.4"
-
-[[deps.HypertextLiteral]]
-deps = ["Tricks"]
-git-tree-sha1 = "7134810b1afce04bbc1045ca1985fbe81ce17653"
-uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
-version = "0.9.5"
-
-[[deps.IOCapture]]
-deps = ["Logging", "Random"]
-git-tree-sha1 = "d75853a0bdbfb1ac815478bacd89cd27b550ace6"
-uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
-version = "0.2.3"
-
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
@@ -1053,12 +1104,12 @@ version = "0.16.1"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.4.0+0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -1067,7 +1118,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.0+1"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1148,11 +1199,6 @@ deps = ["Dates", "Logging"]
 git-tree-sha1 = "c1dd6d7978c12545b4179fb6153b9250c96b0075"
 uuid = "e6f89c97-d47a-5376-807f-9c37f3926c36"
 version = "1.0.3"
-
-[[deps.MIMEs]]
-git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
-uuid = "6c6e2e6c-3030-632d-7369-2d6c69616d65"
-version = "0.1.4"
 
 [[deps.MacroTools]]
 deps = ["Markdown", "Random"]
@@ -1267,7 +1313,7 @@ version = "0.42.2+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.9.2"
+version = "1.9.0"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]
@@ -1300,12 +1346,6 @@ version = "1.39.0"
     IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a"
     ImageInTerminal = "d8c32880-2388-543b-8c61-d9f865259254"
     Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
-
-[[deps.PlutoUI]]
-deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
-git-tree-sha1 = "bd7c69c7f7173097e7b5e1be07cee2b8b7447f51"
-uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-version = "0.7.54"
 
 [[deps.PrecompileTools]]
 deps = ["Preferences"]
@@ -1457,11 +1497,6 @@ weakdeps = ["Random", "Test"]
 
     [deps.TranscodingStreams.extensions]
     TestExt = ["Test", "Random"]
-
-[[deps.Tricks]]
-git-tree-sha1 = "eae1bb484cd63b36999ee58be2de6c178105112f"
-uuid = "410a4b4d-49e4-4fbc-ab6d-cb71b17b3775"
-version = "0.1.8"
 
 [[deps.URIs]]
 git-tree-sha1 = "67db6cc7b3821e19ebe75791a9dd19c9b1188f2b"
@@ -1730,7 +1765,7 @@ version = "0.15.1+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.8.0+0"
+version = "5.7.0+0"
 
 [[deps.libevdev_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1771,7 +1806,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.52.0+1"
+version = "1.48.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1849,7 +1884,7 @@ version = "1.4.1+1"
 # ╟─105c3ee3-2d78-4524-89bf-da3b97745842
 # ╠═4d8a697c-9b26-417f-b0f2-e8c1bac3a4a2
 # ╠═c2270a41-ce15-4670-9937-25a6a7d3f304
-# ╟─0be4f60d-9727-4d6d-b192-e9f60e7bbca2
+# ╠═0be4f60d-9727-4d6d-b192-e9f60e7bbca2
 # ╠═e597f8cc-be2f-435f-8d10-9befa36fdbd6
 # ╠═56d246d3-9113-4681-8a82-10c33664554e
 # ╠═db66b883-6313-4574-9cd6-80d6e74060a5
@@ -1857,10 +1892,10 @@ version = "1.4.1+1"
 # ╠═a67d9e5e-9f2a-4da8-861c-b2a008280da9
 # ╟─7dc2d822-5a69-404b-9a27-d28dfcc4caf7
 # ╠═45fffdc2-8815-4c0b-9b5f-41b8da706b06
-# ╟─9617629e-b286-412e-b526-0d911946deba
+# ╠═9617629e-b286-412e-b526-0d911946deba
 # ╠═ebd06076-421a-4687-85c4-4284f98559cb
 # ╟─a1be1f55-cff5-4251-863f-fd23e276c479
-# ╠═9092521a-d5fc-47ad-9d8c-a79359a4ee49
-# ╟─63f2fc3e-f29a-414e-a560-dad7139981f1
+# ╟─9092521a-d5fc-47ad-9d8c-a79359a4ee49
+# ╟─d8268ca0-8bd3-4c5e-9fa3-a40413ca05ea
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
