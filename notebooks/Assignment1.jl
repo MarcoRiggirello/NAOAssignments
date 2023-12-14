@@ -154,32 +154,6 @@ function plot_summary(g, b, pq=1.)
 end
 
 
-# ╔═╡ 54744193-84bb-4f7f-9d65-692e00b26142
-function test_dataset(dataset_generator, t, plot_quantile=1.)
-	Random.seed!(42)
-	f = 0
-	g = Float64[]
-	b = Float64[]
-	for i in 1:t
-		A = dataset_generator(i)
-		try
-			L, U, γ = lufact(A)
-			β = relative_backward_error(A, L, U)
-			push!(g, γ)
-			push!(b, β)
-		catch e
-			if isa(e, DomainError)
-				f += 1
-			else
-				throw(e)
-			end
-		end
-	end
-	print_summary(g, b, f, t)
-	plot_summary(g, b, plot_quantile)
-	#return g, b
-end
-
 # ╔═╡ a3c4d104-a92a-4706-895c-052f954818d8
 md"""
 #### Random matrices
@@ -196,9 +170,6 @@ function generate_random(i)
 	return randn(Float64, N, N)
 end
 
-# ╔═╡ 432078ea-9a58-4b3f-bf6f-7b22d41490c3
-test_dataset(generate_random, 100, 0.9)
-
 # ╔═╡ c28edc65-ffef-4a71-8ca6-894a70131531
 md"""
 Furthermore, we generate complex matrix with the same size range and elements distribution.
@@ -209,9 +180,6 @@ function generate_random_complex(i)
 	N = rand(2:100)
 	return randn(ComplexF64, N, N)
 end
-
-# ╔═╡ 4881c984-d042-46eb-b815-ee21ecf9f205
-test_dataset(generate_random_complex, 100, 0.9)
 
 # ╔═╡ d2e5b090-2215-4eea-8db8-9151100065cd
 md"""
@@ -251,9 +219,6 @@ function generate_hilbert(N)
 	return [1 / (i + j - 1) for i in 1:N, j in 1:N]
 end
 
-# ╔═╡ aa93a02f-e063-47b2-8d01-ed37b50a50df
-test_dataset(generate_hilbert, 300)
-
 # ╔═╡ 9c44ddd0-825c-4336-8c5c-b87647b4f8c8
 md"""
 FANNO CAAA 	qed
@@ -286,9 +251,6 @@ function generate_dd(i)
 	A += diagm([N+1 for _ in 1:N])
 	return A
 end
-
-# ╔═╡ e5143618-5d7f-4263-8c21-3e2a5362e893
-test_dataset(generate_dd, 1000)
 
 # ╔═╡ 17489357-b809-4376-97de-573d3087ae7a
 md"""
@@ -325,13 +287,87 @@ function generate_spd(i)
 	return A*A'
 end
 
-# ╔═╡ e4463365-2939-4b0f-878f-e4bc70e80a69
-test_dataset(generate_spd, 100)
-
 # ╔═╡ 8b73be05-23f6-4614-81ba-f59bbb4ec8b2
 md"""
 commento risultati su stabilita'
 """
+
+# ╔═╡ 0806005c-6dcf-47ff-b9bb-9d9529588e84
+md"""
+an example of performance profiling
+"""
+
+# ╔═╡ 7d8d1fe8-318b-4f1d-bf21-1da8d05b35a5
+begin
+
+# Function to perform the LU factorization (placeholder, replace with actual implementation)
+function lufact(A)
+    # Your LU factorization code here
+end
+
+# Initial throwaway calculation to force compilation
+lufact(randn(3,3))
+
+# Define the range of matrix sizes
+n_values = 400:400:4000
+# Array to store the benchmark results
+timings = []
+
+# Benchmark the lufact() function for different sizes of N
+for N in n_values
+    A = randn(N, N)
+    # Benchmark and get the median time
+    bench = @benchmark lufact($A)
+    median_time = median(bench).time / 1e9  # Convert to seconds
+    push!(timings, median_time)
+end
+
+# Plot the timings on a log-log graph
+scatter(n_values, timings, label="data", legend=:topleft, xscale=:log10, yscale=:log10, xlabel="n", ylabel="elapsed time (s)")
+plot!(n_values, timings[end]*n_values./(n_values[end]).^3, label="O(n^3)", linestyle=:dash, xscale=:log10, yscale=:log10)
+
+end
+
+# ╔═╡ 54744193-84bb-4f7f-9d65-692e00b26142
+function test_dataset(dataset_generator, t, plot_quantile=1.)
+	Random.seed!(42)
+	f = 0
+	g = Float64[]
+	b = Float64[]
+	for i in 1:t
+		A = dataset_generator(i)
+		try
+			L, U, γ = lufact(A)
+			β = relative_backward_error(A, L, U)
+			push!(g, γ)
+			push!(b, β)
+		catch e
+			if isa(e, DomainError)
+				f += 1
+			else
+				throw(e)
+			end
+		end
+	end
+	print_summary(g, b, f, t)
+	plot_summary(g, b, plot_quantile)
+	#return g, b
+end
+
+# ╔═╡ 432078ea-9a58-4b3f-bf6f-7b22d41490c3
+test_dataset(generate_random, 100, 0.9)
+
+# ╔═╡ 4881c984-d042-46eb-b815-ee21ecf9f205
+test_dataset(generate_random_complex, 100, 0.9)
+
+# ╔═╡ aa93a02f-e063-47b2-8d01-ed37b50a50df
+test_dataset(generate_hilbert, 300)
+
+# ╔═╡ e5143618-5d7f-4263-8c21-3e2a5362e893
+test_dataset(generate_dd, 1000)
+
+# ╔═╡ e4463365-2939-4b0f-878f-e4bc70e80a69
+test_dataset(generate_spd, 100)
 
 # ╔═╡ 9af51aca-53f4-4568-927f-0ca185613408
 md"""
@@ -483,19 +519,6 @@ end
 #@btime b100v = generate_b_vector_third(100)
 end
 
-# ╔═╡ 9f2c8225-dd97-4144-a170-67f56b360d20
-begin
-	N = 5
-	b = generate_b_vector(N)
-	@show result = -b[end] + sum(-(b[1:end-1]))
-	@show local z = [b[i] - sum(b[1:i-1]) for i in 1:N]
-	u_ii = [1. for i in 1:N]
-	u_ii[end] = 2^(N-1)
-	u_ij = [2^(i-1) for i in 1:N]
-	@show local x = [(z[i] - sum(z[i+1:N].*u_ij[i+1:N]))/u_ii[i] for i in 1:N]
-	@show local x1 = [z[i] - 2.0^(i-N)*z[N] for i in 1:N]
-end
-
 # ╔═╡ db66b883-6313-4574-9cd6-80d6e74060a5
 
 
@@ -587,6 +610,71 @@ md"""
 We see that the relative error bound, ϵ_bound, is of order 1 at about $n = 48$. After that, numerical optimizations make so that the solution can still be computed accurately, but we do not have any guarantee from theory. Finally, we lose the accurate solution to the problem at $n = 55$. 
 
 Interestingly, $n = 55$ concides with the point from where the error bound is at least 2 orders of magnitude bigger than 1, suggesting that the optimizations of the backslash operator are capable of handling relative errors with theoretical bounds of about 1 order of magnitude bigger than the error observed.
+"""
+
+# ╔═╡ 9092521a-d5fc-47ad-9d8c-a79359a4ee49
+md"""
+### Problem 3
+
+Point (a) is asking us to prove that the matrix $\hat{A} = A + uv^T$ is nonsingular if and only if $v^T A^{-1} u \neq -1$.
+
+To start, let's remember that a matrix is nonsingular (or invertible) if it has a nonzero determinant.
+
+Now, we'll use the matrix determinant lemma which states that for any invertible $n \times n$ matrix $A$ and column vectors $u, v \in \mathbb{R}^n$, the determinant of $A + uv^T$ is given by:
+
+$$\det(A + uv^T) = \det(A) \cdot (1 + v^T A^{-1} u)$$
+
+
+**Proof of the Matrix Determinant Lemma:**
+
+First the proof of the special case \( A = I \) follows from the equality:
+
+$$\begin{aligned}
+\left( \begin{array}{cc}
+I & 0 \\
+v^T & 1 
+\end{array} \right)
+\left( \begin{array}{cc}
+I & u \\
+0 & 1 
+\end{array} \right)
+\left( \begin{array}{cc}
+I & 0 \\
+-v^T & 1 
+\end{array} \right)
+&=
+\left( \begin{array}{cc}
+I & u \\
+0 & 1 + v^T u 
+\end{array} \right)
+\end{aligned}$$
+
+The determinant of the left hand side is the product of the determinants of the three matrices. Since the first and third matrix are triangular matrices with unit diagonal, their determinants are just 1. The determinant of the middle matrix is our desired value. The determinant of the right hand side is simply \( (1 + v^T u) \). So we have the result:
+
+$$\det(I + uv^T) = (1 + v^T u) .$$
+
+Then the general case can be found as:
+
+$$\begin{aligned}
+\det(A + uv^T) &= \det(A) \det(I + (A^{-1} u)v^T) \\
+&= \det(A)(1 + v^T (A^{-1} u)) .
+\end{aligned}$$
+
+And that completes the proof of the matrix determinant lemma.
+
+For $\hat{A}$ to be nonsingular, $\det(\hat{A})$ must not equal zero. Based on the matrix determinant lemma, this will be the case if and only if:
+
+$$1 + v^T A^{-1} u \neq 0$$
+
+If we rearrange this inequality, we get:
+
+$$v^T A^{-1} u \neq -1$$
+
+So, if $v^T A^{-1} u = -1$, then $\hat{A}$ would be singular, because the determinant would be zero. Conversely, if $v^T A^{-1} u \neq -1$, then the determinant is non-zero, and $\hat{A}$ is nonsingular.
+
+This concludes the proof: we've used the matrix determinant lemma to relate the invertibility of $\hat{A}$ to the condition $v^T A^{-1} u \neq -1$.
+
+
 """
 
 # ╔═╡ 63f2fc3e-f29a-414e-a560-dad7139981f1
@@ -1751,6 +1839,8 @@ version = "1.4.1+1"
 # ╠═257f07b9-9505-4f48-a1ab-0984e1fb0b21
 # ╠═e4463365-2939-4b0f-878f-e4bc70e80a69
 # ╟─8b73be05-23f6-4614-81ba-f59bbb4ec8b2
+# ╠═0806005c-6dcf-47ff-b9bb-9d9529588e84
+# ╠═7d8d1fe8-318b-4f1d-bf21-1da8d05b35a5
 # ╟─9af51aca-53f4-4568-927f-0ca185613408
 # ╟─a37d2a18-510f-4217-b77e-9055e4531869
 # ╟─84bc6ce3-41bd-4056-b98b-d0e56423f972
@@ -1762,7 +1852,6 @@ version = "1.4.1+1"
 # ╟─0be4f60d-9727-4d6d-b192-e9f60e7bbca2
 # ╠═e597f8cc-be2f-435f-8d10-9befa36fdbd6
 # ╠═56d246d3-9113-4681-8a82-10c33664554e
-# ╠═9f2c8225-dd97-4144-a170-67f56b360d20
 # ╠═db66b883-6313-4574-9cd6-80d6e74060a5
 # ╟─a65ddcf4-bc95-4801-8709-d633b6849598
 # ╠═a67d9e5e-9f2a-4da8-861c-b2a008280da9
@@ -1771,6 +1860,7 @@ version = "1.4.1+1"
 # ╟─9617629e-b286-412e-b526-0d911946deba
 # ╠═ebd06076-421a-4687-85c4-4284f98559cb
 # ╟─a1be1f55-cff5-4251-863f-fd23e276c479
+# ╠═9092521a-d5fc-47ad-9d8c-a79359a4ee49
 # ╟─63f2fc3e-f29a-414e-a560-dad7139981f1
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
