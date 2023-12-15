@@ -69,24 +69,21 @@ function lufact(A::AbstractMatrix{T}) where T <: Union{Real, Complex}
     if m != n
         throw(ArgumentError("Matrix is not square."))
     end
-
     # Creates a copy of A
-	U = T <: Real ? Float64 : ComplexF64
+	V = T <: Real ? Float64 : ComplexF64
 	
-	Aₖ = map(U, A)
-    γ = zero(U)
-
+	Aₖ = map(V, A)
+    γ = zero(V)
     # Performs the LU factorization.
     for k in 1:n-1
 		pivot = Aₖ[k, k]
 		# Sanity check
         if abs(pivot) <= eps(Float64)
-            throw(DomainError("Matrix is ill-conditioned."))
+            throw(DomainError("Dividing by pivot smaller than machine eps!"))
         end
         # Compute i-th column of L
         Aₖ[k+1:n,k] = Aₖ[k+1:n,k] / pivot
 		# Update Aₖ
-		#Aₖ[k+1:n,k+1:n] -= Aₖ[k+1:n,k] * Aₖ[k,k+1:n]'
 		for i in k+1:n
 			Aₖ[i,k+1:n] -= Aₖ[i,k] * Aₖ[k,k+1:n]
 		end
@@ -108,7 +105,7 @@ end
 
 # ╔═╡ 178d03b6-4392-467b-9a6e-f1694c16518f
 md"""
-#### A note on growth factor
+##### A note on growth factor
 Ideally, the growth factor should be close to 1. This indicates that the LU decomposition did not significantly increase the magnitude of the matrix's elements, suggesting a stable decomposition. It's important to note that a low growth factor does not guarantee a good decomposition. It's just one of several indicators of the quality and stability of the decomposition.
 """
 
@@ -120,13 +117,13 @@ md"""
 # ╔═╡ ceca4721-8711-42ad-b7b6-d85a9a3bfee0
 md"""
 Now we want to test the performances of this algorithm over various matrix types. Before we proceed, we define a bunch of utility functions:
-- `relative_backward_error` computes the relative backward error defined as
+- `relative_backward_error()`: computes the relative backward error defined as
 
-$$GPT$$
+$$\frac{\|A - LU\|_{\infty}}{\|A\|_{\infty}}$$
 
-- `print_summary` prints summary statistics for a vector of growth factors and relative backwar errors;
-- `plot_summary` plots the histograms of the growth factor and relative backward errors for the given sample;
-- `test_dataset` for a dataset generator function (see below) computes the LU factorization, the growth factor and the relative backward error and print and plots the results.
+- `print_summary()`: prints summary statistics for a matrix dataset (growth factors and relative backwar errors);
+- `plot_summary()`: plots the histograms of the growth factor and relative backward errors for the given sample;
+- `test_dataset()`: for a dataset generator function (see below) computes the LU factorization, the growth factor and the relative backward error. Then, prints and plots the results.
 """
 
 # ╔═╡ 029c1d1f-cc52-4c3d-b0e3-4c252e847878
@@ -156,22 +153,18 @@ function print_summary(g, b, f, t)
 	println("StdDev: $(std(b))")
 end
 
-# ╔═╡ 463c8c44-28bd-4090-82c4-e09bc4757d5b
-md"""
-CHIEDERE A GPT COME RIDURRE LE CIFRE SIGNIFICATIVE DEL XTICKLABEL
-"""
-
 # ╔═╡ 4c97f6d2-846b-4d7a-93f9-53ddb6125a33
 function plot_summary(g, b, pq=1.)
-    # Adjust the binning for histograms if necessary to make the x-axis less crowded
-    # Adjust the size of the plot or the labels to prevent squeezing
-    hg = histogram(g[g .<= quantile(g, pq)], xlabel="Growth factor", ylabel="Frequency", 
+	gg = g[g .<= quantile(g, pq)]
+    hg = histogram(gg, xlabel="Growth factor", ylabel="Frequency", 
+       legend=false, xrotation=45, bins=30)
+	bb = b[b .<= quantile(g, pq)]
+    hb = histogram(bb, xlabel="Relative backward error", ylabel="Frequency", 
                    legend=false, xrotation=45, bins=30)
-    hb = histogram(b[b .<= quantile(g, pq)], xlabel="Relative backward error", ylabel="Frequency", 
-                   legend=false, xrotation=45, bins=30)
-    # Combine the two histograms into one plot 
-    plot(hg, hb, layout=(1,2), size=(800, 400)) # Adjust the size as needed
+
+    plot(hg, hb, layout=(1,2), size=(800, 400))
 end
+
 
 
 # ╔═╡ 54744193-84bb-4f7f-9d65-692e00b26142
@@ -196,7 +189,7 @@ function test_dataset(dataset_generator, t, plot_quantile=1.)
 		end
 	end
 	print_summary(g, b, f, t)
-	if f/t > 0.7
+	if true #f/t > 0.7
 		plot_summary(g, b, plot_quantile)
 	end
 end
@@ -222,7 +215,7 @@ test_dataset(generate_random, 100, 0.9)
 
 # ╔═╡ c28edc65-ffef-4a71-8ca6-894a70131531
 md"""
-Furthermore, we generate complex matrix with the same size range and elements distribution.
+Furthermore, we generate random complex matrix with the same size range and elements distribution.
 """
 
 # ╔═╡ 317031de-331f-4c82-b080-eea8e8bd1134
@@ -236,7 +229,7 @@ test_dataset(generate_random_complex, 100, 0.9)
 
 # ╔═╡ d2e5b090-2215-4eea-8db8-9151100065cd
 md"""
-FOR RANDOM IT SEEMS OK. SAY IT BETTER
+We observe that the LU factorization does not fail on this class of matrices, even if the growth factors can be rather large.
 """
 
 # ╔═╡ 430999b7-c693-4280-8325-6e6f6c6bd732
@@ -278,7 +271,7 @@ test_dataset(generate_hilbert, 300)
 
 # ╔═╡ 9c44ddd0-825c-4336-8c5c-b87647b4f8c8
 md"""
-FANNO CAAA 	qed
+As expected, the LU factorization without pivoting fails for all matrices with size bigger than a certain N for this class of matrices.
 """
 
 # ╔═╡ 71eb0c07-8f46-47c3-92cb-8558d870e5d5
@@ -292,7 +285,7 @@ A square matrix $A$ is said to be diagonally dominant (by rows) if for every row
 
 $$|a_{ii}| \geq \sum_{j \neq i} |a_{ij}| \quad \text{for all } i.$$
 
-This condition must hold for each $i$ from $1$ to $n$, where $n$ is the size of the $n \times n$ matrix $A$. If the inequality is strict for all rows, then $A$ is said to be strictly diagonally dominant. The LU factorization without pivoting is known to be backward stable for this irreducible DD matrices.
+This condition must hold for each $i$ from $1$ to $n$, where $n$ is the size of the $n \times n$ matrix $A$. If the inequality is strict for all rows, then $A$ is said to be strictly diagonally dominant. The LU factorization without pivoting is known to be backward stable for *irreducible* DD matrices.
 
 """
 
@@ -314,7 +307,7 @@ test_dataset(generate_dd, 1000)
 
 # ╔═╡ 17489357-b809-4376-97de-573d3087ae7a
 md"""
-stable as qed
+Again, we observe a stable LU decomposition for this class of matrices, as expected. The growth factor remains very close to 1, confirming that this is the case.
 """
 
 # ╔═╡ 40c9f9be-eb94-40f3-ac14-727432d9ade9
@@ -337,19 +330,46 @@ Additionally, a matrix is positive definite if and only if all its eigenvalues a
 
 """
 
+# ╔═╡ 7723ac14-73be-4bbb-8b3d-708c0eccda48
+md"""
+The function `generate_spd_cholesky()` generates a Symmetric Positive Definite (SPD) matrix by taking advantage of the Cholesky decomposition, as we know that it holds for this class of matrices.
+
+1. First, we generate a lower triangular matrix $L$ by taking the lower triangular part of a randomly generated matrix.
+
+2. To ensure that the matrix $L$ contributes to a positive definite matrix, we make its diagonal entries significantly positive. For each diagonal entry $L_{ii}$, we set:
+
+   $$L_{ii} = |L_{ii}| + N$$
+
+   This operation guarantees that the diagonal entries are positive and larger than the sum of the absolute values of the other entries in their respective rows, which is a sufficient condition for $L$ to be positive definite.
+
+3. The matrix $L$ is then multiplied by its transpose to produce matrix $B$:
+
+   $$B = LL^T$$
+
+   Since $L$ is lower triangular with positive diagonal entries, $B$ is guaranteed to be symmetric because $(LL^T)^T = (L^T)^TL^T = LL^T$ and positive definite because for any non-zero vector $\mathbf{x}$, the product $\mathbf{x}^T LL^T \mathbf{x}$ results in a sum of squares of linear combinations of the elements of $\mathbf{x}$, which is always positive.
+
+4. Thus, the resulting matrix $B$ is symmetric and positive definite, making it suitable for applications requiring SPD matrices.
+
+"""
+
 # ╔═╡ 257f07b9-9505-4f48-a1ab-0984e1fb0b21
-function generate_spd(i)
-	N = rand(2:100)
-	A = randn(N, N)
-	return A*A'
+function generate_spd_cholesky(N::Int)
+    # Create a random lower triangular matrix with positive diagonal entries
+    L = tril(randn(N, N))
+    for i in 1:N
+        L[i, i] = abs(L[i, i]) + N  # Make the diagonal entries significantly positive
+    end
+    # The resulting matrix L * L' will be SPD
+    return L * L'
 end
 
+
 # ╔═╡ e4463365-2939-4b0f-878f-e4bc70e80a69
-test_dataset(generate_spd, 100)
+test_dataset(generate_spd_cholesky, 100)
 
 # ╔═╡ 8b73be05-23f6-4614-81ba-f59bbb4ec8b2
 md"""
-commento risultati su stabilita'
+Again, we observe a stable decomposition for this class of matrices.
 """
 
 # ╔═╡ 0806005c-6dcf-47ff-b9bb-9d9529588e84
@@ -358,12 +378,10 @@ an example of performance profiling
 """
 
 # ╔═╡ 7d8d1fe8-318b-4f1d-bf21-1da8d05b35a5
-# ╠═╡ disabled = true
-#=╠═╡
 begin
 
 # Define the range of matrix sizes
-n_values = 400:400:4000
+n_values = [100, 300, 500, 1000, 2000, 3000]
 # Array to store the benchmark results
 timings = []
 
@@ -371,17 +389,19 @@ timings = []
 for N in n_values
     A = randn(N, N)
     # Benchmark and get the median time
-    bench = @benchmark lufact(A)
-    median_time = median(bench).time / 1e9  # Convert to seconds
-    push!(timings, median_time)
+    time = @elapsed for j in 1:3; lufact(A); end
+    push!(timings, time)
 end
 
+end
+
+# ╔═╡ 98f140b8-fa88-4330-9d61-e9042409d1da
+begin
 # Plot the timings on a log-log graph
 scatter(n_values, timings, label="data", legend=:topleft, xscale=:log10, yscale=:log10, xlabel="n", ylabel="elapsed time (s)")
-plot!(n_values, timings[end]*n_values./(n_values[end]).^3, label="O(n^3)", linestyle=:dash, xscale=:log10, yscale=:log10)
+plot!(n_values, timings[end]*(n_values/n_values[end]).^3, label="O(n^3)", linestyle=:dash, xscale=:log10, yscale=:log10)
 
 end
-  ╠═╡ =#
 
 # ╔═╡ 9af51aca-53f4-4568-927f-0ca185613408
 md"""
@@ -876,7 +896,7 @@ Plots = "~1.39.0"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.4"
+julia_version = "1.9.0"
 manifest_format = "2.0"
 project_hash = "77cdee6e3fa2810b18db7ccd6f952128cce67bf4"
 
@@ -962,7 +982,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.5+0"
+version = "1.0.2+0"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
@@ -1202,12 +1222,12 @@ version = "0.16.1"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.4.0+0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -1216,7 +1236,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.0+1"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1411,7 +1431,7 @@ version = "0.42.2+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.9.2"
+version = "1.9.0"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]
@@ -1863,7 +1883,7 @@ version = "0.15.1+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.8.0+0"
+version = "5.7.0+0"
 
 [[deps.libevdev_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1904,7 +1924,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.52.0+1"
+version = "1.48.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1947,7 +1967,6 @@ version = "1.4.1+1"
 # ╟─ceca4721-8711-42ad-b7b6-d85a9a3bfee0
 # ╠═029c1d1f-cc52-4c3d-b0e3-4c252e847878
 # ╠═c6e79210-d8e1-4c6d-a5cb-6304765cc6a6
-# ╠═463c8c44-28bd-4090-82c4-e09bc4757d5b
 # ╠═4c97f6d2-846b-4d7a-93f9-53ddb6125a33
 # ╠═54744193-84bb-4f7f-9d65-692e00b26142
 # ╟─a3c4d104-a92a-4706-895c-052f954818d8
@@ -1969,14 +1988,16 @@ version = "1.4.1+1"
 # ╟─19840fc1-e07b-42fc-9e9c-f44f285a55bc
 # ╠═731efdaf-e0db-41c1-80d3-92523ecd02bf
 # ╠═e5143618-5d7f-4263-8c21-3e2a5362e893
-# ╟─17489357-b809-4376-97de-573d3087ae7a
+# ╠═17489357-b809-4376-97de-573d3087ae7a
 # ╟─40c9f9be-eb94-40f3-ac14-727432d9ade9
 # ╟─9f2232c9-a72e-43cc-884d-a76df21d66df
+# ╟─7723ac14-73be-4bbb-8b3d-708c0eccda48
 # ╠═257f07b9-9505-4f48-a1ab-0984e1fb0b21
 # ╠═e4463365-2939-4b0f-878f-e4bc70e80a69
 # ╟─8b73be05-23f6-4614-81ba-f59bbb4ec8b2
 # ╟─0806005c-6dcf-47ff-b9bb-9d9529588e84
 # ╠═7d8d1fe8-318b-4f1d-bf21-1da8d05b35a5
+# ╠═98f140b8-fa88-4330-9d61-e9042409d1da
 # ╟─9af51aca-53f4-4568-927f-0ca185613408
 # ╟─a37d2a18-510f-4217-b77e-9055e4531869
 # ╟─84bc6ce3-41bd-4056-b98b-d0e56423f972
