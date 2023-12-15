@@ -451,7 +451,6 @@ $$U = \begin{bmatrix}
 \end{bmatrix}$$
 
 or 
-SAI CHE ALLE 00:50 DEL 15/12 NON MI SEMBRA VERO QUELLO SCRITTO PER L QUI SOTTO
 
 $$L = I_n - \sum_{i=2}^{n} \sum_{j=1}^{i-1} e_i e_j^T$$
 
@@ -534,18 +533,10 @@ end
 
 # ╔═╡ a65ddcf4-bc95-4801-8709-d633b6849598
 md"""
-#### Not final , to revise
-##### Mi sembra che si sia fatto tutto
-In task 4, we are asked to perform a numerical experiment with the Wilkinson matrix \( W_n \) and the vector \( e \), which leads to the following steps:
 
-1. Generate \( A = W_n \), the Wilkinson matrix of size \( n \times n \).
-2. Let \( e \) be the column vector with all entries equal to 1, then form \( b = Ae \), resulting in a specific pattern as described above.
-3. Solve the linear system \( Ax = b \) using the backslash operator, which in Julia (or MATLAB) leverages optimized algorithms for solving linear equations.
-4. The computed solution \( x \) is then compared to the exact solution, which should be the vector \( e \).
+Given the specific structure of $W_n$, the backslash operator should ideally find the exact solution without difficulty for smaller values of $n$. However, as $n$ becomes large, numerical instability can occur due to the ill-conditioning of the Wilkinson matrix. This can lead to a computed solution $x$ that deviates from the exact solution $e$, especially in the presence of round-off errors in floating-point arithmetic.
 
-Given the specific structure of \( W_n \), the backslash operator should ideally find the exact solution without difficulty for smaller values of \( n \). However, as \( n \) becomes large, numerical instability can occur due to the ill-conditioning of the Wilkinson matrix. This can lead to a computed solution \( x \) that deviates from the exact solution \( e \), especially in the presence of round-off errors in floating-point arithmetic.
-
-The success of this numerical experiment heavily depends on the numerical stability of the algorithms used by the backslash operator and the conditioning of the matrix \( W_n \). For \( W_{60} \), we would need to assess the accuracy of the computed solution by comparing it to \( e \) and examining the residual \( r = b - Ax \), which should be close to the zero vector for an accurate solution.
+The success of this numerical experiment heavily depends on the numerical stability of the algorithms used by the backslash operator and the conditioning of the matrix $W_n$.
 
 """
 
@@ -563,8 +554,7 @@ end
 # ╔═╡ 7dc2d822-5a69-404b-9a27-d28dfcc4caf7
 md"""
 ### Task 5 and 6
-Repeat the experiment for smaller values of $n$. What is the largest value of $n$ for which $W_n x = b$ can be solved accurately by GEPP when $b = W_n e$? Provide an explanation of the observed behavior.
-
+We repeat the experiment for smaller values of $n$. We want to find the greatest value of $n$ for which $W_n \mathbf{x} = \mathbf{b}$ can be solved accurately by GEPP when $\mathbf{b} = W_n \textbackslash \mathbf{e}$.
 """
 
 # ╔═╡ 45fffdc2-8815-4c0b-9b5f-41b8da706b06
@@ -600,7 +590,7 @@ At $n=55$ we have a transition: we get a first non-zero entry for the relative e
 
 # ╔═╡ 3fb6b211-e503-4561-b482-8bb2d275855b
 md"""
-We have the following set of equations:
+By forward substitution, we have the following set of equations:
 
 $$\begin{align*}
 z_1 &= b_1, \\
@@ -653,16 +643,22 @@ Now we continue with the backward substitution step, $U\mathbf{x} = \mathbf{z}$,
 
 $$\begin{align*}
 &x_n = \frac{z_n}{2^{n-1}} = \frac{2^{n-1}}{2^{n-1}} = 1, \\
-x_{n-1} + 2^{n-2}x_n =  z_{n-1}, \rightarrow &x_{n-1} = z_{n-1} - 2^{n-2} = 2^{n-2} + 1 - 2^{n-2} \\
+x_{n-1} + 2^{n-2}x_n =  z_{n-1}, \longrightarrow\; &x_{n-1} = z_{n-1} - 2^{n-2} = 2^{n-2} + 1 - 2^{n-2} \\
 &\vdots\\
-x_{i} + 2^{i-1}x_n =  z_i, \rightarrow &x_{i} = z_i - 2^{i-1} = 2^{i-1} + 1 - 2^{i-1} 
+x_{i} + 2^{i-1}x_n =  z_i, \longrightarrow\; &x_{i} = z_i - 2^{i-1} = 2^{i-1} + 1 - 2^{i-1} 
 \end{align*}$$
 """
 
 # ╔═╡ 08feb0f8-990a-4c5b-9c17-f69ae324a3de
 md"""
-It is clear then that for a given power of 2 the machine epsilon becomes greater than the unity, $z_i=2^{i-1} + 1 \rightarrow 2^{i-1}$, then the right hand side of the equation for $x_i$ cancels exactly. For double precision numbers, this power is precisely $2^{55}$.
+It is clear then that when the size of the matrix is such that $z_{i}=2^{i-1} + 1 \rightarrow 2^{i-1}$, then the right hand side of the equation for $x_i$ cancels exactly. For double precision numbers, the first matrix that has this condition is of size 55 where $z_{54} = 2^{53} + 1 \rightarrow 2^{53}$.
 """
+
+# ╔═╡ 5ba3e7e3-e971-4cb6-8492-eb292d56c02f
+begin
+	@assert 2.0^53 + 1 == 2.0^53
+	@assert 2.0^52 + 1 == 2.0^52
+end
 
 # ╔═╡ 9617629e-b286-412e-b526-0d911946deba
 md"""
@@ -2001,6 +1997,7 @@ version = "1.4.1+1"
 # ╟─d9c63e21-1fb7-40da-90ec-e989c7bf3ce8
 # ╟─d585f344-e6de-4440-bf3f-71a779a79130
 # ╟─08feb0f8-990a-4c5b-9c17-f69ae324a3de
+# ╠═5ba3e7e3-e971-4cb6-8492-eb292d56c02f
 # ╟─9617629e-b286-412e-b526-0d911946deba
 # ╠═ebd06076-421a-4687-85c4-4284f98559cb
 # ╟─a1be1f55-cff5-4251-863f-fd23e276c479
