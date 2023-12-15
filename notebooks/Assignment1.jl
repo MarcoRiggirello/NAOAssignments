@@ -76,8 +76,10 @@ function lufact(A::AbstractMatrix{T}) where T <: Union{Real, Complex}
         # Compute i-th column of L
         Aₖ[k+1:n,k] = Aₖ[k+1:n,k] / pivot
 		# Update Aₖ
-		Aₖ[k+1:n,k+1:n] -= Aₖ[k+1:n,k] * (Aₖ[k,k+1:n])'
-
+		#Aₖ[k+1:n,k+1:n] -= Aₖ[k+1:n,k] * Aₖ[k,k+1:n]'
+		for i in k+1:n
+			Aₖ[i,k+1:n] -= Aₖ[i,k] * Aₖ[k,k+1:n]
+		end
     end
 	# check if we ended up with NaNs
 	if any(isnan, Aₖ)
@@ -108,9 +110,13 @@ md"""
 # ╔═╡ ceca4721-8711-42ad-b7b6-d85a9a3bfee0
 md"""
 Now we want to test the performances of this algorithm over various matrix types. Before we proceed, we define a bunch of utility functions:
-- introdurre in elenco?
+- `relative_backward_error` computes the relative backward error defined as
 
-RICORDIAMOCI DI COMMENTARE I RISULTATI SULLE VARIE MATRICI
+$$GPT$$
+
+- `print_summary` prints summary statistics for a vector of growth factors and relative backwar errors;
+- `plot_summary` plots the histograms of the growth factor and relative backward errors for the given sample;
+- `test_dataset` for a dataset generator function (see below) computes the LU factorization, the growth factor and the relative backward error and print and plots the results.
 """
 
 # ╔═╡ 029c1d1f-cc52-4c3d-b0e3-4c252e847878
@@ -140,16 +146,20 @@ function print_summary(g, b, f, t)
 	println("StdDev: $(std(b))")
 end
 
+# ╔═╡ 463c8c44-28bd-4090-82c4-e09bc4757d5b
+md"""
+CHIEDERE A GPT COME RIDURRE LE CIFRE SIGNIFICATIVE DEL XTICKLABEL
+"""
+
 # ╔═╡ 4c97f6d2-846b-4d7a-93f9-53ddb6125a33
 function plot_summary(g, b, pq=1.)
     # Adjust the binning for histograms if necessary to make the x-axis less crowded
     # Adjust the size of the plot or the labels to prevent squeezing
     hg = histogram(g[g .<= quantile(g, pq)], xlabel="Growth factor", ylabel="Frequency", 
-                   legend=false, xrotation=45, bins=30) # Rotate x-axis labels and set bins
+                   legend=false, xrotation=45, bins=30)
     hb = histogram(b[b .<= quantile(g, pq)], xlabel="Relative backward error", ylabel="Frequency", 
-                   legend=false, xrotation=45, bins=30) # Rotate x-axis labels and set bins
-
-    # Combine the two histograms into one plot without a legend
+                   legend=false, xrotation=45, bins=30)
+    # Combine the two histograms into one plot 
     plot(hg, hb, layout=(1,2), size=(800, 400)) # Adjust the size as needed
 end
 
@@ -238,7 +248,8 @@ $\begin{bmatrix}
 1/4 & 1/5 & 1/6 & 1/7
 \end{bmatrix}$
 
-MENTION ILL-CONDITIONED NATURE OF THESE MATRICES
+!!! info ""
+	Hilbert matrices are known to be ill-conditioned.
 """
 
 # ╔═╡ ee9f87df-8962-43e8-9851-22b117f03cc3
@@ -295,9 +306,6 @@ md"""
 stable as qed
 """
 
-# ╔═╡ 82e2cb53-a87a-431f-a537-4cd61286638e
-plot_correlation(g3, b3)
-
 # ╔═╡ 40c9f9be-eb94-40f3-ac14-727432d9ade9
 md"""
 ### SPD matrices
@@ -321,7 +329,7 @@ Additionally, a matrix is positive definite if and only if all its eigenvalues a
 # ╔═╡ 257f07b9-9505-4f48-a1ab-0984e1fb0b21
 function generate_spd(i)
 	N = rand(2:100)
-	A = randn(Complex{Float64}, N, N)
+	A = randn(N, N)
 	return A*A'
 end
 
@@ -339,6 +347,8 @@ an example of performance profiling
 """
 
 # ╔═╡ 7d8d1fe8-318b-4f1d-bf21-1da8d05b35a5
+# ╠═╡ disabled = true
+#=╠═╡
 begin
 
 # Define the range of matrix sizes
@@ -360,6 +370,7 @@ scatter(n_values, timings, label="data", legend=:topleft, xscale=:log10, yscale=
 plot!(n_values, timings[end]*n_values./(n_values[end]).^3, label="O(n^3)", linestyle=:dash, xscale=:log10, yscale=:log10)
 
 end
+  ╠═╡ =#
 
 # ╔═╡ 9af51aca-53f4-4568-927f-0ca185613408
 md"""
@@ -429,6 +440,7 @@ $$U = \begin{bmatrix}
 \end{bmatrix}$$
 
 or 
+SAI CHE ALLE 00:50 DEL 15/12 NON MI SEMBRA VERO QUELLO SCRITTO PER L QUI SOTTO
 
 $$L = I_n - \sum_{i=2}^{n} \sum_{j=1}^{i-1} e_i e_j^T$$
 
@@ -443,24 +455,25 @@ md"""
 
 # ╔═╡ 105c3ee3-2d78-4524-89bf-da3b97745842
 md"""
-introduce function. unite in one?
+We define the function `wilkin` to generate a Wilkinson matrix of arbitrary dimension:
 """
-
-# ╔═╡ 4d8a697c-9b26-417f-b0f2-e8c1bac3a4a2
-function wilkinson_element(i, j, N)
-    if i == j || j == N
-        return 1.
-    elseif i < j
-        return 0.
-    else
-         return -1.
-     end
-end
 
 # ╔═╡ c2270a41-ce15-4670-9937-25a6a7d3f304
 function wilkin(N::Integer)
+	function wilkinson_element(i, j, N)
+    	if i == j || j == N
+        	return 1
+    	elseif i < j
+    	    return 0
+    	else
+    		return -1
+    	end
+	end
     return [wilkinson_element(i,j,N) for i in 1:N, j in 1:N]
 end
+
+# ╔═╡ 3af0ba79-6615-4d4f-adb0-de80db1ef5ca
+wilkin(8)
 
 # ╔═╡ 0be4f60d-9727-4d6d-b192-e9f60e7bbca2
 md"""
@@ -507,24 +520,15 @@ function generate_b_vector(n)
 end
 
 # ╔═╡ 56d246d3-9113-4681-8a82-10c33664554e
-begin
 for n in 2:100
 	@assert wilkin(n)*[1 for i in 1:n] == generate_b_vector(n)
 	#@show wilkin(n)*[1 for i in 1:n]
 end
 
-# see which one is faster
-
-#@btime b100 = generate_b_vector(100)
-#@btime b100v = generate_b_vector_third(100)
-end
-
-# ╔═╡ db66b883-6313-4574-9cd6-80d6e74060a5
-
-
 # ╔═╡ a65ddcf4-bc95-4801-8709-d633b6849598
 md"""
 #### Not final , to revise
+##### Mi sembra che si sia fatto tutto
 In task 4, we are asked to perform a numerical experiment with the Wilkinson matrix \( W_n \) and the vector \( e \), which leads to the following steps:
 
 1. Generate \( A = W_n \), the Wilkinson matrix of size \( n \times n \).
@@ -540,14 +544,12 @@ The success of this numerical experiment heavily depends on the numerical stabil
 
 # ╔═╡ a67d9e5e-9f2a-4da8-861c-b2a008280da9
 begin
-	A = wilkin(60)
+	local A = wilkin(60)
 	local b = generate_b_vector(60)
-	# a 60 dim vector of ones
+	# a dim 60 vector of ones
 	e = ones(60)
-	x = A \ b
-	@show x
-	diff = x - e
-	@show norm(diff, Inf)
+	@show x = A \ b
+	@show norm(x - e, Inf)
 	@assert x == e
 end
 
@@ -581,9 +583,9 @@ end
 
 # ╔═╡ 9617629e-b286-412e-b526-0d911946deba
 md"""
-The Wilkinson matrix is specifically designed to be a challenging test case for numerical algorithms due to its structure, which induces a large growth factor ($2^{n-1}$) in the elements of the LU decomposition without pivoting. As the size of the matrix grows, the condition number of the Wilkinson matrix increases exponentially, making it more susceptible to round-off errors. 
+The Wilkinson matrix is specifically designed to be a challenging test case for numerical algorithms due to its structure, which induces a large growth factor ($2^{n-1}$) in the elements of the LU decomposition. As the size of the matrix grows, the condition number of the Wilkinson matrix increases exponentially, making it more susceptible to round-off errors. 
 
-At $n=55$ we have a transition: we get a first non-zero entry for the relative error, which becomes 1 under the Infinity norm. Why is that the case? We consider the analytical solution to the problem using the knonw LU factorization for a Wilkinson matrix. Let $L\mathbf{z} = \mathbf{b}$:
+At $n=55$ we have a transition: we get a first non-zero entry for the relative error, which becomes 1 under the Infinity norm. Why is that the case? We consider the exact solution to the problem using the knonw LU factorization for a Wilkinson matrix. Let $L\mathbf{z} = \mathbf{b}$:
 
 We have the following set of equations:
 
@@ -592,7 +594,7 @@ z_1 &= b_1, \\
 z_2 &= b_2 + z_1 = b_2 + b_1, \\
 z_3 &= b_3 + z_2 + z_1 = b_3 + b_2 + 2b_1, \\
 z_4 &= b_4 + z_3 + z_2 + z_1 = b_4 + b_3 + 2b_2 + 4b_1, \\
-&\vdots
+\vdots
 \end{align*}$$
 
 This pattern continues, and we can generalize it to the equation for any $z_i$:
@@ -603,48 +605,33 @@ This can be written more compactly as:
 
 $$z_i = b_i + \sum_{k=1}^{i-1} 2^{k-1}b_{i-k}.$$
 
-We now use the analytical expression for $\mathbf{b}$ to rewrite $z_i$ as:
+We now use the previously found form of $\mathbf{b}$ to rewrite $z_i$ as:
 
 $$z_i = -(i - 3) - \sum_{k=1}^{i-1} 2^{k-1}(i - k - 3).$$
 
 excpet for the last $z_n$ where $b_n = -(i - 2)$.
 
-We continue from the previous step:
+This expression can be simplified to:
 
-$$-(i-3) - (i-3) \left( \sum_{k=1}^{i-1} 2^{k-1} \right) + \sum_{k=1}^{i-1} k 2^{k-1} = \ldots$$
+$$\begin{align} z_i&=-(i-3) - (i-3) \left( \sum_{k=1}^{i-1} 2^{k-1} \right) + \sum_{k=1}^{i-1} k 2^{k-1} = \\
+&=- (i-3)(2^{i} - 1) + \sum_{k=1}^{i-1} k 2^{k-1}\\
+&=2^{i-1} + 1
+\end{align}$$
 
-This simplifies to:
+and $z_n = 2^{n-1}$ for the last element.
 
-$$- (i-3)(2^{i} - 1) + \sum_{k=1}^{i-1} k 2^{k-1} = \ldots$$
-
-And we can conclude with:
-
-$$z_i = 2^{i-1} + 1$$
-
-and 
-
-$$z_n = 2^{n-1}$$
-
-DA RIMUOVERE?
-Finally, we can relate this to the geometric progression sum formula:
-
-$$\sum_{k=0}^{N} 2^k = 2^{N+1} - 1.$$
-
-For example, adding powers of 2 like $1 + 2 + 4 + 8 + 16 + 32$ can be calculated using the sum formula for a geometric series:
-
-$$\sum_{k=0}^{N} 2^k = 2^{N+1} - 1.$$
-
-Now we continue with the backward substitution step, $U\mathbf{x} = \mathbf{z}$, and we know that the following holds for the specific for of U in the Wilkinson matrix:
+Now we continue with the backward substitution step, $U\mathbf{x} = \mathbf{z}$, and we know that the following holds for the specific form of U for the Wilkinson matrix:
 
 $$\begin{align*}
-x_n &= \frac{z_n}{2^{n-1}} = \frac{2^{n-1}}{2^{n-1}} = 1, \\
-\vdots\\
-x_{i} + 2^{i-1}x_n &=  z_i, \rightarrow x_{i} = z_i - 2^{i-1} = 2^{i-1} + 1 - 2^{i-1} \\
+&x_n = \frac{z_n}{2^{n-1}} = \frac{2^{n-1}}{2^{n-1}} = 1, \\
+x_{n-1} + 2^{n-2}x_n =  z_{n-1}, \rightarrow &x_{n-1} = z_{n-1} - 2^{n-2} = 2^{n-2} + 1 - 2^{n-2} \\
+&\vdots\\
+x_{i} + 2^{i-1}x_n =  z_i, \rightarrow &x_{i} = z_i - 2^{i-1} = 2^{i-1} + 1 - 2^{i-1} 
 \end{align*}$$
 
-CONTINUARE QUI
+It is clear then that for a given power of 2 the machine epsilon becomes greater than the unity, $z_i=2^{i-1} + 1 \rightarrow 2^{i-1}$, then the right hand side of the equation for $x_i$ cancels exactly. For double precision numbers, this power is precisely $2^{55}$.
 
-The previous is an exact explanation of the loss of accuracy we observe. However, in order to investigate further this problem, we can recall Theorem 4.29 of the lectures, which states that the relative error for our case is bounded by:
+The previous is an explanation of the loss of accuracy using the specific form of the Wilkinson matrix. However, in order to explain this problem in a broader context, we can recall Theorem 4.29 of the lectures, which states that the relative error for our case is bounded by:
 
 $$\frac{\left\lVert \mathbf{x}^* - \tilde{\mathbf{x}} \right\rVert}{\left\lVert \mathbf{x}^*\right\rVert}  \leq O(\gamma u) \kappa(W_n)$$
 
@@ -802,13 +789,38 @@ md"""
 
 The bordered system
 
-QUA CI PENSA GPTGPTGPTGPT
+$$\begin{bmatrix}
+A & \mathbf{u} \\
+\mathbf{v}^T & \beta
+\end{bmatrix}
+\begin{bmatrix}
+\mathbf{x} \\
+z
+\end{bmatrix}
+=
+\begin{bmatrix}
+\mathbf{b} \\
+c
+\end{bmatrix}$$
 
-corresponds to the system
+corresponds to the system of equation
 
-ANCHE QUA BRUMBRUMBRUM
+$$\begin{cases}
+A\mathbf{x} + \mathbf{u}z = \mathbf{b} \\
+\mathbf{v}^T \mathbf{x} + \beta z = c
+\end{cases}$$
 
-Then, by substitution of $z$, we can recounduce to the previous case, that has quadratic complexity.
+Then, by substitution of $z = (c - \mathbf{v}^T \mathbf{x})/\beta$, we can recounduce to the previous case:
+
+$$\begin{align}
+A\mathbf{x} + \mathbf{u}(c - \mathbf{v}^T \mathbf{x})/\beta &= \mathbf{b} \\
+(\beta A - \mathbf{u}\mathbf{v}^T)\mathbf{x} &= \beta \mathbf{b} - c\mathbf{u}\\
+(\hat{A} - \mathbf{u}\mathbf{v}^T)\mathbf{x} &= \tilde{\mathbf{b}}
+\end{align}$$
+
+As already shown, $\mathbf{x}$ can be found with quadratic complexity if $LU$ factorization is available for $A$, and similarly $z$ is found using only vector vector multiplications and sums.
+
+QUNADO SOLUZIONE UNICA + QUESTIONI DI NUMERI
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -1894,9 +1906,10 @@ version = "1.4.1+1"
 # ╠═8637fdcd-8f66-436e-9ea6-6bfdf439e7f0
 # ╟─178d03b6-4392-467b-9a6e-f1694c16518f
 # ╟─404cc770-47b6-4dac-9ea6-549a8cf8be12
-# ╠═ceca4721-8711-42ad-b7b6-d85a9a3bfee0
+# ╟─ceca4721-8711-42ad-b7b6-d85a9a3bfee0
 # ╠═029c1d1f-cc52-4c3d-b0e3-4c252e847878
 # ╠═c6e79210-d8e1-4c6d-a5cb-6304765cc6a6
+# ╠═463c8c44-28bd-4090-82c4-e09bc4757d5b
 # ╠═4c97f6d2-846b-4d7a-93f9-53ddb6125a33
 # ╠═54744193-84bb-4f7f-9d65-692e00b26142
 # ╟─a3c4d104-a92a-4706-895c-052f954818d8
@@ -1909,7 +1922,7 @@ version = "1.4.1+1"
 # ╠═d2e5b090-2215-4eea-8db8-9151100065cd
 # ╟─430999b7-c693-4280-8325-6e6f6c6bd732
 # ╟─b03a8b8f-456c-4174-bdc6-70e93fa1f584
-# ╠═ee9f87df-8962-43e8-9851-22b117f03cc3
+# ╟─ee9f87df-8962-43e8-9851-22b117f03cc3
 # ╠═49cd5b24-bc60-4c36-98d2-f5c04ebbc2df
 # ╠═aa93a02f-e063-47b2-8d01-ed37b50a50df
 # ╟─9c44ddd0-825c-4336-8c5c-b87647b4f8c8
@@ -1919,13 +1932,12 @@ version = "1.4.1+1"
 # ╠═731efdaf-e0db-41c1-80d3-92523ecd02bf
 # ╠═e5143618-5d7f-4263-8c21-3e2a5362e893
 # ╟─17489357-b809-4376-97de-573d3087ae7a
-# ╠═82e2cb53-a87a-431f-a537-4cd61286638e
 # ╟─40c9f9be-eb94-40f3-ac14-727432d9ade9
-# ╠═9f2232c9-a72e-43cc-884d-a76df21d66df
+# ╟─9f2232c9-a72e-43cc-884d-a76df21d66df
 # ╠═257f07b9-9505-4f48-a1ab-0984e1fb0b21
 # ╠═e4463365-2939-4b0f-878f-e4bc70e80a69
 # ╟─8b73be05-23f6-4614-81ba-f59bbb4ec8b2
-# ╠═0806005c-6dcf-47ff-b9bb-9d9529588e84
+# ╟─0806005c-6dcf-47ff-b9bb-9d9529588e84
 # ╠═7d8d1fe8-318b-4f1d-bf21-1da8d05b35a5
 # ╟─9af51aca-53f4-4568-927f-0ca185613408
 # ╟─a37d2a18-510f-4217-b77e-9055e4531869
@@ -1933,12 +1945,11 @@ version = "1.4.1+1"
 # ╟─606f9f6c-9e5d-45d4-bb3d-35f0dcefc121
 # ╟─7e182a84-e584-4681-b112-d6e7251e771c
 # ╟─105c3ee3-2d78-4524-89bf-da3b97745842
-# ╠═4d8a697c-9b26-417f-b0f2-e8c1bac3a4a2
 # ╠═c2270a41-ce15-4670-9937-25a6a7d3f304
-# ╠═0be4f60d-9727-4d6d-b192-e9f60e7bbca2
+# ╠═3af0ba79-6615-4d4f-adb0-de80db1ef5ca
+# ╟─0be4f60d-9727-4d6d-b192-e9f60e7bbca2
 # ╠═e597f8cc-be2f-435f-8d10-9befa36fdbd6
 # ╠═56d246d3-9113-4681-8a82-10c33664554e
-# ╠═db66b883-6313-4574-9cd6-80d6e74060a5
 # ╟─a65ddcf4-bc95-4801-8709-d633b6849598
 # ╠═a67d9e5e-9f2a-4da8-861c-b2a008280da9
 # ╟─7dc2d822-5a69-404b-9a27-d28dfcc4caf7
