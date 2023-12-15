@@ -378,6 +378,8 @@ an example of performance profiling
 """
 
 # ╔═╡ 7d8d1fe8-318b-4f1d-bf21-1da8d05b35a5
+# ╠═╡ disabled = true
+#=╠═╡
 begin
 
 # Define the range of matrix sizes
@@ -394,14 +396,18 @@ for N in n_values
 end
 
 end
+  ╠═╡ =#
 
 # ╔═╡ 98f140b8-fa88-4330-9d61-e9042409d1da
+# ╠═╡ disabled = true
+#=╠═╡
 begin
 # Plot the timings on a log-log graph
 scatter(n_values, timings, label="data", legend=:topleft, xscale=:log10, yscale=:log10, xlabel="n", ylabel="elapsed time (s)")
 plot!(n_values, timings[end]*(n_values/n_values[end]).^3, label="O(n^3)", linestyle=:dash, xscale=:log10, yscale=:log10)
 
 end
+  ╠═╡ =#
 
 # ╔═╡ 9af51aca-53f4-4568-927f-0ca185613408
 md"""
@@ -671,13 +677,13 @@ x_{i} + 2^{i-1}x_n =  z_i, \longrightarrow\; &x_{i} = z_i - 2^{i-1} = 2^{i-1} + 
 
 # ╔═╡ 08feb0f8-990a-4c5b-9c17-f69ae324a3de
 md"""
-It is clear then that when the size of the matrix is such that $z_{i}=2^{i-1} + 1 \rightarrow 2^{i-1}$, then the right hand side of the equation for $x_i$ cancels exactly. For double precision numbers, the first matrix that has this condition is of size 55 where $z_{54} = 2^{53} + 1 \rightarrow 2^{53}$.
+It is clear then that when the size of the matrix is such that $z_{i}=2^{i-1} + 1 \rightarrow 2^{i-1}$, then the right hand side of the equation for $x_i$ cancels exactly. For double precision numbers, the first matrix that has this condition is $W_{55}$ where $z_{54} = 2^{53} + 1 \rightarrow 2^{53}$.
 """
 
 # ╔═╡ 5ba3e7e3-e971-4cb6-8492-eb292d56c02f
 begin
-	@assert 2.0^53 + 1 == 2.0^53
-	@assert 2.0^52 + 1 == 2.0^52
+	@assert 2.0^53 + 1 == 2.0^53 # penultimate entry of W_55 (true)
+	@assert 2.0^52 + 1 == 2.0^52 # penultimate entry of W_54 (false)
 end
 
 # ╔═╡ 9617629e-b286-412e-b526-0d911946deba
@@ -757,7 +763,7 @@ $$\det(A + \mathbf{uv}^T) = \det(A) \cdot (1 + \mathbf{v}^T A^{-1} \mathbf{u})$$
 
 	$$\det(I + \mathbf{uv}^T) = (1 + \mathbf{v}^T \mathbf{u}) .$$
 
-	It is simple the to derive the general case:
+	Then, it is simple to derive the general case:
 
 	$$\begin{aligned}
 	\det(A + \mathbf{uv}^T) &= \det(A) \det(I + (A^{-1} \mathbf{u})\mathbf{v}^T) \\
@@ -824,7 +830,8 @@ $$\begin{align}
                   &=\mathbf{x} - \alpha A^{-1}\mathbf{uv}^T\mathbf{x}
 \end{align}$$
 
-$A^{-1}\mathbf{u}\equiv\mathbf{y}$ can be found using the $LU$ decomposition with backward forward substituion as well (quadratic complexity). The remaining operations are vector dot products or vector sums, which are of linear complexity.
+
+The expression $A^{-1}\mathbf{u}\equiv\mathbf{y}$ can be solved using the $LU$ decomposition with backward forward substitution as well (quadratic complexity). The remaining operations are vector dot products or vector sums, which are of linear complexity.
 
 To conclude, the following algorithm then finds $\tilde{\mathbf{x}}$ with $\mathcal{O}(n^2)$ flops:
 	
@@ -871,7 +878,11 @@ A\mathbf{x} + \mathbf{u}(c - \mathbf{v}^T \mathbf{x})/\beta &= \mathbf{b} \\
 
 As already shown, $\mathbf{x}$ can be found with quadratic complexity if $LU$ factorization is available for $A$, and similarly $z$ is found using only vector vector multiplications and sums.
 
-QUNADO SOLUZIONE UNICA + QUESTIONI DI NUMERI
+When does this system admits a unique solution? We have the following requirements:
+1. The matrix $A$ must be non-singular, i.e., it must have an inverse. This is already given since the LU factorization of $A$ exists;
+2. The scalar $\beta$ must be non-zero, $\beta \neq 0$, to ensure that the second equation can be solved for $z$;
+3. The new matrix $\hat{A} - \mathbf{u}\mathbf{v}^T$, must be non-singular to guarantee the uniqueness of the solution for $\mathbf{x}$.
+
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
