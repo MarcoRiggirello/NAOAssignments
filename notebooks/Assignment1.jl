@@ -37,14 +37,24 @@ md"""
 ### Task 1
 """
 
-# ╔═╡ cad47d12-5d44-45f3-a4c4-85f033a97009
+# ╔═╡ 0697cd30-0b18-48f8-b74a-f3f0420004d0
 md"""
 Here we define the function `lufact()` that takes as input a square matrix and computes the non-pivoted LU factorization and its growth factor.
+"""
 
+# ╔═╡ 2319738c-61ab-4e55-b824-8fa3d7db9064
+md"""
 The $L$ and $U$ matrices are computed via Gaussian elimination, as presented in the class, while the growth factor $\gamma$ is defined as the ratio of the largest entry in the matrix $G \equiv |L||U|$ and the largest entry in the matrix $|A|$ (absolute values are element-wise).
 
-In our implementation, Gaussian elimination is carried on by storing both $L$ and $U$  in a single wokring matrix $A_k$. In the last iteration $n$, the upper triangular part of $A_n$ represents the nonzero elements of $U$ while the lower part represent the $L$ matrix, diagonal excluded. The $A_k$ update is done using the slicing syntax of Julia's arrays.
+"""
 
+# ╔═╡ 10e80669-a654-43dc-bb47-54defdac9a26
+md"""
+In our implementation, Gaussian elimination is carried on by storing both $L$ and $U$  in a single wokring matrix $A_k$. In the last iteration $n$, the upper triangular part of $A_n$ represents the nonzero elements of $U$ while the lower part represent the $L$ matrix, diagonal excluded. The $A_k$ update is done using the slicing syntax of Julia's arrays.
+"""
+
+# ╔═╡ cad47d12-5d44-45f3-a4c4-85f033a97009
+md"""
 We made our implementation more robust in various ways: 
 - in the first place, the Julia idiomatic type declaration (`function lufact(A::AbstractMatrix{T}) where T <: Union{Real, Complex}`) allowed us to know how to correcly initialize $A_k$ and $\gamma$ based on the matrix type. Specifically, for every subtype of `Real`, we initialize the copy to `Float64`, so that integers matrix factorization will not fail due to the creation of floating-point values in an integer matrix; 
 - furthermore, a preliminary check on the matrix squareness is performed;
@@ -186,8 +196,9 @@ function test_dataset(dataset_generator, t, plot_quantile=1.)
 		end
 	end
 	print_summary(g, b, f, t)
-	plot_summary(g, b, plot_quantile)
-	#return g, b
+	if f/t > 0.7
+		plot_summary(g, b, plot_quantile)
+	end
 end
 
 # ╔═╡ a3c4d104-a92a-4706-895c-052f954818d8
@@ -512,17 +523,13 @@ We thus define a function to store in memory the exact solution to the problem:
 # ╔═╡ e597f8cc-be2f-435f-8d10-9befa36fdbd6
 function generate_b_vector(n)
 	b = [-(i-3) for i in 1:n]
-	b[1] = 2
-	if n > 1
-		b[end] = - (n - 2)
-	end
+	b[end] -= 1
 	return b
 end
 
 # ╔═╡ 56d246d3-9113-4681-8a82-10c33664554e
 for n in 2:100
 	@assert wilkin(n)*[1 for i in 1:n] == generate_b_vector(n)
-	#@show wilkin(n)*[1 for i in 1:n]
 end
 
 # ╔═╡ a65ddcf4-bc95-4801-8709-d633b6849598
@@ -577,16 +584,22 @@ begin
 			throw(DomainError("relative error introduced at step n = $n"))	
 		end
 		@assert x == e
-		println("n = $n")
+		#println("n = $n")
 	end
 end
 
-# ╔═╡ 9617629e-b286-412e-b526-0d911946deba
+# ╔═╡ d00b2362-e12e-41e2-b673-6fa3718c2022
 md"""
 The Wilkinson matrix is specifically designed to be a challenging test case for numerical algorithms due to its structure, which induces a large growth factor ($2^{n-1}$) in the elements of the LU decomposition. As the size of the matrix grows, the condition number of the Wilkinson matrix increases exponentially, making it more susceptible to round-off errors. 
+"""
 
+# ╔═╡ 5191c95a-bca2-499b-aa66-8b26187708e3
+md"""
 At $n=55$ we have a transition: we get a first non-zero entry for the relative error, which becomes 1 under the Infinity norm. Why is that the case? We consider the exact solution to the problem using the knonw LU factorization for a Wilkinson matrix. Let $L\mathbf{z} = \mathbf{b}$:
+"""
 
+# ╔═╡ 3fb6b211-e503-4561-b482-8bb2d275855b
+md"""
 We have the following set of equations:
 
 $$\begin{align*}
@@ -597,20 +610,33 @@ z_4 &= b_4 + z_3 + z_2 + z_1 = b_4 + b_3 + 2b_2 + 4b_1, \\
 \vdots
 \end{align*}$$
 
+"""
+
+# ╔═╡ 74667c02-6b7e-4681-a0ec-c459352fe852
+md"""
 This pattern continues, and we can generalize it to the equation for any $z_i$:
 
 $$z_i = b_i + b_{i-1} + 2b_{i-2} + \cdots + 2^{i-2}b_1.$$
+"""
 
+# ╔═╡ fa7269a2-6470-4c4b-8d18-5e5cfe4cfe02
+md"""
 This can be written more compactly as:
 
 $$z_i = b_i + \sum_{k=1}^{i-1} 2^{k-1}b_{i-k}.$$
+"""
 
+# ╔═╡ 89bf3e59-7d66-412c-b881-5632f8ccc38e
+md"""
 We now use the previously found form of $\mathbf{b}$ to rewrite $z_i$ as:
 
 $$z_i = -(i - 3) - \sum_{k=1}^{i-1} 2^{k-1}(i - k - 3).$$
 
 excpet for the last $z_n$ where $b_n = -(i - 2)$.
+"""
 
+# ╔═╡ d9c63e21-1fb7-40da-90ec-e989c7bf3ce8
+md"""
 This expression can be simplified to:
 
 $$\begin{align} z_i&=-(i-3) - (i-3) \left( \sum_{k=1}^{i-1} 2^{k-1} \right) + \sum_{k=1}^{i-1} k 2^{k-1} = \\
@@ -619,7 +645,10 @@ $$\begin{align} z_i&=-(i-3) - (i-3) \left( \sum_{k=1}^{i-1} 2^{k-1} \right) + \s
 \end{align}$$
 
 and $z_n = 2^{n-1}$ for the last element.
+"""
 
+# ╔═╡ d585f344-e6de-4440-bf3f-71a779a79130
+md"""
 Now we continue with the backward substitution step, $U\mathbf{x} = \mathbf{z}$, and we know that the following holds for the specific form of U for the Wilkinson matrix:
 
 $$\begin{align*}
@@ -628,9 +657,15 @@ x_{n-1} + 2^{n-2}x_n =  z_{n-1}, \rightarrow &x_{n-1} = z_{n-1} - 2^{n-2} = 2^{n
 &\vdots\\
 x_{i} + 2^{i-1}x_n =  z_i, \rightarrow &x_{i} = z_i - 2^{i-1} = 2^{i-1} + 1 - 2^{i-1} 
 \end{align*}$$
+"""
 
+# ╔═╡ 08feb0f8-990a-4c5b-9c17-f69ae324a3de
+md"""
 It is clear then that for a given power of 2 the machine epsilon becomes greater than the unity, $z_i=2^{i-1} + 1 \rightarrow 2^{i-1}$, then the right hand side of the equation for $x_i$ cancels exactly. For double precision numbers, this power is precisely $2^{55}$.
+"""
 
+# ╔═╡ 9617629e-b286-412e-b526-0d911946deba
+md"""
 The previous is an explanation of the loss of accuracy using the specific form of the Wilkinson matrix. However, in order to explain this problem in a broader context, we can recall Theorem 4.29 of the lectures, which states that the relative error for our case is bounded by:
 
 $$\frac{\left\lVert \mathbf{x}^* - \tilde{\mathbf{x}} \right\rVert}{\left\lVert \mathbf{x}^*\right\rVert}  \leq O(\gamma u) \kappa(W_n)$$
@@ -1902,6 +1937,9 @@ version = "1.4.1+1"
 # ╠═71fb6b39-125d-481f-ad19-affa7c04d226
 # ╟─2d793d4f-6ca9-4551-b5ce-89d994bfc762
 # ╟─7340ab2e-f583-48c4-a2d9-df1e0e3ec2c2
+# ╟─0697cd30-0b18-48f8-b74a-f3f0420004d0
+# ╟─2319738c-61ab-4e55-b824-8fa3d7db9064
+# ╟─10e80669-a654-43dc-bb47-54defdac9a26
 # ╟─cad47d12-5d44-45f3-a4c4-85f033a97009
 # ╠═8637fdcd-8f66-436e-9ea6-6bfdf439e7f0
 # ╟─178d03b6-4392-467b-9a6e-f1694c16518f
@@ -1954,6 +1992,15 @@ version = "1.4.1+1"
 # ╠═a67d9e5e-9f2a-4da8-861c-b2a008280da9
 # ╟─7dc2d822-5a69-404b-9a27-d28dfcc4caf7
 # ╠═45fffdc2-8815-4c0b-9b5f-41b8da706b06
+# ╟─d00b2362-e12e-41e2-b673-6fa3718c2022
+# ╟─5191c95a-bca2-499b-aa66-8b26187708e3
+# ╟─3fb6b211-e503-4561-b482-8bb2d275855b
+# ╟─74667c02-6b7e-4681-a0ec-c459352fe852
+# ╟─fa7269a2-6470-4c4b-8d18-5e5cfe4cfe02
+# ╟─89bf3e59-7d66-412c-b881-5632f8ccc38e
+# ╟─d9c63e21-1fb7-40da-90ec-e989c7bf3ce8
+# ╟─d585f344-e6de-4440-bf3f-71a779a79130
+# ╟─08feb0f8-990a-4c5b-9c17-f69ae324a3de
 # ╟─9617629e-b286-412e-b526-0d911946deba
 # ╠═ebd06076-421a-4687-85c4-4284f98559cb
 # ╟─a1be1f55-cff5-4251-863f-fd23e276c479
