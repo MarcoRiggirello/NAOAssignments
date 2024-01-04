@@ -5,7 +5,7 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ 6476e2c3-4f65-4df3-84e3-a3f1aa2864f5
-using LinearAlgebra, Plots, Statistics, Random
+using LinearAlgebra, Plots, Statistics, Random, Polynomials
 
 # ╔═╡ 72d1aade-524a-45f0-bdca-c5cd2456dfa5
 md"""
@@ -88,7 +88,7 @@ $$V = \begin{bmatrix}
 
 We wish to prove that rank(V) = n if $x_i \neq x_j$ for $i \neq j$. The rank corresponds to the maximal number of linearly independent columns of V. 
 
-Suppose that V is *not* of rank n. Then, the columns should not be linearly indipendent, that is, it would be possible to find some vector $\mathbf{c} = (c_1, \dots, c_n): V\mathbf{c} = \mathbf{0}$. 
+Suppose that V is *not* of rank n. Then, the columns should not be linearly indipendent, that is, it would be possible to find some vector $\mathbf{c} = (c_1, \dots, c_n)^T: V\mathbf{c} = \mathbf{0}$. 
 
 This expression would give rise to a polynomial $p(x) = c_1 + c_2 * x + \dots + c_n * x^{n-1}$. In order for $V\mathbf{c} = \mathbf{0}$ to be satisfied, this would mean that all the $x_i$ are roots (as they are distinct from each other). But the cardinality of ${x}$ is $m>n$, so a polynomial of degree n-1 would have more than n-1 roots, which is not possible. 
 
@@ -115,7 +115,7 @@ end
 
 # ╔═╡ 04c64c37-febc-414f-8b15-eb25ffdf459b
 md"""
-And now we create the function for computing a solution through the Cholesky decomposition:
+Here we define the function for computing a solution through the Cholesky decomposition:
 """
 
 # ╔═╡ 10e65287-1069-42d0-859a-6e6605226985
@@ -184,18 +184,111 @@ And now solve!
 begin
 	α_C = lsnormal(V, y)
 	println(α_C)
+	α_QR = V \ y
+	println(α_QR)
+	# compare the two solutions
+	#  This corresponds to requiring equality of about half of the significant digits. 
+    println("The two solutions are approximately equal: ", α_C ≈ α_QR)
+	# compute the difference between the two solutions
+    println("The difference between the two solutions is: ", norm(α_C - α_QR, 2))
 end
+
+# ╔═╡ 6591340b-c688-41c1-8d82-7c370fad3b4c
+md"""
+We plot the results below:
+"""
+
+# ╔═╡ d234abdf-a14a-449f-80d9-bf53f36264ff
+begin
+p_C = Polynomial(α_C)
+p_QR = Polynomial(α_QR)
+
+f_C = x -> p_C(x)
+f_QR = x -> p_QR(x)
+scatter(x,y,label="data",
+    xlabel="x-var",ylabel="y-var",leg=:bottomright)
+plot!(f_C,7,101,label="Cholesky Solution")
+plot!(f_QR,7,101,label="QR Solution")
+
+end
+
+# ╔═╡ 0d2c2305-757c-49a8-ba6a-050462409f00
+md"""
+### Task 4
+
+We compute the residuals for the two solutions. Notice that the resiudal of interest is $\mathbf{r} = \mathbf{d} - C*\alpha$. This residual measures the error in the solution of the system itself, rather than the fit of the model to the observed data (which would be $\mathbf{r}=\mathbf{y}−V\mathbf{x}$ in a regression context).
+"""
+
+# ╔═╡ 5bfc6d26-0da9-4e50-8f8d-0b2b42df72ba
+begin
+C = V'*V
+d = V'*y
+r_C = d - C*α_C
+r_QR = d - C*α_QR
+println("The norm of the residual for the Cholesky solution is: ", norm(r_C, 2))
+println("The norm of the residual for the QR solution is: ", norm(r_QR, 2))
+end
+
+# ╔═╡ 8176c4f4-07bb-457b-9514-58227cf4221e
+md"""
+And now we compute the residuals for the approximate solution $\hat{\mathbf{\alpha}}$:
+"""
+
+# ╔═╡ 70be3242-51db-4566-a440-bed44ff4f101
+begin
+α_hat = [-1.919, 0.2782, 0.001739]
+@show size(C)
+r_hat = d - C*α_hat
+println(r_hat)
+println("The norm of the residual for the approximate solution is: ", norm(r_hat, 2))
+end
+
+# ╔═╡ ce2da4cf-5418-4043-887a-9dd5eebc388a
+md"""
+We can notice that the residual for this approximate solution has a much bigger norm compared to those of the solutions computed by Cholseky or QR Factorization. Why is this the case? Clearly, this solution is significantly less accurate than the one obtained via, e.g., QR decomposition. We can also use the following inequality to explain our findings:
+
+$$\kappa^{-1} \frac{\| r \|_2}{\| d \|_2} \leq \frac{\| x - \hat{x} \|_2}{\| x \|_2} \leq \kappa \frac{\| r \|_2}{\| d \|_2}$$
+
+Note that $\kappa$, the conditioning number of C, is particularly high. This is due to the ill-conditioned nature of V, which propagates to C as:
+
+$$\kappa(V^T V) = \kappa(V)^2.$$
+
+"""
+
+# ╔═╡ 37453bfc-099d-4541-a76d-9d971231681c
+begin
+κ = cond(C)
+κ_V = cond(V)
+@show κ
+@show κ_V, κ_V^2
+println("κ approximately equal κ_V**2 with atol=1e-3: ", isapprox(κ, κ_V^2, atol=1e-3))
+
+norm_r = norm(r_hat)
+norm_d = norm(d)
+
+LB = (norm_r/norm_d)/κ
+@show LB
+UB = κ*(norm_r/norm_d)
+@show UB
+end
+
+# ╔═╡ 6812c726-a529-4998-8e04-814fce3fc160
+md"""
+Non sto capendo troppo bene cosa vuole farci notare qui. E' chiaro che l'upper bound e' enorme, ma questo dipende anche dal calcolo del residuo che e' grande a sua volta, oltre che dal pessimo condtioning number.
+"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
 Plots = "~1.39.0"
+Polynomials = "~4.0.6"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -204,7 +297,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.0"
 manifest_format = "2.0"
-project_hash = "dca70ae96e4ece7b78b2df365b12b1859bc75def"
+project_hash = "42cb3ce5ac7912aeebc56acdaca2cf1bf7db7dec"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -289,6 +382,20 @@ deps = ["Serialization", "Sockets"]
 git-tree-sha1 = "8cfa272e8bdedfa88b6aefbbca7c19f1befac519"
 uuid = "f0e56b4a-5159-44fe-b623-3e5288b988bb"
 version = "2.3.0"
+
+[[deps.ConstructionBase]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "c53fc348ca4d40d7b371e71fd52251839080cbc9"
+uuid = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
+version = "1.5.4"
+
+    [deps.ConstructionBase.extensions]
+    ConstructionBaseIntervalSetsExt = "IntervalSets"
+    ConstructionBaseStaticArraysExt = "StaticArrays"
+
+    [deps.ConstructionBase.weakdeps]
+    IntervalSets = "8197267c-284f-5f27-9208-e0e47529a953"
+    StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [[deps.Contour]]
 git-tree-sha1 = "d05d9e7b7aedff4e5b51a029dced05cfb6125781"
@@ -389,6 +496,10 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "aa31987c2ba8704e23c6c8ba8a4f769d5d7e4f91"
 uuid = "559328eb-81f9-559d-9380-de523a88c83c"
 version = "1.0.10+0"
+
+[[deps.Future]]
+deps = ["Random"]
+uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
 [[deps.GLFW_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libglvnd_jll", "Pkg", "Xorg_libXcursor_jll", "Xorg_libXi_jll", "Xorg_libXinerama_jll", "Xorg_libXrandr_jll"]
@@ -765,6 +876,24 @@ version = "1.39.0"
     ImageInTerminal = "d8c32880-2388-543b-8c61-d9f865259254"
     Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
+[[deps.Polynomials]]
+deps = ["LinearAlgebra", "RecipesBase", "Setfield", "SparseArrays"]
+git-tree-sha1 = "a9c7a523d5ed375be3983db190f6a5874ae9286d"
+uuid = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
+version = "4.0.6"
+
+    [deps.Polynomials.extensions]
+    PolynomialsChainRulesCoreExt = "ChainRulesCore"
+    PolynomialsFFTWExt = "FFTW"
+    PolynomialsMakieCoreExt = "MakieCore"
+    PolynomialsMutableArithmeticsExt = "MutableArithmetics"
+
+    [deps.Polynomials.weakdeps]
+    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+    FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+    MakieCore = "20f20a25-4f0e-4fdf-b5d1-57303727442b"
+    MutableArithmetics = "d8a4904e-b15c-11e9-3269-09a3773c0cb0"
+
 [[deps.PrecompileTools]]
 deps = ["Preferences"]
 git-tree-sha1 = "03b4c25b43cb84cee5c90aa9b5ea0a78fd848d2f"
@@ -837,6 +966,12 @@ version = "1.2.1"
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
+[[deps.Setfield]]
+deps = ["ConstructionBase", "Future", "MacroTools", "StaticArraysCore"]
+git-tree-sha1 = "e2cc6d8c88613c05e1defb55170bf5ff211fbeac"
+uuid = "efcf1570-3423-57d1-acb7-fd33fddbac46"
+version = "1.1.1"
+
 [[deps.Showoff]]
 deps = ["Dates", "Grisu"]
 git-tree-sha1 = "91eddf657aca81df9ae6ceb20b959ae5653ad1de"
@@ -860,6 +995,11 @@ version = "1.2.0"
 [[deps.SparseArrays]]
 deps = ["Libdl", "LinearAlgebra", "Random", "Serialization", "SuiteSparse_jll"]
 uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+
+[[deps.StaticArraysCore]]
+git-tree-sha1 = "36b3d696ce6366023a0ea192b4cd442268995a0d"
+uuid = "1e83bf80-4336-4d27-bf5d-d5a4f845583c"
+version = "1.4.2"
 
 [[deps.Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
@@ -1258,5 +1398,14 @@ version = "1.4.1+1"
 # ╠═10e65287-1069-42d0-859a-6e6605226985
 # ╟─9a9368c6-e7cb-46f7-82c5-26a08bd8a3c4
 # ╠═91b1bef0-faff-448a-bac6-dafa9dfc51ae
+# ╟─6591340b-c688-41c1-8d82-7c370fad3b4c
+# ╠═d234abdf-a14a-449f-80d9-bf53f36264ff
+# ╟─0d2c2305-757c-49a8-ba6a-050462409f00
+# ╠═5bfc6d26-0da9-4e50-8f8d-0b2b42df72ba
+# ╟─8176c4f4-07bb-457b-9514-58227cf4221e
+# ╠═70be3242-51db-4566-a440-bed44ff4f101
+# ╠═ce2da4cf-5418-4043-887a-9dd5eebc388a
+# ╠═37453bfc-099d-4541-a76d-9d971231681c
+# ╠═6812c726-a529-4998-8e04-814fce3fc160
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
