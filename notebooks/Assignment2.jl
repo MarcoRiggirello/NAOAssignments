@@ -277,6 +277,31 @@ md"""
 Non sto capendo troppo bene cosa vuole farci notare qui. E' chiaro che l'upper bound e' enorme, ma questo dipende anche dal calcolo del residuo che e' grande a sua volta, oltre che dal pessimo condtioning number.
 """
 
+# ╔═╡ 3e1b226d-cde2-4a16-b9fd-8b73e2086108
+md"""
+## Problem 2
+"""
+
+# ╔═╡ 839634e0-268a-41b2-afe1-290876cb4af5
+md"""
+### Task 1
+
+Let $A = Q_1 R_1$ be the reduced QR factorization of A. 
+
+Then, suppose that $R_1$ is singular: this would mean that $\exists \; \mathbf{v}: R_1\mathbf{v}=\mathbf{0}$. But then  $A\mathbf{v} = Q_1 R_1\mathbf{v} = \mathbf{0}$, and this is not possible as A is of full rank. Thus, $R_1$ must be non-singular. 
+
+The columns of $Q_1$ are orthonormal, by the property of the QR factorization, and they form a basis for the columns of $A$. Since $A$ has full rank, the columns of $A$, and therefore the columns of $Q_1$, span Ran(A). Being orthonormal and spanning Ran(A), they form an orthonormal basis for Ran(A).
+
+Null($A^T$) is the orthogonal complement of Ran($A$). Then, the extension of the orthonormal set $(\mathbf{q_1}, \dots, \mathbf{q_n})$ to a basis of $\mathbb{R}^m$, that is $(\mathbf{q_{n+1}}, \dots, \mathbf{q_m})$, is an orthonormal basis of Null($A^T$).
+"""
+
+# ╔═╡ a26fd903-7541-40d4-9e95-443a57fe5a0c
+md"""
+### Task 2
+
+
+"""
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -1404,8 +1429,11 @@ version = "1.4.1+1"
 # ╠═5bfc6d26-0da9-4e50-8f8d-0b2b42df72ba
 # ╟─8176c4f4-07bb-457b-9514-58227cf4221e
 # ╠═70be3242-51db-4566-a440-bed44ff4f101
-# ╠═ce2da4cf-5418-4043-887a-9dd5eebc388a
+# ╟─ce2da4cf-5418-4043-887a-9dd5eebc388a
 # ╠═37453bfc-099d-4541-a76d-9d971231681c
 # ╠═6812c726-a529-4998-8e04-814fce3fc160
+# ╟─3e1b226d-cde2-4a16-b9fd-8b73e2086108
+# ╟─839634e0-268a-41b2-afe1-290876cb4af5
+# ╠═a26fd903-7541-40d4-9e95-443a57fe5a0c
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
