@@ -288,9 +288,9 @@ md"""
 
 Let $A = Q_1 R_1$ be the reduced QR factorization of A. 
 
-Then, suppose that $R_1$ is singular: this would mean that $\exists \; \mathbf{v}: R_1\mathbf{v}=\mathbf{0}$. But then  $A\mathbf{v} = Q_1 R_1\mathbf{v} = \mathbf{0}$, and this is not possible as A is of full rank. Thus, $R_1$ must be non-singular. 
+Then, suppose that $R_1$ is singular: this would mean that $\exists \; \mathbf{v}\neq\mathbf{0}: R_1\mathbf{v}=\mathbf{0}$. But then  $A\mathbf{v} = Q_1 R_1\mathbf{v} = \mathbf{0}$, and this is not possible as A is of full rank. Thus, $R_1$ must be non-singular. 
 
-The columns of $Q_1$ are orthonormal, by the property of the QR factorization, and they form a basis for the columns of $A$. Since $A$ has full rank, the columns of $A$, and therefore the columns of $Q_1$, span Ran(A). Being orthonormal and spanning Ran(A), they form an orthonormal basis for Ran(A).
+The columns of $Q_1$ are orthonormal, by the property of the QR factorization, and they form a basis for the columns of $A$ (*NOTE: this may be non trivial and maybe it has to be proven*) . Since $A$ has full rank, the columns of $A$, and therefore the columns of $Q_1$, span Ran(A). Being orthonormal and spanning Ran(A), they form an orthonormal basis for Ran(A).
 
 Null($A^T$) is the orthogonal complement of Ran($A$). Then, the extension of the orthonormal set $(\mathbf{q_1}, \dots, \mathbf{q_n})$ to a basis of $\mathbb{R}^m$, that is $(\mathbf{q_{n+1}}, \dots, \mathbf{q_m})$, is an orthonormal basis of Null($A^T$).
 """
@@ -299,8 +299,62 @@ Null($A^T$) is the orthogonal complement of Ran($A$). Then, the extension of the
 md"""
 ### Task 2
 
+$$A^T = \begin{bmatrix}1.07 & 1.07 & 1.07 \\
+1.10 & 1.11 & 1.15
+\end{bmatrix}$$
 
+and
+
+$$A^T A = \begin{bmatrix}3.43 & 3.60 \\
+3.60 & 3.76
+\end{bmatrix}$$
+
+We first notice that $A^T A$ is square and symmetric. To check if it is positive define, we need to check if the eignevalues are positive. The discriminant is $|A^T A| = 3.76*3.43 - 3.60*3.60 = -0.06$, so $A^T A$ cannot be positive definite.
 """
+
+# ╔═╡ 40d89559-f9a0-46c2-8caf-6f3339929620
+md"""
+### Task 3
+
+Without rounding, we recover the same matrix. With rounding in-between, we lose it.
+"""
+
+# ╔═╡ cdfe4fc2-cf43-4860-a100-29435d6a3c67
+begin
+	A = [1.07 1.10; 1.07 1.11; 1.07 1.15]
+	m,n = size(A)
+	@show A
+	z = A[:,1]
+	v = normalize(z - norm(z)*[1;zeros(m-1)])
+	P₁ = I - 2v*v' # reflector
+	@show P₁
+	Q₁ = copy(P₁)
+	A₁ = P₁ * A
+	@show A₁
+	# need to add another step :(
+	z₁ = A₁[2:m, 2]
+	v₁ = normalize(z₁ - norm(z₁)*[1;zeros(m-2)])
+	P₂ = I - 2v₁*v₁'
+	Q₂ = [1. 0. 0.; 0. 0. 0.; 0. 0. 0.]
+	Q₂[2:m, 2:3] = P₂
+	@show P₂
+	@show Q₂
+	R = copy(A₁)
+	R[2:m, :] = P₂*A₁[2:m, :]
+	@show R
+end
+
+# ╔═╡ 1d07690e-8fab-4c03-b08c-b66302c75820
+md""" 
+Remember that $Q = (Q_2 Q_1)^T = Q_1^T Q_2^T$ so:
+"""
+
+# ╔═╡ 510699fc-c81c-46c0-824b-d2a35c2f372b
+begin 
+	Q = Q₁' * Q₂'
+	@show round.(Q*R, digits=2)
+	@assert A == round.(Q*R, digits=2)
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1434,6 +1488,10 @@ version = "1.4.1+1"
 # ╠═6812c726-a529-4998-8e04-814fce3fc160
 # ╟─3e1b226d-cde2-4a16-b9fd-8b73e2086108
 # ╟─839634e0-268a-41b2-afe1-290876cb4af5
-# ╠═a26fd903-7541-40d4-9e95-443a57fe5a0c
+# ╟─a26fd903-7541-40d4-9e95-443a57fe5a0c
+# ╟─40d89559-f9a0-46c2-8caf-6f3339929620
+# ╠═cdfe4fc2-cf43-4860-a100-29435d6a3c67
+# ╟─1d07690e-8fab-4c03-b08c-b66302c75820
+# ╠═510699fc-c81c-46c0-824b-d2a35c2f372b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
