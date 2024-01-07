@@ -567,8 +567,44 @@ md"""
 
 # ╔═╡ b260470f-d366-405b-b71f-e9b3044ffc5b
 md"""
-We want
+We want to find the best rank 1 and rank 2 approximation of `B`. To do so, we use the singular value decomposition. In fact, we know that if $U\Sigma V^T$ is the SVD decomposition of a matrix $B$, then $U \Sigma_k V^T$ (with $\Sigma_k$ being the rectangular matrix were only the first k singular values are taken) is the best rank $k$ approximation of $B$.
+
+Due cose: 
+1. La sintassi può essere migliorata-
+2. Il teorema/risultato sulla migliore approssimazione forse va, se non dimostrato, per lo meno approfondito.
 """
+
+# ╔═╡ d7712c3f-81c9-4151-8c25-298eaade303a
+md"""
+Thus, the best rank 1 approximation is:
+"""
+
+# ╔═╡ d01412c9-7671-4049-b727-e8239b8aaafa
+B_1 = F.U * Diagonal([F.S[1], 0, 0]) * F.Vt
+
+# ╔═╡ 23e6ef0c-0470-4798-8d2c-4fc026f787e9
+md"""
+Its condition number is:
+"""
+
+# ╔═╡ 73f142a7-0b21-462d-b9ef-b8e2e53d3170
+cond(B_1)
+
+# ╔═╡ ec66c587-f119-4817-8fc5-8f824af40bfe
+md"""
+The best rank 2 approximation is:
+"""
+
+# ╔═╡ f45f4d67-2191-4f61-945e-b7a6684d5b01
+B_2 = F.U * Diagonal([F.S[1], F.S[2],0]) * F.Vt
+
+# ╔═╡ 7ea6f6ee-0e8f-44bf-92ae-eb79f9469de2
+md"""
+With condition number
+"""
+
+# ╔═╡ ccd178a2-0366-4d27-82e0-5957789c7ab5
+cond(B_2)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1734,6 +1770,14 @@ version = "1.4.1+1"
 # ╟─81fd82fa-8a10-4638-8486-3a8087d44a2b
 # ╠═ae183c96-0c59-44a9-b3af-d1f1576a0b4c
 # ╟─7bc9df74-f24f-4d96-a407-07b3eac37c35
-# ╠═b260470f-d366-405b-b71f-e9b3044ffc5b
+# ╟─b260470f-d366-405b-b71f-e9b3044ffc5b
+# ╟─d7712c3f-81c9-4151-8c25-298eaade303a
+# ╠═d01412c9-7671-4049-b727-e8239b8aaafa
+# ╟─23e6ef0c-0470-4798-8d2c-4fc026f787e9
+# ╠═73f142a7-0b21-462d-b9ef-b8e2e53d3170
+# ╟─ec66c587-f119-4817-8fc5-8f824af40bfe
+# ╠═f45f4d67-2191-4f61-945e-b7a6684d5b01
+# ╟─7ea6f6ee-0e8f-44bf-92ae-eb79f9469de2
+# ╠═ccd178a2-0366-4d27-82e0-5957789c7ab5
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
