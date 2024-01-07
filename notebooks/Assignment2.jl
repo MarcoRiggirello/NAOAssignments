@@ -550,11 +550,13 @@ The condition number, defined as the ratio of the greatest and smallest singular
 """
 
 # ╔═╡ 99b6d0f6-becc-4de1-acc5-29f0629da5be
-κ_B = maximum(F.S) / minimum(F.S) 
+κ_B = F.S[1] / F.S[end]
 
 # ╔═╡ 81fd82fa-8a10-4638-8486-3a8087d44a2b
 md"""
 As we can cross check:
+
+Ma ha devvero senso fare questo check?
 """
 
 # ╔═╡ ae183c96-0c59-44a9-b3af-d1f1576a0b4c
@@ -582,14 +584,6 @@ Thus, the best rank 1 approximation is:
 # ╔═╡ d01412c9-7671-4049-b727-e8239b8aaafa
 B_1 = F.U * Diagonal([F.S[1], 0, 0]) * F.Vt
 
-# ╔═╡ 23e6ef0c-0470-4798-8d2c-4fc026f787e9
-md"""
-Its condition number is:
-"""
-
-# ╔═╡ 73f142a7-0b21-462d-b9ef-b8e2e53d3170
-cond(B_1)
-
 # ╔═╡ ec66c587-f119-4817-8fc5-8f824af40bfe
 md"""
 The best rank 2 approximation is:
@@ -604,7 +598,59 @@ With condition number
 """
 
 # ╔═╡ ccd178a2-0366-4d27-82e0-5957789c7ab5
-cond(B_2)
+F.S[1]/F.S[2]
+
+# ╔═╡ ebd1265e-5f11-404f-a04a-65aadaf6c800
+md"""
+As expected, the rank 2 approximation has a better condition number than the full rank decomposition, which is one of the reasons to approximate the matrix in the first place.
+"""
+
+# ╔═╡ 07c6c80e-c2bc-4cd4-89c7-f810bfbd3f46
+md"""
+### Task 6
+"""
+
+# ╔═╡ ec7f87fb-e4aa-4d5d-a390-a580ea5e950e
+function generate_R(n)
+	R = [j > i ? -1 : 0 for i in 1:n, j in 1:n]
+	for i in 1:n
+		R[i,i] = 1
+	end
+	return R
+end
+
+# ╔═╡ d4da86b6-54f7-4d1e-ae23-59bb657efb8d
+begin
+	S10 = svdvals(generate_R(10))
+	scatter(S10, [10 for _ in S10])
+	S20 = svdvals(generate_R(20))
+	scatter!(S20, [20 for _ in S20])
+	S50 = svdvals(generate_R(50))
+	scatter!(S50, [50 for _ in S50])
+	S100 = svdvals(generate_R(100))
+	scatter!(S100, [100 for _ in S100])
+ 
+	plot!(legend=false)
+	#plot!(xscale=:log10)
+	plot!(xlabel="singolar values")
+	plot!(ylabel="N")
+end
+
+# ╔═╡ 9548b77b-ded1-45eb-b5e1-979f7b70812b
+md"""
+è istruttivo un plot del genere? cui prodest? metterei degli istogrammi forse, non saprei... plot a violino?
+"""
+
+# ╔═╡ be3777f1-300c-414f-8085-c5102e91f31f
+begin
+	κs = []
+	for n in 1:60
+		S = svdvals(generate_R(n))
+		S = S[S.>0]
+		append!(κs, S[1]/S[end])
+	end
+	plot(1:60, κs, yscale=:log10, legend=false, xlabel="matrix sixe", ylabel="condition number")
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1773,11 +1819,15 @@ version = "1.4.1+1"
 # ╟─b260470f-d366-405b-b71f-e9b3044ffc5b
 # ╟─d7712c3f-81c9-4151-8c25-298eaade303a
 # ╠═d01412c9-7671-4049-b727-e8239b8aaafa
-# ╟─23e6ef0c-0470-4798-8d2c-4fc026f787e9
-# ╠═73f142a7-0b21-462d-b9ef-b8e2e53d3170
 # ╟─ec66c587-f119-4817-8fc5-8f824af40bfe
 # ╠═f45f4d67-2191-4f61-945e-b7a6684d5b01
 # ╟─7ea6f6ee-0e8f-44bf-92ae-eb79f9469de2
 # ╠═ccd178a2-0366-4d27-82e0-5957789c7ab5
+# ╟─ebd1265e-5f11-404f-a04a-65aadaf6c800
+# ╟─07c6c80e-c2bc-4cd4-89c7-f810bfbd3f46
+# ╠═ec7f87fb-e4aa-4d5d-a390-a580ea5e950e
+# ╠═d4da86b6-54f7-4d1e-ae23-59bb657efb8d
+# ╟─9548b77b-ded1-45eb-b5e1-979f7b70812b
+# ╠═be3777f1-300c-414f-8085-c5102e91f31f
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
