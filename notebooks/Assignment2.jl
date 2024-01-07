@@ -461,6 +461,115 @@ md"""
 4. $A(A^T A)^{-1}A^T$
 This is the identity. It's easy to show that the product of all the components in the decomposition of the expression above lends to the identity as well."""
 
+# ╔═╡ 4ea3aae8-a54b-4d76-b920-610188b8f776
+md"""
+### Task 2
+"""
+
+# ╔═╡ 4a7b6aea-780b-4169-a67d-efd10eb98d76
+md"""
+aiuto sono confuso, rimando
+"""
+
+# ╔═╡ 9da832c7-0522-48e2-9129-f6e1cbd2f3fa
+md"""
+### Task 3
+"""
+
+# ╔═╡ 6d3581b1-6499-4010-8019-ee796643b81e
+md"""
+uguale
+"""
+
+# ╔═╡ 403e386e-37ac-4577-a129-643d0af87ebf
+md"""
+### Task 4
+"""
+
+# ╔═╡ 3f60adf8-bcf9-4b8b-afb3-99bae402745e
+md"""
+Using the features of the Julia `LinearAlgebra` standard library, we compute the SVD decomposition, the condition number, the rank and the Moore--Penrose pseudoinverse of the following matrix:
+"""
+
+# ╔═╡ 09679dad-aad2-4d5b-9df9-bbf90e6238d7
+B = [
+	-2    -4   -2   -4;
+	2     -2    2    1;
+	-800 200 -800 -401
+]
+
+# ╔═╡ d793814f-110e-4148-b56b-4e8e6a946e98
+md"""
+The SVD decomposition is:
+"""
+
+# ╔═╡ 3239de2d-54ef-4798-8387-da3345bca6c0
+begin
+	# FROM THE svd() FUNCTION DOCUMENTATION:
+	#
+	# U, S, V and Vt can be obtained from the factorization
+	# F with F.U, F.S, F.V and F.Vt, such that A = U * Diagonal(S) * Vt.
+	#
+	# If full = false (default), a "thin" SVD is returned.
+	# For an M \times N matrix A, in the full factorization
+	# U is M \times M and V is N \times N, while in
+    # the thin factorization U is M \times K and V
+	# is N \times K, where K = \min(M,N) is the number of singular values.
+
+	F = svd(B)
+	svd(B, full=true)
+end
+
+# ╔═╡ 93c94d3a-9791-4d0f-a6f1-2af12f20fd22
+md"""
+There are three nonzero singular values, hence the matrix is of rank 3, as we can cross-check:
+"""
+
+# ╔═╡ ddfb314c-0c57-4a41-bb22-80d3cd36b827
+rank(B) == 3
+
+# ╔═╡ 57411892-53dd-4245-bdfc-ee0ad2f6fda2
+md"""
+The Moore--Penrose pseudoinverse is given by $V\Sigma^+ U^T$, where $\Sigma^+$ is given by replacing every nonzero diagonal element of $\Sigma$ by its reciprocal:
+"""
+
+# ╔═╡ df5c4753-b803-4fd1-a8a4-003a3a5b7840
+B⁺ = F.V * Diagonal(1 ./ F.S) * F.U'
+
+# ╔═╡ 5e2c2fc5-559d-4b8e-9040-f9a3abb639b5
+md"""
+As we can cross-check:
+"""
+
+# ╔═╡ 21cde6be-16f3-4e77-aa07-9cb50cf646a5
+pinv(B) ≈ B⁺
+
+# ╔═╡ 4a699e21-0666-49a1-b6b8-ccb73142e3d0
+md"""
+The condition number, defined as the ratio of the greatest and smallest singular value, is:
+"""
+
+# ╔═╡ 99b6d0f6-becc-4de1-acc5-29f0629da5be
+κ_B = maximum(F.S) / minimum(F.S) 
+
+# ╔═╡ 81fd82fa-8a10-4638-8486-3a8087d44a2b
+md"""
+As we can cross check:
+"""
+
+# ╔═╡ ae183c96-0c59-44a9-b3af-d1f1576a0b4c
+cond(B) ≈ κ_B
+
+# ╔═╡ 7bc9df74-f24f-4d96-a407-07b3eac37c35
+md"""
+### Task 5
+"""
+
+# ╔═╡ b260470f-d366-405b-b71f-e9b3044ffc5b
+md"""
+We want
+"""
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -1605,5 +1714,26 @@ version = "1.4.1+1"
 # ╟─ef6a16e1-c896-40ca-87e0-878bfb5bccfa
 # ╟─ef2a1c8d-bfef-449d-a10e-c35c778d5aee
 # ╟─99fcdeed-a3f4-4527-830c-c280ec662429
+# ╟─4ea3aae8-a54b-4d76-b920-610188b8f776
+# ╟─4a7b6aea-780b-4169-a67d-efd10eb98d76
+# ╟─9da832c7-0522-48e2-9129-f6e1cbd2f3fa
+# ╟─6d3581b1-6499-4010-8019-ee796643b81e
+# ╟─403e386e-37ac-4577-a129-643d0af87ebf
+# ╟─3f60adf8-bcf9-4b8b-afb3-99bae402745e
+# ╟─09679dad-aad2-4d5b-9df9-bbf90e6238d7
+# ╟─d793814f-110e-4148-b56b-4e8e6a946e98
+# ╠═3239de2d-54ef-4798-8387-da3345bca6c0
+# ╟─93c94d3a-9791-4d0f-a6f1-2af12f20fd22
+# ╠═ddfb314c-0c57-4a41-bb22-80d3cd36b827
+# ╟─57411892-53dd-4245-bdfc-ee0ad2f6fda2
+# ╠═df5c4753-b803-4fd1-a8a4-003a3a5b7840
+# ╟─5e2c2fc5-559d-4b8e-9040-f9a3abb639b5
+# ╠═21cde6be-16f3-4e77-aa07-9cb50cf646a5
+# ╟─4a699e21-0666-49a1-b6b8-ccb73142e3d0
+# ╠═99b6d0f6-becc-4de1-acc5-29f0629da5be
+# ╟─81fd82fa-8a10-4638-8486-3a8087d44a2b
+# ╠═ae183c96-0c59-44a9-b3af-d1f1576a0b4c
+# ╟─7bc9df74-f24f-4d96-a407-07b3eac37c35
+# ╠═b260470f-d366-405b-b71f-e9b3044ffc5b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
