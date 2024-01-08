@@ -471,6 +471,16 @@ md"""
 aiuto sono confuso, rimando
 """
 
+# ╔═╡ d7d6bbb6-f8ea-4e71-b24d-ec6c75230f99
+begin
+	θ = 2 * π * rand(1000)
+	ball = [cos.(θ) sin.(θ)]'
+	proj = [1 2; 0 2] * ball
+	projplot = scatter(ball[1,:], ball[2,:], label = "unit ball")
+	scatter!(projplot, proj[1,:], proj[2,:], label = "projection")
+	plot(projplot, aspect_ratio=:equal)
+end
+
 # ╔═╡ 9da832c7-0522-48e2-9129-f6e1cbd2f3fa
 md"""
 ### Task 3
@@ -1808,13 +1818,14 @@ version = "1.4.1+1"
 # ╠═510699fc-c81c-46c0-824b-d2a35c2f372b
 # ╟─a99d636a-7180-46b1-8cbd-4fd01d96e9c6
 # ╟─6864243d-bb5a-487a-8176-f5ce34bc9d29
-# ╠═fa630a70-8b28-467e-afd5-30f2f4f8a9ef
+# ╟─fa630a70-8b28-467e-afd5-30f2f4f8a9ef
 # ╟─fbad5eff-71e3-4364-8ada-5e9409dca5e4
 # ╟─ef6a16e1-c896-40ca-87e0-878bfb5bccfa
 # ╟─ef2a1c8d-bfef-449d-a10e-c35c778d5aee
 # ╟─99fcdeed-a3f4-4527-830c-c280ec662429
 # ╟─4ea3aae8-a54b-4d76-b920-610188b8f776
 # ╟─4a7b6aea-780b-4169-a67d-efd10eb98d76
+# ╠═d7d6bbb6-f8ea-4e71-b24d-ec6c75230f99
 # ╟─9da832c7-0522-48e2-9129-f6e1cbd2f3fa
 # ╟─6d3581b1-6499-4010-8019-ee796643b81e
 # ╟─403e386e-37ac-4577-a129-643d0af87ebf
