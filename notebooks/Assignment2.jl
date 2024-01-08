@@ -619,26 +619,43 @@ function generate_R(n)
 	return R
 end
 
-# ╔═╡ d4da86b6-54f7-4d1e-ae23-59bb657efb8d
+# ╔═╡ 2e9dfa69-d085-48de-97b8-d1ab214d2702
 begin
-	S10 = svdvals(generate_R(10))
-	scatter(S10, [10 for _ in S10])
-	S20 = svdvals(generate_R(20))
-	scatter!(S20, [20 for _ in S20])
-	S50 = svdvals(generate_R(50))
-	scatter!(S50, [50 for _ in S50])
-	S100 = svdvals(generate_R(100))
-	scatter!(S100, [100 for _ in S100])
- 
-	plot!(legend=false)
-	#plot!(xscale=:log10)
-	plot!(xlabel="singolar values")
-	plot!(ylabel="N")
+	Ns = [10,20,50,100]
+	Ss = []
+	for n in Ns
+		push!(Ss, svdvals(generate_R(n)))
+	end
 end
+
+# ╔═╡ 6571e534-2de3-4bbf-8b6a-e8642a64b4a1
+begin
+	scp = scatter(Ss[1], [Ns[1] for _ in Ss[1]])
+	for (s,n) in zip(Ss[2:end], Ns[2:end])
+		scatter!(scp, s, [n for _ in s])
+	end
+	plot(scp, legend=false, xlabel="singolar values", ylabel="N")
+end
+	
 
 # ╔═╡ 9548b77b-ded1-45eb-b5e1-979f7b70812b
 md"""
 è istruttivo un plot del genere? cui prodest? metterei degli istogrammi forse, non saprei... plot a violino?
+"""
+
+# ╔═╡ db76a7f6-9563-44e7-af4b-d9c65080f105
+begin
+	hs = []
+	for (s, n) in zip(Ss, Ns)
+		h = histogram(s, title="Size: $n", xlabel="singolar values")
+		push!(hs, h)
+	end
+	plot(hs..., layout=(2,2), legend=false)
+end
+
+# ╔═╡ a2a4505c-73d6-4275-a981-32cfce1f37be
+md"""
+boh gli istogrammi mi sembrano inutili
 """
 
 # ╔═╡ be3777f1-300c-414f-8085-c5102e91f31f
@@ -1826,8 +1843,11 @@ version = "1.4.1+1"
 # ╟─ebd1265e-5f11-404f-a04a-65aadaf6c800
 # ╟─07c6c80e-c2bc-4cd4-89c7-f810bfbd3f46
 # ╠═ec7f87fb-e4aa-4d5d-a390-a580ea5e950e
-# ╠═d4da86b6-54f7-4d1e-ae23-59bb657efb8d
+# ╠═2e9dfa69-d085-48de-97b8-d1ab214d2702
+# ╠═6571e534-2de3-4bbf-8b6a-e8642a64b4a1
 # ╟─9548b77b-ded1-45eb-b5e1-979f7b70812b
+# ╠═db76a7f6-9563-44e7-af4b-d9c65080f105
+# ╠═a2a4505c-73d6-4275-a981-32cfce1f37be
 # ╠═be3777f1-300c-414f-8085-c5102e91f31f
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
