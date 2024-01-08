@@ -479,7 +479,28 @@ $A=
 we compute the eigenvalues of $AA^T$:
 
 $\det (AA^T - \lambda I)=
-\det\begin{bmatrix} 5 - \lambda & 4 \\ 4 & 4 - \lambda \end{bmatrix}$
+\det\begin{bmatrix} 5 - \lambda & 4 \\ 4 & 4 - \lambda \end{bmatrix}=
+\lambda^2 - 9\lambda + 4 = 0$
+
+The solutions, expressed in base 10 with 4 digits precision, are 8.531 and 0.4689. The singular values of $A$ are the roots of the eigenvalues of $AA^T$, thus
+
+$\sigma_1 = 2.921 \qquad \sigma_2 = 0.6847$
+
+then the condition number is $\sigma_1/\sigma_2=4.266$. We can cross check our results using the functions of the Julia standard library:
+"""
+
+# ╔═╡ ced41e59-8e54-4d91-9c26-ef69853d8ca3
+svdvals([1 2; 0 2])
+
+# ╔═╡ 8bd80629-8a01-4ca1-b86b-af2e7084d47d
+cond([1 2; 0 2])
+
+# ╔═╡ 1f6382f4-0ef1-4180-b62f-af261fc5b005
+md"""
+Here we plot in the 2d plane the effect of the matrix $A$ applied to the unit ball. The projection is an ellypse where the principal axes are approximately 2.9 and 0.68 times the diameter of the unit ball.
+
+This makes sense when we consider the singular value decomposition of $A=U\Sigma V^T$.
+When applied to a $\mathbb{R}^2$ vector, the orthogonal matrix $V^T$ is a rotation, then the diagonal matrix $\Sigma$ scales the rotated vector and $U$ applies another rotation.
 """
 
 # ╔═╡ d7d6bbb6-f8ea-4e71-b24d-ec6c75230f99
@@ -492,6 +513,22 @@ begin
 	plot(projplot, aspect_ratio=:equal)
 end
 
+# ╔═╡ abedbe7b-9ec8-44fb-9303-a4e9f862533a
+md"""
+Given the fact that $V^T$ has no graphical effect since it is applied to a circle, the tilt of the ellypse is given only by $U$. We can use this information to plot the principal axes on the plot and verify that our intuitive explanation is in fact correct.
+"""
+
+# ╔═╡ 3dd200b9-8c0c-40fc-b871-0137b5cf315e
+begin
+	U, Σ, _ = svd([1 2; 0 2])
+	pa1 = Σ[1] * U * [1 -1; 0 0]
+	pa2 = Σ[2] * U * [0 0; 1 -1]
+	paplot = scatter(proj[1,:], proj[2,:], label="data")
+	plot!(paplot, pa1[1,:], pa1[2,:], label="principal axis σ 1") 
+	plot!(paplot, pa2[1,:], pa2[2,:], label="principal axis σ 2") 
+	plot(paplot, aspect_ratio=:equal)
+end
+
 # ╔═╡ 9da832c7-0522-48e2-9129-f6e1cbd2f3fa
 md"""
 ### Task 3
@@ -499,8 +536,35 @@ md"""
 
 # ╔═╡ 6d3581b1-6499-4010-8019-ee796643b81e
 md"""
-uguale
+The minimum norm solution $\hat{\mathbf{x}}$ for the problem $||\mathbf{b} - A \mathbf{x}||_2 = \min$, where
+
+$A = \begin{bmatrix} 1 & 1 & 0 \\ 0 & 1 & 1 \end{bmatrix}
+\qquad \mathbf{b} = \begin{bmatrix} 1 \\ 2 \end{bmatrix}$
+
+is given by 
+
+$\hat{\mathbf{x}}=A^+\mathbf{b}$
+
+where $A^+$ is the Moore--Penrose pseudoinverse. Given the SVD of $A=U\Sigma V^T$, the Moore--Penrose pseudoinverse is given by $V\Sigma^+ U^T$, where $\Sigma^+$ is given by replacing every nonzero diagonal element of $\Sigma$ by its reciprocal.
+
+Thus we can use the Julia standard library functions to find the minimum norm solution of our problem:
 """
+
+# ╔═╡ 30d17722-7de3-4c20-bc0a-e35d76e4f180
+begin
+	# FROM THE svd() FUNCTION DOCUMENTATION:
+	#
+	# U, S, V and Vt can be obtained from the factorization
+	# F with F.U, F.S, F.V and F.Vt, such that A = U * Diagonal(S) * Vt.
+	#
+	# If full = false (default), a "thin" SVD is returned.
+	# For an M \times N matrix A, in the full factorization
+	# U is M \times M and V is N \times N, while in
+    # the thin factorization U is M \times K and V
+	# is N \times K, where K = \min(M,N) is the number of singular values.
+	D = svd([1 1 0; 0 1 1])
+	x̂ =  D.V * Diagonal(1 ./ D.S) * D.U' * [1, 2]
+end
 
 # ╔═╡ 403e386e-37ac-4577-a129-643d0af87ebf
 md"""
@@ -526,17 +590,6 @@ The SVD decomposition is:
 
 # ╔═╡ 3239de2d-54ef-4798-8387-da3345bca6c0
 begin
-	# FROM THE svd() FUNCTION DOCUMENTATION:
-	#
-	# U, S, V and Vt can be obtained from the factorization
-	# F with F.U, F.S, F.V and F.Vt, such that A = U * Diagonal(S) * Vt.
-	#
-	# If full = false (default), a "thin" SVD is returned.
-	# For an M \times N matrix A, in the full factorization
-	# U is M \times M and V is N \times N, while in
-    # the thin factorization U is M \times K and V
-	# is N \times K, where K = \min(M,N) is the number of singular values.
-
 	F = svd(B)
 	svd(B, full=true)
 end
@@ -551,7 +604,7 @@ rank(B) == 3
 
 # ╔═╡ 57411892-53dd-4245-bdfc-ee0ad2f6fda2
 md"""
-The Moore--Penrose pseudoinverse is given by $V\Sigma^+ U^T$, where $\Sigma^+$ is given by replacing every nonzero diagonal element of $\Sigma$ by its reciprocal:
+The Moore--Penrose pseudoinverse:
 """
 
 # ╔═╡ df5c4753-b803-4fd1-a8a4-003a3a5b7840
@@ -1835,10 +1888,16 @@ version = "1.4.1+1"
 # ╟─ef2a1c8d-bfef-449d-a10e-c35c778d5aee
 # ╟─99fcdeed-a3f4-4527-830c-c280ec662429
 # ╟─4ea3aae8-a54b-4d76-b920-610188b8f776
-# ╠═4a7b6aea-780b-4169-a67d-efd10eb98d76
+# ╟─4a7b6aea-780b-4169-a67d-efd10eb98d76
+# ╠═ced41e59-8e54-4d91-9c26-ef69853d8ca3
+# ╠═8bd80629-8a01-4ca1-b86b-af2e7084d47d
+# ╟─1f6382f4-0ef1-4180-b62f-af261fc5b005
 # ╠═d7d6bbb6-f8ea-4e71-b24d-ec6c75230f99
+# ╟─abedbe7b-9ec8-44fb-9303-a4e9f862533a
+# ╠═3dd200b9-8c0c-40fc-b871-0137b5cf315e
 # ╟─9da832c7-0522-48e2-9129-f6e1cbd2f3fa
 # ╟─6d3581b1-6499-4010-8019-ee796643b81e
+# ╠═30d17722-7de3-4c20-bc0a-e35d76e4f180
 # ╟─403e386e-37ac-4577-a129-643d0af87ebf
 # ╟─3f60adf8-bcf9-4b8b-afb3-99bae402745e
 # ╟─09679dad-aad2-4d5b-9df9-bbf90e6238d7
