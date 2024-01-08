@@ -468,7 +468,18 @@ md"""
 
 # ╔═╡ 4a7b6aea-780b-4169-a67d-efd10eb98d76
 md"""
-aiuto sono confuso, rimando
+To compute the singular values of the matrix
+
+$A=
+\begin{bmatrix}
+1 & 2 \\
+0 & 2
+\end{bmatrix}$
+
+we compute the eigenvalues of $AA^T$:
+
+$\det (AA^T - \lambda I)=
+\det\begin{bmatrix} 5 - \lambda & 4 \\ 4 & 4 - \lambda \end{bmatrix}$
 """
 
 # ╔═╡ d7d6bbb6-f8ea-4e71-b24d-ec6c75230f99
@@ -1824,7 +1835,7 @@ version = "1.4.1+1"
 # ╟─ef2a1c8d-bfef-449d-a10e-c35c778d5aee
 # ╟─99fcdeed-a3f4-4527-830c-c280ec662429
 # ╟─4ea3aae8-a54b-4d76-b920-610188b8f776
-# ╟─4a7b6aea-780b-4169-a67d-efd10eb98d76
+# ╠═4a7b6aea-780b-4169-a67d-efd10eb98d76
 # ╠═d7d6bbb6-f8ea-4e71-b24d-ec6c75230f99
 # ╟─9da832c7-0522-48e2-9129-f6e1cbd2f3fa
 # ╟─6d3581b1-6499-4010-8019-ee796643b81e
