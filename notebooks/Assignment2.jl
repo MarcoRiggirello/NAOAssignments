@@ -424,7 +424,7 @@ Starting from the previous results, we write
 
 $(A^T A)^{-1} A^T = V\Xi V^T \, V \Sigma^T U^T = V\,\Xi \Sigma^T\, U^T$
 
-The matrix $\Xi \Sigma^T$ is
+The matrix $\Xi \Sigma^T\in\mathbb{R}^{n\times m}$ is
 
 $\begin{bmatrix}
 1/\sigma_1 &        &             &   \\
@@ -441,9 +441,9 @@ md"""
 3. $A(A^T A)^{-1}$
 Starting from the previous results, we write
 
-$A(A^T A)^{-1} = U \Sigma V^T V\Xi V^T = U\, \Sigma \Xi \,U^T$
+$A(A^T A)^{-1} = U \Sigma V^T V\Xi V^T = U\, \Sigma \Xi \,V^T$
 
-The matrix $\Sigma\Xi$ is
+The matrix $\Sigma\Xi\in\mathbb{R}^{m\times n}$ is
 
 $\begin{bmatrix}
 1/\sigma_1 &        &             \\
@@ -459,7 +459,18 @@ Then the singular values are $1/\sigma_n, \dots, 1/\sigma_1$
 # ╔═╡ 99fcdeed-a3f4-4527-830c-c280ec662429
 md"""
 4. $A(A^T A)^{-1}A^T$
-This is the identity. It's easy to show that the product of all the components in the decomposition of the expression above lends to the identity as well."""
+Starting from the previous results, we write:
+
+$A(A^T A)^{-1}A^T = U \Sigma V^T V\Xi V^T V \Sigma^T U^T= U\, \Sigma \Xi \Sigma^T \,U^T$
+
+The matrix $\Sigma \Xi \Sigma^T\in\mathbb{R}^{m\times m}$ is
+
+$\begin{bmatrix}
+I & 0 \\
+0 & 0\end{bmatrix}$
+
+with the identity block of size $n$. The singular values are then all equal to 1.
+"""
 
 # ╔═╡ 4ea3aae8-a54b-4d76-b920-610188b8f776
 md"""
@@ -629,8 +640,6 @@ The condition number, defined as the ratio of the greatest and smallest singular
 # ╔═╡ 81fd82fa-8a10-4638-8486-3a8087d44a2b
 md"""
 As we can cross check:
-
-Ma ha devvero senso fare questo check?
 """
 
 # ╔═╡ ae183c96-0c59-44a9-b3af-d1f1576a0b4c
@@ -645,9 +654,7 @@ md"""
 md"""
 We want to find the best rank 1 and rank 2 approximation of `B`. To do so, we use the singular value decomposition. In fact, we know that if $U\Sigma V^T$ is the SVD decomposition of a matrix $B$, then $U \Sigma_k V^T$ (with $\Sigma_k$ being the rectangular matrix were only the first k singular values are taken) is the best rank $k$ approximation of $B$.
 
-Due cose: 
-1. La sintassi può essere migliorata-
-2. Il teorema/risultato sulla migliore approssimazione forse va, se non dimostrato, per lo meno approfondito.
+1. La sintassi può essere migliorata-chatty
 """
 
 # ╔═╡ d7712c3f-81c9-4151-8c25-298eaade303a
@@ -711,26 +718,6 @@ begin
 	plot(scp, legend=false, xlabel="singolar values", ylabel="N")
 end
 	
-
-# ╔═╡ 9548b77b-ded1-45eb-b5e1-979f7b70812b
-md"""
-è istruttivo un plot del genere? cui prodest? metterei degli istogrammi forse, non saprei... plot a violino?
-"""
-
-# ╔═╡ db76a7f6-9563-44e7-af4b-d9c65080f105
-begin
-	hs = []
-	for (s, n) in zip(Ss, Ns)
-		h = histogram(s, title="Size: $n", xlabel="singolar values")
-		push!(hs, h)
-	end
-	plot(hs..., layout=(2,2), legend=false)
-end
-
-# ╔═╡ a2a4505c-73d6-4275-a981-32cfce1f37be
-md"""
-boh gli istogrammi mi sembrano inutili
-"""
 
 # ╔═╡ be3777f1-300c-414f-8085-c5102e91f31f
 begin
@@ -1926,9 +1913,6 @@ version = "1.4.1+1"
 # ╠═ec7f87fb-e4aa-4d5d-a390-a580ea5e950e
 # ╠═2e9dfa69-d085-48de-97b8-d1ab214d2702
 # ╠═6571e534-2de3-4bbf-8b6a-e8642a64b4a1
-# ╟─9548b77b-ded1-45eb-b5e1-979f7b70812b
-# ╠═db76a7f6-9563-44e7-af4b-d9c65080f105
-# ╠═a2a4505c-73d6-4275-a981-32cfce1f37be
 # ╠═be3777f1-300c-414f-8085-c5102e91f31f
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
