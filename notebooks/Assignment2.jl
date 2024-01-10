@@ -744,7 +744,7 @@ end
 
 # ╔═╡ 32a2b126-45d8-4dde-86fd-f34401bdb646
 md"""
-We see that the greatest singular value depends on the dimension of the matrix. Here we plot the condition number (defined as the ratio of the greatest and smallest non-zero singular value) of R from 2 to 60, to check its dependency on the matrix size as well:
+We see that the greatest singular value depends on the dimension of the matrix. Here we plot the condition number (defined as the ratio of the greatest and smallest non-zero singular value) of $R_n$ with $n$ from 2 to 60, to check its dependency on the matrix size as well:
 """
 
 # ╔═╡ be3777f1-300c-414f-8085-c5102e91f31f
@@ -755,7 +755,35 @@ begin
 		S = S[S.>0]
 		append!(κs, S[1]/S[end])
 	end
-	plot(1:60, κs, yscale=:log10, legend=false, xlabel="matrix sixe", ylabel="condition number")
+	plot(1:60, κs, yscale=:log10, legend=false, xlabel="matrix sixe", ylabel="condition number", yminorticks=true)
+end
+
+# ╔═╡ 63a2e02e-9056-4cef-b65c-23c4649da6af
+md"""
+We see that dependency is roughly exponential. We can see that aaaaaa
+"""
+
+# ╔═╡ 9fc8ef56-1b9d-4581-a6cf-67cfe1103272
+function ϵ_rank(A)
+	S = svdvals(A)
+	T = typeof(S[1])
+	ϵ = eps(T)
+	rank_threshold = ϵ * S[1]
+	return count( x -> x >= rank_threshold, S)
+end
+
+# ╔═╡ 1ef5f885-0fe9-4db9-9662-fdf9ea5d3b42
+ϵ_rank(generate_R(70))
+
+# ╔═╡ 340ca0b7-114e-471e-b9a1-3966a219caea
+begin
+	num_ranks = []
+	matrices = 1:70
+	for n in matrices
+		num_rank = ϵ_rank(generate_R(n))
+		append!(num_ranks, num_rank)
+	end
+	plot(matrices, num_ranks, legend=false, xlabel="matrix sixe", ylabel="condition number")
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -1948,5 +1976,9 @@ version = "1.4.1+1"
 # ╠═6571e534-2de3-4bbf-8b6a-e8642a64b4a1
 # ╟─32a2b126-45d8-4dde-86fd-f34401bdb646
 # ╠═be3777f1-300c-414f-8085-c5102e91f31f
+# ╠═63a2e02e-9056-4cef-b65c-23c4649da6af
+# ╠═9fc8ef56-1b9d-4581-a6cf-67cfe1103272
+# ╠═1ef5f885-0fe9-4db9-9662-fdf9ea5d3b42
+# ╠═340ca0b7-114e-471e-b9a1-3966a219caea
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
