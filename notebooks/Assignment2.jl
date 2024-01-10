@@ -691,6 +691,11 @@ md"""
 ### Task 6
 """
 
+# ╔═╡ c706f0c9-581b-457c-9a9e-7f093b76f66d
+md"""
+First, we write the function to generate the upper triangular matrix $R=(r_{ij})$ with $r_{ii}=1$ and $r_{ij}=-1$ for $j>i$:
+"""
+
 # ╔═╡ ec7f87fb-e4aa-4d5d-a390-a580ea5e950e
 function generate_R(n)
 	R = [j > i ? -1 : 0 for i in 1:n, j in 1:n]
@@ -699,6 +704,19 @@ function generate_R(n)
 	end
 	return R
 end
+
+# ╔═╡ 45a4a394-c180-4657-9dd4-6cef68df8af5
+md"""
+For example, the matrix $R$ of size 8 is:
+"""
+
+# ╔═╡ 08bde72f-9348-40a3-8304-d535ea348d06
+generate_R(8)
+
+# ╔═╡ 071d0d94-0731-4434-aa43-1ead2b50dd96
+md"""
+Next, we evaluate the singular values of the matrices R of size 10, 20, 50 and 100:
+"""
 
 # ╔═╡ 2e9dfa69-d085-48de-97b8-d1ab214d2702
 begin
@@ -709,15 +727,25 @@ begin
 	end
 end
 
+# ╔═╡ f63971a5-d483-4255-aa8a-74560e84eb9a
+md"""
+Here we plot the results:
+"""
+
 # ╔═╡ 6571e534-2de3-4bbf-8b6a-e8642a64b4a1
 begin
 	scp = scatter(Ss[1], [Ns[1] for _ in Ss[1]])
 	for (s,n) in zip(Ss[2:end], Ns[2:end])
 		scatter!(scp, s, [n for _ in s])
 	end
-	plot(scp, legend=false, xlabel="singolar values", ylabel="N")
+	plot(scp, legend=false, xlabel="singular values", ylabel="N")
 end
 	
+
+# ╔═╡ 32a2b126-45d8-4dde-86fd-f34401bdb646
+md"""
+We see that the greatest singular value depends on the dimension of the matrix. Here we plot the condition number (defined as the ratio of the greatest and smallest non-zero singular value) of R from 2 to 60, to check its dependency on the matrix size as well:
+"""
 
 # ╔═╡ be3777f1-300c-414f-8085-c5102e91f31f
 begin
@@ -1910,9 +1938,15 @@ version = "1.4.1+1"
 # ╠═ccd178a2-0366-4d27-82e0-5957789c7ab5
 # ╟─ebd1265e-5f11-404f-a04a-65aadaf6c800
 # ╟─07c6c80e-c2bc-4cd4-89c7-f810bfbd3f46
+# ╟─c706f0c9-581b-457c-9a9e-7f093b76f66d
 # ╠═ec7f87fb-e4aa-4d5d-a390-a580ea5e950e
+# ╟─45a4a394-c180-4657-9dd4-6cef68df8af5
+# ╠═08bde72f-9348-40a3-8304-d535ea348d06
+# ╟─071d0d94-0731-4434-aa43-1ead2b50dd96
 # ╠═2e9dfa69-d085-48de-97b8-d1ab214d2702
+# ╟─f63971a5-d483-4255-aa8a-74560e84eb9a
 # ╠═6571e534-2de3-4bbf-8b6a-e8642a64b4a1
+# ╟─32a2b126-45d8-4dde-86fd-f34401bdb646
 # ╠═be3777f1-300c-414f-8085-c5102e91f31f
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
