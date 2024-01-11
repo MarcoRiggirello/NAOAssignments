@@ -817,6 +817,11 @@ For example, the matrix $R$ of size 8 is:
 # ╔═╡ 08bde72f-9348-40a3-8304-d535ea348d06
 generate_R(8)
 
+# ╔═╡ e5f2fc03-ae3e-4888-b2ab-5f09e93966a6
+md"""
+The columns of $R$ are linear independent, henche the matrix has full rank.
+"""
+
 # ╔═╡ 071d0d94-0731-4434-aa43-1ead2b50dd96
 md"""
 Next, we evaluate the singular values of the matrices R of size 10, 20, 50 and 100:
@@ -864,7 +869,12 @@ end
 
 # ╔═╡ 63a2e02e-9056-4cef-b65c-23c4649da6af
 md"""
-We see that dependency is roughly exponential. We can see that aaaaaa
+We see that dependency is roughly exponential. This means that, above a certain dimension, the condition number will be greater than the inverse of the machine precision, hence the matrix will be not numerically full rank.
+"""
+
+# ╔═╡ 4cfd6dbb-d87b-4b08-b2c5-d482ba7ae805
+md"""
+Here we define a funcion `ϵ_rank()` to compute the numerical rank of a matrix by counting how many singular values are equal or greater than the machine epsilon times the greatest singular value: 
 """
 
 # ╔═╡ 9fc8ef56-1b9d-4581-a6cf-67cfe1103272
@@ -876,18 +886,23 @@ function ϵ_rank(A)
 	return count( x -> x >= rank_threshold, S)
 end
 
-# ╔═╡ 1ef5f885-0fe9-4db9-9662-fdf9ea5d3b42
-ϵ_rank(generate_R(70))
+# ╔═╡ 625cb4b2-9b40-49c9-bdba-66ea8075eefa
+md"""
+And then we can verify our statements on the rumerical rank of $R_n$
+"""
 
 # ╔═╡ 340ca0b7-114e-471e-b9a1-3966a219caea
 begin
 	num_ranks = []
-	matrices = 1:70
+	matrices = 2:60
 	for n in matrices
 		num_rank = ϵ_rank(generate_R(n))
+		if num_rank < n
+			@show n, num_rank
+		end
 		append!(num_ranks, num_rank)
 	end
-	plot(matrices, num_ranks, legend=false, xlabel="matrix sixe", ylabel="condition number")
+	plot(matrices, num_ranks, legend=false, xlabel="matrix sixe", ylabel="numerical rank")
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -908,7 +923,7 @@ Polynomials = "~4.0.6"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.10.0"
+julia_version = "1.9.4"
 manifest_format = "2.0"
 project_hash = "42cb3ce5ac7912aeebc56acdaca2cf1bf7db7dec"
 
@@ -988,7 +1003,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.5+1"
+version = "1.0.5+0"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
@@ -1254,13 +1269,8 @@ uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
 version = "8.4.0+0"
 
 [[deps.LibGit2]]
-deps = ["Base64", "LibGit2_jll", "NetworkOptions", "Printf", "SHA"]
+deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
 uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
-
-[[deps.LibGit2_jll]]
-deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll"]
-uuid = "e37daf67-58a4-590a-8e99-b0245dd2ffc5"
-version = "1.6.4+0"
 
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
@@ -1366,7 +1376,7 @@ version = "1.1.9"
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
-version = "2.28.2+1"
+version = "2.28.2+0"
 
 [[deps.Measures]]
 git-tree-sha1 = "c13304c81eec1ed3af7fc20e75fb6b26092a1102"
@@ -1384,7 +1394,7 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
-version = "2023.1.10"
+version = "2022.10.11"
 
 [[deps.NaNMath]]
 deps = ["OpenLibm_jll"]
@@ -1405,12 +1415,12 @@ version = "1.3.5+1"
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.23+2"
+version = "0.3.21+4"
 
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
-version = "0.8.1+2"
+version = "0.8.1+0"
 
 [[deps.OpenSSL]]
 deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "OpenSSL_jll", "Sockets"]
@@ -1438,7 +1448,7 @@ version = "1.6.3"
 [[deps.PCRE2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
-version = "10.42.0+1"
+version = "10.42.0+0"
 
 [[deps.Parsers]]
 deps = ["Dates", "PrecompileTools", "UUIDs"]
@@ -1460,7 +1470,7 @@ version = "0.42.2+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.10.0"
+version = "1.9.2"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]
@@ -1539,7 +1549,7 @@ deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 
 [[deps.Random]]
-deps = ["SHA"]
+deps = ["SHA", "Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [[deps.RecipesBase]]
@@ -1613,7 +1623,6 @@ version = "1.2.0"
 [[deps.SparseArrays]]
 deps = ["Libdl", "LinearAlgebra", "Random", "Serialization", "SuiteSparse_jll"]
 uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
-version = "1.10.0"
 
 [[deps.StaticArraysCore]]
 git-tree-sha1 = "36b3d696ce6366023a0ea192b4cd442268995a0d"
@@ -1623,7 +1632,7 @@ version = "1.4.2"
 [[deps.Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
 uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
-version = "1.10.0"
+version = "1.9.0"
 
 [[deps.StatsAPI]]
 deps = ["LinearAlgebra"]
@@ -1638,9 +1647,9 @@ uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 version = "0.34.2"
 
 [[deps.SuiteSparse_jll]]
-deps = ["Artifacts", "Libdl", "libblastrampoline_jll"]
+deps = ["Artifacts", "Libdl", "Pkg", "libblastrampoline_jll"]
 uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
-version = "7.2.1+1"
+version = "5.10.1+6"
 
 [[deps.TOML]]
 deps = ["Dates"]
@@ -1897,7 +1906,7 @@ version = "1.5.0+0"
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
 uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
-version = "1.2.13+1"
+version = "1.2.13+0"
 
 [[deps.Zstd_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1938,7 +1947,7 @@ version = "0.15.1+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.8.0+1"
+version = "5.8.0+0"
 
 [[deps.libevdev_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1984,7 +1993,7 @@ version = "1.52.0+1"
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
-version = "17.4.0+2"
+version = "17.4.0+0"
 
 [[deps.x264_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -2082,15 +2091,17 @@ version = "1.4.1+1"
 # ╠═ec7f87fb-e4aa-4d5d-a390-a580ea5e950e
 # ╟─45a4a394-c180-4657-9dd4-6cef68df8af5
 # ╠═08bde72f-9348-40a3-8304-d535ea348d06
+# ╟─e5f2fc03-ae3e-4888-b2ab-5f09e93966a6
 # ╟─071d0d94-0731-4434-aa43-1ead2b50dd96
 # ╠═2e9dfa69-d085-48de-97b8-d1ab214d2702
 # ╟─f63971a5-d483-4255-aa8a-74560e84eb9a
 # ╠═6571e534-2de3-4bbf-8b6a-e8642a64b4a1
 # ╟─32a2b126-45d8-4dde-86fd-f34401bdb646
 # ╠═be3777f1-300c-414f-8085-c5102e91f31f
-# ╠═63a2e02e-9056-4cef-b65c-23c4649da6af
+# ╟─63a2e02e-9056-4cef-b65c-23c4649da6af
+# ╟─4cfd6dbb-d87b-4b08-b2c5-d482ba7ae805
 # ╠═9fc8ef56-1b9d-4581-a6cf-67cfe1103272
-# ╠═1ef5f885-0fe9-4db9-9662-fdf9ea5d3b42
+# ╟─625cb4b2-9b40-49c9-bdba-66ea8075eefa
 # ╠═340ca0b7-114e-471e-b9a1-3966a219caea
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
