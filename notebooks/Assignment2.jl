@@ -281,7 +281,7 @@ Let $A = Q_1 R_1$ be the reduced QR factorization of A.
 
 Then, suppose that $R_1$ is singular: this would mean that $\exists \; \mathbf{v}\neq\mathbf{0}: R_1\mathbf{v}=\mathbf{0}$. But then  $A\mathbf{v} = Q_1 R_1\mathbf{v} = \mathbf{0}$, and this is not possible as A is of full rank. Thus, $R_1$ must be non-singular. 
 
-The columns of $Q_1$ are orthonormal, by the property of the QR factorization, and they form a basis for the columns of $A$ (*NOTE: this may be non trivial and maybe it has to be proven*) . Since $A$ has full rank, the columns of $A$, and therefore the columns of $Q_1$, span Ran(A). Being orthonormal and spanning Ran(A), they form an orthonormal basis for Ran(A).
+The columns of $Q_1$ are orthonormal, by the property of the QR factorization, and they form a basis for the columns of $A$ . Since $A$ has full rank, the columns of $A$, and therefore the columns of $Q_1$, span Ran(A). Being orthonormal and spanning Ran(A), they form an orthonormal basis for Ran(A).
 
 Null($A^T$) is the orthogonal complement of Ran($A$). Then, the extension of the orthonormal set $(\mathbf{q_1}, \dots, \mathbf{q_n})$ to a basis of $\mathbb{R}^m$, that is $(\mathbf{q_{n+1}}, \dots, \mathbf{q_m})$, is an orthonormal basis of Null($A^T$).
 """
@@ -402,79 +402,6 @@ $$Q R= \begin{bmatrix}
 \end{bmatrix}$$
 
 Which is precisely the original matrix $A$!
-"""
-
-# ╔═╡ b769aa99-a64e-412c-a526-dec094fb3fb9
-md"""
-vedi tu se questa parte ora serve
-"""
-
-# ╔═╡ cdfe4fc2-cf43-4860-a100-29435d6a3c67
-begin
-	# A = [1.07 1.10; 1.07 1.11; 1.07 1.15]
-	# m,n = size(A)
-	# @show A
-	# z = A[:,1]
-	# v = normalize(z - norm(z)*[1;zeros(m-1)])
-	# P₁ = I - 2v*v' # reflector
-	# @show P₁
-	# Q₁ = copy(P₁)
-	# A₁ = P₁ * A
-	# @show A₁
-	# # need to add another step :(
-	# z₁ = A₁[2:m, 2]
-	# v₁ = normalize(z₁ - norm(z₁)*[1;zeros(m-2)])
-	# P₂ = I - 2v₁*v₁'
-	# Q₂ = [1. 0. 0.; 0. 0. 0.; 0. 0. 0.]
-	# Q₂[2:m, 2:3] = P₂
-	# @show P₂
-	# @show Q₂
-	# R = copy(A₁)
-	# R[2:m, :] = P₂*A₁[2:m, :]
-	# @show R
-	# the same as before, but with round.(, sigdigits=3)
-	A = [1.07 1.10; 1.07 1.11; 1.07 1.15]
-	m,n = size(A)
-	@show A
-	z = A[:,1]
-	v = round.(normalize(z - norm(z)*[1;zeros(m-1)]), sigdigits=3)
-	P₁ = round.(I - round.(2v*v', sigdigits=3), sigdigits=3) # reflector
-	@show v
-	@show P₁
-	Q₁ = copy(P₁)
-	A₁ = round.(P₁ * A, sigdigits=3)
-	@show A₁
-	# need to add another step :(
-	z₁ = A₁[2:m, 2]
-	v₁ = round.(normalize(z₁ - norm(z₁)*[1;zeros(m-2)]), sigdigits=3)
-	P₂ = round.(I - round.(2v₁*v₁', sigdigits=3), sigdigits=3)
-	Q₂ = [1. 0. 0.; 0. 0. 0.; 0. 0. 0.]
-	Q₂[2:m, 2:3] = P₂
-	@show z₁
-	@show v₁
-	@show P₂
-	@show Q₂
-	R = copy(A₁)	
-	R[2:m, :] = round.(P₂*A₁[2:m, :], sigdigits=3)
-	@show R
-end
-
-# ╔═╡ 1d07690e-8fab-4c03-b08c-b66302c75820
-md""" 
-Remember that $Q = (Q_2 Q_1)^T = Q_1^T Q_2^T$ so:
-"""
-
-# ╔═╡ 510699fc-c81c-46c0-824b-d2a35c2f372b
-begin 
-	Q = round.(Q₁' * Q₂', sigdigits=3)
-	@show Q
-	@show round.(Q*R, sigdigits=3)
-	@assert A == round.(Q*R, sigdigits=3)
-end
-
-# ╔═╡ 0ca43c85-8ad6-4546-8a0a-29b02ead13aa
-md"""
-As expected, $A$ is recovered correctly.
 """
 
 # ╔═╡ a99d636a-7180-46b1-8cbd-4fd01d96e9c6
@@ -940,7 +867,7 @@ Polynomials = "~4.0.6"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.4"
+julia_version = "1.10.0"
 manifest_format = "2.0"
 project_hash = "42cb3ce5ac7912aeebc56acdaca2cf1bf7db7dec"
 
@@ -1020,7 +947,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.5+0"
+version = "1.0.5+1"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
@@ -1286,8 +1213,13 @@ uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
 version = "8.4.0+0"
 
 [[deps.LibGit2]]
-deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
+deps = ["Base64", "LibGit2_jll", "NetworkOptions", "Printf", "SHA"]
 uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
+
+[[deps.LibGit2_jll]]
+deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll"]
+uuid = "e37daf67-58a4-590a-8e99-b0245dd2ffc5"
+version = "1.6.4+0"
 
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
@@ -1393,7 +1325,7 @@ version = "1.1.9"
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
-version = "2.28.2+0"
+version = "2.28.2+1"
 
 [[deps.Measures]]
 git-tree-sha1 = "c13304c81eec1ed3af7fc20e75fb6b26092a1102"
@@ -1411,7 +1343,7 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
-version = "2022.10.11"
+version = "2023.1.10"
 
 [[deps.NaNMath]]
 deps = ["OpenLibm_jll"]
@@ -1432,12 +1364,12 @@ version = "1.3.5+1"
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.21+4"
+version = "0.3.23+2"
 
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
-version = "0.8.1+0"
+version = "0.8.1+2"
 
 [[deps.OpenSSL]]
 deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "OpenSSL_jll", "Sockets"]
@@ -1465,7 +1397,7 @@ version = "1.6.3"
 [[deps.PCRE2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
-version = "10.42.0+0"
+version = "10.42.0+1"
 
 [[deps.Parsers]]
 deps = ["Dates", "PrecompileTools", "UUIDs"]
@@ -1487,7 +1419,7 @@ version = "0.42.2+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.9.2"
+version = "1.10.0"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]
@@ -1566,7 +1498,7 @@ deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 
 [[deps.Random]]
-deps = ["SHA", "Serialization"]
+deps = ["SHA"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [[deps.RecipesBase]]
@@ -1640,6 +1572,7 @@ version = "1.2.0"
 [[deps.SparseArrays]]
 deps = ["Libdl", "LinearAlgebra", "Random", "Serialization", "SuiteSparse_jll"]
 uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+version = "1.10.0"
 
 [[deps.StaticArraysCore]]
 git-tree-sha1 = "36b3d696ce6366023a0ea192b4cd442268995a0d"
@@ -1649,7 +1582,7 @@ version = "1.4.2"
 [[deps.Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
 uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
-version = "1.9.0"
+version = "1.10.0"
 
 [[deps.StatsAPI]]
 deps = ["LinearAlgebra"]
@@ -1664,9 +1597,9 @@ uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 version = "0.34.2"
 
 [[deps.SuiteSparse_jll]]
-deps = ["Artifacts", "Libdl", "Pkg", "libblastrampoline_jll"]
+deps = ["Artifacts", "Libdl", "libblastrampoline_jll"]
 uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
-version = "5.10.1+6"
+version = "7.2.1+1"
 
 [[deps.TOML]]
 deps = ["Dates"]
@@ -1923,7 +1856,7 @@ version = "1.5.0+0"
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
 uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
-version = "1.2.13+0"
+version = "1.2.13+1"
 
 [[deps.Zstd_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1964,7 +1897,7 @@ version = "0.15.1+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.8.0+0"
+version = "5.8.0+1"
 
 [[deps.libevdev_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -2010,7 +1943,7 @@ version = "1.52.0+1"
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
-version = "17.4.0+0"
+version = "17.4.0+2"
 
 [[deps.x264_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -2040,7 +1973,7 @@ version = "1.4.1+1"
 # ╟─5a7b400d-145b-4cd0-a1cd-067f4d95d072
 # ╠═d024eff2-fbc0-403c-b950-fb9e9d7ed97d
 # ╟─04c64c37-febc-414f-8b15-eb25ffdf459b
-# ╠═c9e70e07-eb26-4184-ac78-442966ea4744
+# ╟─c9e70e07-eb26-4184-ac78-442966ea4744
 # ╠═29fe2bda-d242-49ad-bcec-fdc6747fb25d
 # ╠═3c55be81-ff87-4a83-9807-0fd999d6da40
 # ╟─d8ad5b17-8a8e-4cff-9c50-da4f98afb62f
@@ -2061,11 +1994,6 @@ version = "1.4.1+1"
 # ╟─a26fd903-7541-40d4-9e95-443a57fe5a0c
 # ╟─40d89559-f9a0-46c2-8caf-6f3339929620
 # ╟─88a78727-afc2-4de9-8395-5f3deb16cfe2
-# ╟─b769aa99-a64e-412c-a526-dec094fb3fb9
-# ╠═cdfe4fc2-cf43-4860-a100-29435d6a3c67
-# ╟─1d07690e-8fab-4c03-b08c-b66302c75820
-# ╠═510699fc-c81c-46c0-824b-d2a35c2f372b
-# ╟─0ca43c85-8ad6-4546-8a0a-29b02ead13aa
 # ╟─a99d636a-7180-46b1-8cbd-4fd01d96e9c6
 # ╟─6864243d-bb5a-487a-8176-f5ce34bc9d29
 # ╟─fa630a70-8b28-467e-afd5-30f2f4f8a9ef
