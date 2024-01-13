@@ -118,15 +118,12 @@ md"""
 Here we define the function for computing a solution through the Cholesky decomposition:
 """
 
-# ╔═╡ 10e65287-1069-42d0-859a-6e6605226985
-begin
+# ╔═╡ c9e70e07-eb26-4184-ac78-442966ea4744
+md"""
+First, we define the functions `forwardsub(L,b)` and `backsub(U,b)` to solve the lower triangular linear system with matrix `L` and right-hand side vector `b` and the upper triangular linear system with matrix `U` and right-hand side vector `b` respectively.
+"""
 
- """
-     forwardsub(L,b)
- 
- Solve the lower triangular linear system with matrix `L` and
- right-hand side vector `b`.
- """
+# ╔═╡ 29fe2bda-d242-49ad-bcec-fdc6747fb25d
 function forwardsub(L,b)
      n = size(L,1)
      x = zeros(n)
@@ -138,12 +135,7 @@ function forwardsub(L,b)
     return x
 end
 
- """
-     backsub(U,b)
- 
- Solve the upper triangular linear system with matrix `U` and
- right-hand side vector `b`.
- """
+# ╔═╡ 3c55be81-ff87-4a83-9807-0fd999d6da40
 function backsub(U,b)
      n = size(U,1)
     x = zeros(n)
@@ -154,13 +146,13 @@ function backsub(U,b)
     end
 	return x
 end
-	
- """
-     lsnormal(A,b)
- 
- Solve a linear least-squares problem by the normal equations.
- Returns the minimizer of ||b-Ax||.
- """
+
+# ╔═╡ d8ad5b17-8a8e-4cff-9c50-da4f98afb62f
+md"""
+Then we define `lsnormal(A,b)` to solve a linear least-squares problem by the normal equations. This function returns the minimizer of ||b-Ax||.
+"""
+
+# ╔═╡ 10e65287-1069-42d0-859a-6e6605226985
 function lsnormal(A,b)
 	# NOTE: We know that C is square and SPD!
     C = A'*A;  d = A'*b;
@@ -172,7 +164,6 @@ function lsnormal(A,b)
     w = forwardsub(R',d)           # solves R^T w = d              
     x = backsub(R,w)               # solves R x = w      
     return x
-end
 end
 
 # ╔═╡ 9a9368c6-e7cb-46f7-82c5-26a08bd8a3c4
@@ -949,7 +940,7 @@ Polynomials = "~4.0.6"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.10.0"
+julia_version = "1.9.4"
 manifest_format = "2.0"
 project_hash = "42cb3ce5ac7912aeebc56acdaca2cf1bf7db7dec"
 
@@ -1029,7 +1020,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.5+1"
+version = "1.0.5+0"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
@@ -1295,13 +1286,8 @@ uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
 version = "8.4.0+0"
 
 [[deps.LibGit2]]
-deps = ["Base64", "LibGit2_jll", "NetworkOptions", "Printf", "SHA"]
+deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
 uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
-
-[[deps.LibGit2_jll]]
-deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll"]
-uuid = "e37daf67-58a4-590a-8e99-b0245dd2ffc5"
-version = "1.6.4+0"
 
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
@@ -1407,7 +1393,7 @@ version = "1.1.9"
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
-version = "2.28.2+1"
+version = "2.28.2+0"
 
 [[deps.Measures]]
 git-tree-sha1 = "c13304c81eec1ed3af7fc20e75fb6b26092a1102"
@@ -1425,7 +1411,7 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
-version = "2023.1.10"
+version = "2022.10.11"
 
 [[deps.NaNMath]]
 deps = ["OpenLibm_jll"]
@@ -1446,12 +1432,12 @@ version = "1.3.5+1"
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.23+2"
+version = "0.3.21+4"
 
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
-version = "0.8.1+2"
+version = "0.8.1+0"
 
 [[deps.OpenSSL]]
 deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "OpenSSL_jll", "Sockets"]
@@ -1479,7 +1465,7 @@ version = "1.6.3"
 [[deps.PCRE2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
-version = "10.42.0+1"
+version = "10.42.0+0"
 
 [[deps.Parsers]]
 deps = ["Dates", "PrecompileTools", "UUIDs"]
@@ -1501,7 +1487,7 @@ version = "0.42.2+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.10.0"
+version = "1.9.2"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]
@@ -1580,7 +1566,7 @@ deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 
 [[deps.Random]]
-deps = ["SHA"]
+deps = ["SHA", "Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [[deps.RecipesBase]]
@@ -1654,7 +1640,6 @@ version = "1.2.0"
 [[deps.SparseArrays]]
 deps = ["Libdl", "LinearAlgebra", "Random", "Serialization", "SuiteSparse_jll"]
 uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
-version = "1.10.0"
 
 [[deps.StaticArraysCore]]
 git-tree-sha1 = "36b3d696ce6366023a0ea192b4cd442268995a0d"
@@ -1664,7 +1649,7 @@ version = "1.4.2"
 [[deps.Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
 uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
-version = "1.10.0"
+version = "1.9.0"
 
 [[deps.StatsAPI]]
 deps = ["LinearAlgebra"]
@@ -1679,9 +1664,9 @@ uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 version = "0.34.2"
 
 [[deps.SuiteSparse_jll]]
-deps = ["Artifacts", "Libdl", "libblastrampoline_jll"]
+deps = ["Artifacts", "Libdl", "Pkg", "libblastrampoline_jll"]
 uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
-version = "7.2.1+1"
+version = "5.10.1+6"
 
 [[deps.TOML]]
 deps = ["Dates"]
@@ -1938,7 +1923,7 @@ version = "1.5.0+0"
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
 uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
-version = "1.2.13+1"
+version = "1.2.13+0"
 
 [[deps.Zstd_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1979,7 +1964,7 @@ version = "0.15.1+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.8.0+1"
+version = "5.8.0+0"
 
 [[deps.libevdev_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -2025,7 +2010,7 @@ version = "1.52.0+1"
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
-version = "17.4.0+2"
+version = "17.4.0+0"
 
 [[deps.x264_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -2055,6 +2040,10 @@ version = "1.4.1+1"
 # ╟─5a7b400d-145b-4cd0-a1cd-067f4d95d072
 # ╠═d024eff2-fbc0-403c-b950-fb9e9d7ed97d
 # ╟─04c64c37-febc-414f-8b15-eb25ffdf459b
+# ╠═c9e70e07-eb26-4184-ac78-442966ea4744
+# ╠═29fe2bda-d242-49ad-bcec-fdc6747fb25d
+# ╠═3c55be81-ff87-4a83-9807-0fd999d6da40
+# ╟─d8ad5b17-8a8e-4cff-9c50-da4f98afb62f
 # ╠═10e65287-1069-42d0-859a-6e6605226985
 # ╟─9a9368c6-e7cb-46f7-82c5-26a08bd8a3c4
 # ╠═91b1bef0-faff-448a-bac6-dafa9dfc51ae
