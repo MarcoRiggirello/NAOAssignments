@@ -12,9 +12,13 @@ md"""
 ## Problem 1
 """
 
-# ╔═╡ b18a53e4-64ad-4edd-8f9b-83f92c79e35f
+# ╔═╡ 965e4ec5-d54c-4f2d-999b-4cee64672069
 md"""
 ### Task 1
+"""
+
+# ╔═╡ 4352df2d-210e-436d-bc00-528767d8afb2
+md"""
 
 At each observation $(x_i, y_i)$, we define a residual, $y_i - f(x_i)$. Another possible formulation for our problem is to minimize:
 
@@ -22,6 +26,10 @@ $$R(\alpha_1, \ldots , \alpha_n) = \sum_{i=1}^{m} [y_i - f(x_i)]^2,$$
 
 over all possible choices of parameters $\alpha_1, \ldots , \alpha_n$. We can rewrite the problem in the form $R = \mathbf{r}^T \mathbf{r}$, where
 
+"""
+
+# ╔═╡ 9b48e10a-c7c6-4e8d-968f-d6774416a942
+md"""
 $$\mathbf{r} = 
 \begin{bmatrix}
 y_1 \\
@@ -45,11 +53,19 @@ y_m
 \alpha_n
 \end{bmatrix}$$
 
+"""
+
+# ╔═╡ c378495c-3030-49f9-8031-486b4b4b4417
+md"""
 Recalling that $\mathbf{r}^T \mathbf{r} = \| \mathbf{r} \|^2$, and renaming the variables, we can express our problem as the linear least-squares problem:
 
 $$\arg\min_{\mathbf{x} \in \mathbb{R}^n} \| \mathbf{b} - A\mathbf{x} \|_2$$
 
 with
+"""
+
+# ╔═╡ b18a53e4-64ad-4edd-8f9b-83f92c79e35f
+md"""
 
 $$\mathbf{b} = \begin{bmatrix}
 y_1 \\
@@ -57,9 +73,7 @@ y_2 \\
 \vdots \\
 y_{m-1} \\
 y_m 
-\end{bmatrix}$$
-
-$$A = \begin{bmatrix}
+\end{bmatrix}\qquad A = \begin{bmatrix}
 \phi_1(x_1) & \phi_2(x_1) & \ldots & \phi_n(x_1) \\
 \phi_1(x_2) & \phi_2(x_2) & \ldots & \phi_n(x_2) \\
 \vdots & \vdots & \ddots & \vdots \\
@@ -72,9 +86,13 @@ and $\mathbf{x}$ in the form requested.
 
 """
 
-# ╔═╡ b847ef7a-171f-404a-8761-3eaaa0e5f697
+# ╔═╡ aaa78df6-9ebe-4867-b8fc-778d33e84606
 md"""
 ### Task 2
+"""
+
+# ╔═╡ b847ef7a-171f-404a-8761-3eaaa0e5f697
+md"""
 
 Given the generic expression for $\phi_k(x)$, we can rewrite A as the *Vandermonde* matrix V:
 
@@ -2073,7 +2091,12 @@ version = "1.4.1+1"
 # ╔═╡ Cell order:
 # ╠═6476e2c3-4f65-4df3-84e3-a3f1aa2864f5
 # ╟─72d1aade-524a-45f0-bdca-c5cd2456dfa5
+# ╟─965e4ec5-d54c-4f2d-999b-4cee64672069
+# ╟─4352df2d-210e-436d-bc00-528767d8afb2
+# ╟─9b48e10a-c7c6-4e8d-968f-d6774416a942
+# ╟─c378495c-3030-49f9-8031-486b4b4b4417
 # ╟─b18a53e4-64ad-4edd-8f9b-83f92c79e35f
+# ╟─aaa78df6-9ebe-4867-b8fc-778d33e84606
 # ╟─b847ef7a-171f-404a-8761-3eaaa0e5f697
 # ╟─034e39df-dcbf-42ec-b84e-1e5dc3f43aae
 # ╟─5a7b400d-145b-4cd0-a1cd-067f4d95d072
