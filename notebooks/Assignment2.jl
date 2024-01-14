@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.35
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -402,6 +402,77 @@ $$Q R= \begin{bmatrix}
 \end{bmatrix}$$
 
 Which is precisely the original matrix $A$!
+"""
+
+# ╔═╡ 224fa724-812c-4c67-8eed-88ab20b880cd
+md"""
+### Task 4
+"""
+
+# ╔═╡ c12e7827-637c-42fe-a03e-965c65daf3ef
+md"""
+Given a reduced QR decomposition of a $m\times n$ real matrix $A=Q_1 R_1$, with $Q_1\in\mathbb{R}^{m\times n}$ and $R_1\in\mathbb{R}^{n\times n}$, we want to find the reduced QR decomposition of the $m\times (n+1)$ matrix
+
+$A_+ = \begin{bmatrix}A & \mathbf{b}\end{bmatrix}$
+
+in terms of the reduced QR decomposition of $A$.
+"""
+
+# ╔═╡ 08286a34-cf70-4ae5-862c-20cde4d03ea5
+md"""
+To do so, we start from the full QR decomposition of $A$
+
+$A = QR = \begin{bmatrix} Q_1 & Q_2 \end{bmatrix} \begin{bmatrix} R_1 \\ 0 \end{bmatrix}$
+
+Here $Q\in\mathbb{R}^{m\times m}$ and $R\in\mathbb{R}^{m\times m}$. The columns of $Q_1$ form an orthonormal basis of the span of $A$, while the columns of $Q_2$ form an orthonormal basis of the kernel of $A$.
+"""
+
+# ╔═╡ afb8c3f3-b05c-4c2b-a916-8cb94c302649
+md"""
+Now, let's consider the full QR decomposition of $A_+$ by applying consecutive Householder transformations: $H_1, H_2, \dots, H_n, H_{n+1}$. Since the first $n$ columns of $A_+$ are the same of $A$, the first $n$ Householder transformations are the same for the two matrices, hence
+
+$H_n \cdots H_1 A_+ = Q^T A_+ = 
+\begin{bmatrix}
+R_1 & Q_1^T \mathbf{b} \\
+0 & Q_2^T \mathbf{b}
+\end{bmatrix}
+\equiv 
+\begin{bmatrix}
+R_1 & \mathbf{z} \\
+0 & \mathbf{a}
+\end{bmatrix}$
+
+Where $\mathbf{z}\in\mathbb{R}^n$ and $\mathbf{a}\in\mathbb{R}^{(m-n)}$.
+"""
+
+# ╔═╡ 19f13630-6fe8-4201-97ee-0b41d733a934
+md"""
+The last reflector is then of the form
+
+$H_{n+1} = \begin{bmatrix}
+I & 0 \\
+0 & \hat{H}_{n+1}
+\end{bmatrix}$
+
+with
+
+$\hat{H}_{n+1} = I - 2\mathbf{u}_{n+1}\mathbf{u}_{n+1}^T\in\mathbb{R}^{(m-n)\times(m-n)}$
+
+and $\mathbf{u}_{n+1}$ being the usual vector constructed from $\mathbf{a}$ (FORSE SI PUÒ MIGLIORARE PUR SENZA ESSER LOGORROICI).
+"""
+
+# ╔═╡ 1cc06e5b-94bd-4faf-b082-6ce72c309803
+md"""
+With these premises, we are able to get the full size QR decomposition of $A_+$:
+
+$H_{n+1} \cdots H_1 A_+ \equiv Q_+^T A_+ \equiv R_+=
+\begin{bmatrix}
+R_1 & \mathbf{z} \\
+0 & \rho \\
+0 & 0
+\end{bmatrix}$
+
+The reduced form is then 
 """
 
 # ╔═╡ a99d636a-7180-46b1-8cbd-4fd01d96e9c6
@@ -1994,6 +2065,12 @@ version = "1.4.1+1"
 # ╟─a26fd903-7541-40d4-9e95-443a57fe5a0c
 # ╟─40d89559-f9a0-46c2-8caf-6f3339929620
 # ╟─88a78727-afc2-4de9-8395-5f3deb16cfe2
+# ╟─224fa724-812c-4c67-8eed-88ab20b880cd
+# ╟─c12e7827-637c-42fe-a03e-965c65daf3ef
+# ╟─08286a34-cf70-4ae5-862c-20cde4d03ea5
+# ╟─afb8c3f3-b05c-4c2b-a916-8cb94c302649
+# ╟─19f13630-6fe8-4201-97ee-0b41d733a934
+# ╠═1cc06e5b-94bd-4faf-b082-6ce72c309803
 # ╟─a99d636a-7180-46b1-8cbd-4fd01d96e9c6
 # ╟─6864243d-bb5a-487a-8176-f5ce34bc9d29
 # ╟─fa630a70-8b28-467e-afd5-30f2f4f8a9ef
