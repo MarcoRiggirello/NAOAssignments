@@ -458,21 +458,56 @@ with
 
 $\hat{H}_{n+1} = I - 2\mathbf{u}_{n+1}\mathbf{u}_{n+1}^T\in\mathbb{R}^{(m-n)\times(m-n)}$
 
-and $\mathbf{u}_{n+1}$ being the usual vector constructed from $\mathbf{a}$ (FORSE SI PUÒ MIGLIORARE PUR SENZA ESSER LOGORROICI).
+and $\mathbf{u}_{n+1}$ being the usual vector of unitary norm constructed from $\mathbf{a}$ 
+
+(FORSE SI PUÒ MIGLIORARE PUR SENZA ESSER LOGORROICI).
 """
 
 # ╔═╡ 1cc06e5b-94bd-4faf-b082-6ce72c309803
 md"""
 With these premises, we are able to get the full size QR decomposition of $A_+$:
 
-$H_{n+1} \cdots H_1 A_+ \equiv Q_+^T A_+ \equiv R_+=
+$H_{n+1} \cdots H_1 A_+ 
+= H_{n+1} Q^T A_+
+=
+\begin{bmatrix}
+Q_1^T \\
+\hat{H}_{n+1}Q_2^T
+\end{bmatrix} A_+
+\equiv Q_+^T A_+ 
+\equiv R_+
+=
 \begin{bmatrix}
 R_1 & \mathbf{z} \\
 0 & \rho \\
 0 & 0
 \end{bmatrix}$
 
-The reduced form is then 
+In the reduced form then $Q_{1_+}$ is a $\mathbb{R}^{m\times(n+1)}$ matrix while $R_{1_+}\in\mathbb{R}^{(n+1)\times(n+1)}$ and they can be written as
+
+$Q_{1_+}=\begin{bmatrix} Q_1^T & \mathbf{q}_{n+1}\end{bmatrix} 
+\qquad 
+R_{1_+}=\begin{bmatrix}
+R_1 & \mathbf{z} \\
+0 & \rho \\
+\end{bmatrix}$
+
+where $\mathbf{q}_{n+1}$ is the first column of $Q_2\hat{H}_{n+1}^T$ while $\rho=\text{sgn}(a_1) ||\mathbf{a}||_2$.
+"""
+
+# ╔═╡ 400e00db-717f-48d1-817b-ef4af51e56b9
+md"""
+Given the fact that an orthogonal matrix does not change the 2-norm of a vector, we can write
+
+$||A\mathbf{x}-\mathbf{b}||_2^2=||Q^T(A\mathbf{x}-\mathbf{b})||_2^2=||R\mathbf{x} - \begin{bmatrix}Q_1^T & Q_2^T\end{bmatrix}\mathbf{b}||_2^2$
+
+Since $R_1\mathbf{x}\in\text{rank}(A)$, $Q_1^T\mathbf{b}\in\text{rank}(A)$ and $Q_2^T\mathbf{b}\in\text{ker}(A)$ we can write
+
+$||A\mathbf{x}-\mathbf{b}||_2^2=||R_1\mathbf{x} - Q_1^T\mathbf{b}||_2^2+||Q_2^T\mathbf{b}||_2^2=||R_1\mathbf{x} - \mathbf{z}||_2^2 + |\rho|^2$
+
+Then, the solution of the least square problem $\min{||A\mathbf{x}-\mathbf{b}||_2}$ is $\mathbf{x}^*=R_1^{-1}\mathbf{z}$ and thus 
+
+$||A\mathbf{x}^*-\mathbf{b}||_2=|\rho|$
 """
 
 # ╔═╡ a99d636a-7180-46b1-8cbd-4fd01d96e9c6
@@ -2070,7 +2105,8 @@ version = "1.4.1+1"
 # ╟─08286a34-cf70-4ae5-862c-20cde4d03ea5
 # ╟─afb8c3f3-b05c-4c2b-a916-8cb94c302649
 # ╟─19f13630-6fe8-4201-97ee-0b41d733a934
-# ╠═1cc06e5b-94bd-4faf-b082-6ce72c309803
+# ╟─1cc06e5b-94bd-4faf-b082-6ce72c309803
+# ╟─400e00db-717f-48d1-817b-ef4af51e56b9
 # ╟─a99d636a-7180-46b1-8cbd-4fd01d96e9c6
 # ╟─6864243d-bb5a-487a-8176-f5ce34bc9d29
 # ╟─fa630a70-8b28-467e-afd5-30f2f4f8a9ef
