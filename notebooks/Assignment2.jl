@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.35
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -127,8 +127,7 @@ Let's define the data for our problem as arrays, and compute the Vandermonde mat
 begin
 x = [8, 10, 12, 16, 20, 30, 40, 60, 100]
 y = [0.88, 1.22, 1.64, 2.72, 3.96, 7.66, 11.96, 21.56, 43.16]
-V = [ x[i]^j for i in 1:length(x), j in 0:2 ]  
-#@show size(V)
+V = [ x[i]^j for i in 1:length(x), j in 0:2 ]
 end
 
 # ╔═╡ 04c64c37-febc-414f-8b15-eb25ffdf459b
@@ -176,7 +175,6 @@ function lsnormal(A,b)
     C = A'*A;  d = A'*b;
 	# get cholesky decomposition
 	# in upper triangular form
-	# TODO: printout in format long
     R = cholesky(C).U 
 	# solve (R^T)Rx=d
     w = forwardsub(R',d)           # solves R^T w = d              
@@ -218,7 +216,6 @@ scatter(x,y,label="data",
     xlabel="x-var",ylabel="y-var",leg=:bottomright)
 plot!(f_C,7,101,label="Cholesky Solution")
 plot!(f_QR,7,101,label="QR Solution")
-
 end
 
 # ╔═╡ 0d2c2305-757c-49a8-ba6a-050462409f00
@@ -819,8 +816,6 @@ md"""
 # ╔═╡ b260470f-d366-405b-b71f-e9b3044ffc5b
 md"""
 We want to find the best rank 1 and rank 2 approximation of `B`. To do so, we use the singular value decomposition. In fact, we know that if $U\Sigma V^T$ is the SVD decomposition of a matrix $B$, then $U \Sigma_k V^T$ (with $\Sigma_k$ being the rectangular matrix were only the first k singular values are taken) is the best rank $k$ approximation of $B$.
-
-1. La sintassi può essere migliorata-chatty
 """
 
 # ╔═╡ d7712c3f-81c9-4151-8c25-298eaade303a
@@ -881,7 +876,7 @@ generate_R(8)
 
 # ╔═╡ e5f2fc03-ae3e-4888-b2ab-5f09e93966a6
 md"""
-The columns of $R$ are linear independent, henche the matrix has full rank.
+The columns of $R$ are linear independent, hence the matrix has full rank.
 """
 
 # ╔═╡ 071d0d94-0731-4434-aa43-1ead2b50dd96
@@ -945,7 +940,7 @@ function ϵ_rank(A)
 	T = typeof(S[1])
 	ϵ = eps(T)
 	rank_threshold = ϵ * S[1]
-	return count( x -> x >= rank_threshold, S)
+	return count(x -> x >= rank_threshold, S)
 end
 
 # ╔═╡ 625cb4b2-9b40-49c9-bdba-66ea8075eefa
