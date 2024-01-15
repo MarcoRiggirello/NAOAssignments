@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.36
+# v0.19.35
 
 using Markdown
 using InteractiveUtils
@@ -281,11 +281,6 @@ UB = κ*(norm_r/norm_d)
 @show UB
 end
 
-# ╔═╡ 6812c726-a529-4998-8e04-814fce3fc160
-md"""
-Non sto capendo troppo bene cosa vuole farci notare qui. E' chiaro che l'upper bound e' enorme, ma questo dipende anche dal calcolo del residuo che e' grande a sua volta, oltre che dal pessimo condtioning number.
-"""
-
 # ╔═╡ 3e1b226d-cde2-4a16-b9fd-8b73e2086108
 md"""
 ## Problem 2
@@ -346,7 +341,7 @@ $$z = \begin{bmatrix}
 1.07 \\
 1.07
 \end{bmatrix}$$
-3. **Compute the first Householder reflector $v$ and round to 2 digits:**
+3. **Compute the first Householder reflector $v$:**
 
 The first reflector $v$ is:
 $$v = \frac{z - \| z \| \cdot e_1}{\| z - \| z \| \cdot e_1 \|} = \begin{bmatrix}
@@ -354,7 +349,7 @@ $$v = \frac{z - \| z \| \cdot e_1}{\| z - \| z \| \cdot e_1 \|} = \begin{bmatrix
 0.628\\
 0.628
 \end{bmatrix}$$
-4. **Construct the first Householder matrix $P_1$ and round to 2 digits:**
+4. **Construct the first Householder matrix $P_1$:**
 
 The first Householder matrix $P_1$ is:
 $$P_1 = I - 2vv^T =  \begin{bmatrix}
@@ -362,7 +357,7 @@ $$P_1 = I - 2vv^T =  \begin{bmatrix}
 0.578 & 0.211 & -0.789 \\
 0.578 & -0.789 & 0.211
 \end{bmatrix}$$
-5. **Apply $P_1$ to $A$ to obtain $A_1$ and round to 2 digits:**
+5. **Apply $P_1$ to $A$ to obtain $A_1$:**
 
 The result is:
 $$A_1 = P_1 A =  \begin{bmatrix}
@@ -380,7 +375,7 @@ $$z_1 = \begin{bmatrix}
 -0.999\\
 0.0356
 \end{bmatrix}$$
-7. **Construct the second Householder matrix $P_2$ and round to 2 digits:**
+7. **Construct the second Householder matrix $P_2$:**
 
 The second Householder matrix $P_2$ is:
 $$P_2 = \begin{bmatrix}
@@ -478,7 +473,6 @@ $\hat{H}_{n+1} = I - 2\mathbf{u}_{n+1}\mathbf{u}_{n+1}^T\in\mathbb{R}^{(m-n)\tim
 
 and $\mathbf{u}_{n+1}$ being the usual vector of unitary norm constructed from $\mathbf{a}$ 
 
-(FORSE SI PUÒ MIGLIORARE PUR SENZA ESSER LOGORROICI).
 """
 
 # ╔═╡ 1cc06e5b-94bd-4faf-b082-6ce72c309803
@@ -2117,7 +2111,6 @@ version = "1.4.1+1"
 # ╠═70be3242-51db-4566-a440-bed44ff4f101
 # ╟─ce2da4cf-5418-4043-887a-9dd5eebc388a
 # ╠═37453bfc-099d-4541-a76d-9d971231681c
-# ╠═6812c726-a529-4998-8e04-814fce3fc160
 # ╟─3e1b226d-cde2-4a16-b9fd-8b73e2086108
 # ╟─839634e0-268a-41b2-afe1-290876cb4af5
 # ╟─a26fd903-7541-40d4-9e95-443a57fe5a0c
