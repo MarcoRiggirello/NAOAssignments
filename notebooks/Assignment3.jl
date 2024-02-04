@@ -33,29 +33,137 @@ md"""
 """
 
 # ╔═╡ 693752b2-eed7-4ac8-a4e5-3005b8d8171b
-function qr_iteration(A, tol=1e-4, store=(1,4,5))
-	Aₖ = copy(A)
-	L = []
-	while maximum(abs.(A - diagm(diag(A)))) < tol
+function qr_iteration(A; tol=1e-4, store=(1,5,10,15), maxitr=1000)
+	Aₖ = Matrix{Float64}(A)
+	d = ["Start" => copy(Aₖ)]
+	i = 0
+	while maximum(abs.(Aₖ - Diagonal(Aₖ))) >= tol && i <= maxitr
+		i += 1
 		Q, R = qr(Aₖ)
 		Aₖ = R * Q
+		if any(j -> i == j, store) || store == :all
+			push!(d, "Itr $i" => copy(Aₖ))
+		end
 	end
+	push!(d, "Itr $i (End)" => copy(Aₖ))
+	return d
 end
+
+# ╔═╡ 075e04b4-cc23-419a-a679-d37c73637a34
+A = [
+	4 3 2 1;
+	3 4 3 2;
+	2 3 4 3;
+	1 2 3 4
+]
+
+# ╔═╡ 5305fb9f-d910-4e75-8651-0adcf5a257c3
+Aₖ = qr_iteration(A)
 
 # ╔═╡ 37fe8308-a211-4a08-8683-ba6d7780158d
 md"""
 #### Subtask b
 """
 
+# ╔═╡ afff1c0a-db73-41db-9c52-0181a6d6a5b6
+eigen_true = eigen(A).values
+
+# ╔═╡ 9e8dbf8d-11c1-4c3e-9e90-9d16c1cce412
+eigen_qr = sort(diag(Aₖ[end].second))
+
+# ╔═╡ 53bcdb32-c65e-4de1-8086-d3f258ed9b8b
+md"""
+	Perché lui vuole format long? Non è meglio l'errore relativo? 
+"""
+
+# ╔═╡ 51cb4351-d7ca-4d23-82f5-32b15d9da4d8
+(eigen_true - eigen_qr)./eigen_true
+
 # ╔═╡ 876e1168-0c41-4b9d-98f0-63f498c6db3f
 md"""
 #### Subtask c
 """
 
+# ╔═╡ 23471ccf-c736-4ed4-8a50-f7370341056a
+function qr_comparison(A; tol=1e-4, maxitr=1000)
+	Aₖ = Matrix{Float64}(A)
+	eigen_true = eigen(A).values
+	i = 0
+	while any(j -> j >= tol, abs.(sort(diag(Aₖ)) - eigen_true)) && i <= maxitr
+		i += 1
+		Q, R = qr(Aₖ)
+		Aₖ = R * Q
+	end
+	return i
+end
+
+# ╔═╡ c0a887a2-bcb1-44d9-9ac7-3217f9845072
+md"""
+	secondo te solo la matrice di prima o delle matrici a caso?
+"""
+
+# ╔═╡ 110314c7-9d1b-40a7-ae24-7877ef9be38f
+begin
+	x = [1e-1,1e-2,1e-3,1e-4,1e-5,1e-6,1e-7,1e-8]
+	y = zero(x)
+	for (i,t) in enumerate(x)
+		y[i] = qr_comparison(A, tol=t)
+	end
+	p = plot(x,y, xscale=:log10, xlabel="Absolute tolerance", ylabel="Number of QR iterations", marker=true, line=false, legend=false)
+end
+
 # ╔═╡ 385b1755-1f4c-46f3-8908-1a5cbfd5ef1f
 md"""
 #### Subtask d
 """
+
+# ╔═╡ f12b1a44-ac70-4e54-8922-3dad22580061
+md"""
+	idem con patate
+"""
+
+# ╔═╡ 51f7a5fc-9366-43da-9c3e-1831ff45f5fb
+md"""
+	ma quando famo la deflation vuole che splittiamo il problema???
+"""
+
+# ╔═╡ 8c9b0f69-8e6c-49cb-ab52-89b4f039e499
+function qr_deflated_rayleigh(A; tol=1e-4, maxitr=1000)
+	Aₖ = Matrix{Float64}(A)
+	eigen_true = eigen(A).values
+	i = 0
+	n = size(A)[1]
+	while any(j -> j >= tol, abs.(sort(diag(Aₖ)) - eigen_true)) && i <= maxitr
+		i += 1
+		μₖ = A[end, end]
+		Q, R = qr(Aₖ - μₖ * Diagonal(one(A)))
+		Aₖ = R * Q + μₖ * Diagonal(one(A))
+		#for i in 1:n, j in i+1:n
+		#	if Aₖ[i,j] < tol && Aₖ != 0
+		#		Aₖ[i,j] = Aₖ[j,i] = 0
+		#	end
+		#end
+	end
+	return i
+end
+
+# ╔═╡ bfd78ed1-4047-45ce-afd5-540e5101b9bf
+begin
+	yrd = zero(x)
+	for (i,t) in enumerate(x)
+		yrd[i] = qr_deflated_rayleigh(A, tol=t)
+	end
+	p2 = plot(x,yrd, xscale=:log10, xlabel="Absolute tolerance", ylabel="Number of QR iterations", marker=true, line=false, label="rayleigh shift + defletion")
+	plot!(p2, x, y, marker=true, line=false, label="simple qr")
+end
+
+# ╔═╡ 7b5a0c83-e3b1-4904-8c60-8fe5a0eff3eb
+md"""
+	Mi sarei aspettato migliori performance da rayleigh. Boh va debuggato.
+"""
+
+# ╔═╡ 4b18ed84-1ebb-47cf-b8ad-e3047570a173
+
 
 # ╔═╡ 94b15ec3-cdfc-4046-b83f-897c10c41550
 md"""
@@ -1169,9 +1277,24 @@ version = "1.4.1+1"
 # ╟─7efb4688-6b27-4291-83f1-f204afc49554
 # ╟─d1a7e0b9-4a3b-4ddd-b583-97cc943d4388
 # ╠═693752b2-eed7-4ac8-a4e5-3005b8d8171b
+# ╟─075e04b4-cc23-419a-a679-d37c73637a34
+# ╠═5305fb9f-d910-4e75-8651-0adcf5a257c3
 # ╟─37fe8308-a211-4a08-8683-ba6d7780158d
+# ╠═afff1c0a-db73-41db-9c52-0181a6d6a5b6
+# ╠═9e8dbf8d-11c1-4c3e-9e90-9d16c1cce412
+# ╟─53bcdb32-c65e-4de1-8086-d3f258ed9b8b
+# ╠═51cb4351-d7ca-4d23-82f5-32b15d9da4d8
 # ╟─876e1168-0c41-4b9d-98f0-63f498c6db3f
+# ╠═23471ccf-c736-4ed4-8a50-f7370341056a
+# ╟─c0a887a2-bcb1-44d9-9ac7-3217f9845072
+# ╠═110314c7-9d1b-40a7-ae24-7877ef9be38f
 # ╟─385b1755-1f4c-46f3-8908-1a5cbfd5ef1f
+# ╟─f12b1a44-ac70-4e54-8922-3dad22580061
+# ╟─51f7a5fc-9366-43da-9c3e-1831ff45f5fb
+# ╠═8c9b0f69-8e6c-49cb-ab52-89b4f039e499
+# ╠═bfd78ed1-4047-45ce-afd5-540e5101b9bf
+# ╟─7b5a0c83-e3b1-4904-8c60-8fe5a0eff3eb
+# ╠═4b18ed84-1ebb-47cf-b8ad-e3047570a173
 # ╟─94b15ec3-cdfc-4046-b83f-897c10c41550
 # ╟─36ec5b09-c6cd-42dd-97e2-a8a254d53281
 # ╟─e046c608-7a00-4a44-a9e2-6123ef8af6f9
