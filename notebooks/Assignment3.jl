@@ -246,6 +246,16 @@ begin
 	plot!(j, μ, seriestype=:scatter, label="")
 end
 
+# ╔═╡ 3f6052d7-5868-4b2e-baa6-d598a3238e3c
+md"""
+### Task 5
+"""
+
+# ╔═╡ e493b80b-3dcd-4842-b8f3-ff15be811156
+md"""
+	Fa un po' onco il plot cosi' forse
+"""
+
 # ╔═╡ b3586bfd-8d92-498e-9bb2-d4e3f38a30ea
 begin
 	u(k, j) = sqrt(2/(N+1)) * sin(π * j * k / (N+1))
@@ -254,26 +264,118 @@ begin
 
 # Now plot
 # Initialize the plot with the first series to ensure it creates a plot object
-plo = plot(1:N, eigenvectors[:, 1], label="j = $(j1[1])", legend=:outertopright)
+plo = plot(1:N, eigenvectors[:, 1], label="j = $(j1[1])", legend=:outertopright, figsize=(1000, 600),  linewidth=2)
+
 
 # Add the rest of the series in a loop
-for idx in 2:length(j1)-1
-    plot!(plo, 1:N, eigenvectors[:, idx], label="j = $(j1[idx])")
+for idx in 2:length(j1)
+    plot!(plo, 1:N, eigenvectors[:, idx], label="j = $(j1[idx])", figsize=(1000, 600), linewidth=2)
 end
 
 # Display the plot
-plot!(plo, 1:N, eigenvectors[:, 6], label="j = $(j1[6])")
-end
+# plot!(plo, 1:N, eigenvectors[:, 6], label="j = $(j1[6])")
+plo
 
-# ╔═╡ 3f6052d7-5868-4b2e-baa6-d598a3238e3c
-md"""
-### Task 5
-"""
+end
 
 # ╔═╡ f41ca8d7-17f7-4211-a4dd-5a6f2fec5485
 md"""
 ### Task 6
 """
+
+# ╔═╡ ce71edf6-8c70-4a39-ad81-96b83a5d8625
+ begin
+function forwardsub(L,b)
+     n = size(L,1)
+     x = zeros(n)
+    x[1] = b[1]/L[1,1]
+    for i in 2:n
+        s = sum( L[i,j]*x[j] for j in 1:i-1 )
+        x[i] = ( b[i] - s ) / L[i,i]
+    end
+    return x
+end
+
+function backsub(U,b)
+     n = size(U,1)
+    x = zeros(n)
+    x[n] = b[n]/U[n,n]
+    for i in n-1:-1:1
+		s = sum( U[i,j]*x[j] for j in i+1:n )
+        x[i] = ( b[i] - s ) / U[i,i]
+    end
+	return x
+end
+
+function cholesky_solver(R,b)
+	# R is a cholesky upper triangular factorization of T_N
+	# solve (R^T)Rx=d
+    w = forwardsub(R',b)           # solves R^T w = d              
+    x = backsub(R,w)               # solves R x = w      
+    return x
+end
+
+function inverse_power_method(T; tol=1e-8, maxitr=10000)
+    n = size(T, 1)
+    x = randn(n)
+    x = x / norm(x, 2)
+    λ = zeros(maxitr)
+    R = cholesky(T).U
+    i = 1
+    while i <= maxitr
+        y = cholesky_solver(R, x)  # Solve R'Ry = x using backslash operator
+        normy, m = findmax(abs.(y))
+        λ[i] = x[m] / y[m]
+        if norm(x - y / y[m], 2) < tol
+            return λ[1:i], x  # Return current values up to the ith iteration
+        end
+        x = y / y[m]
+        i += 1
+    end
+    return λ, x  # Return outside the loop if maxitr reached without convergence
+end
+
+ end
+
+# ╔═╡ 253d3b53-2900-417b-ba3a-8b0db5427bd2
+begin
+
+# Define N1
+N1 = 500
+
+# Initialize TN with zeros
+T_N = zeros(N1, N1)
+
+# Fill the diagonal with 2s
+for i in 1:N1
+    T_N[i, i] = 2
+end
+
+# Fill the off-diagonals with -1s
+for i in 1:N1-1
+    T_N[i, i+1] = -1
+    T_N[i+1, i] = -1
+end
+
+# Since the exercise involves the operator h^(-2)*T_N, we calculate h
+h = 1 / (N1 + 1)
+
+# Adjust T_N accordingly
+T_N = (h^(-2)) * T_N
+
+R = cholesky(T_N).U 
+end
+
+# ╔═╡ 79bbc86b-de8b-44e2-8329-1edcc5c4f31d
+begin
+	μ1 = 2 * (1 .- cos.(π * 1 / (N1 + 1)))
+end
+
+# ╔═╡ 4b79be8e-6454-41b3-9687-2d0a0c74d9da
+lambda, ex = inverse_power_method(T_N)
+
+# ╔═╡ 94ff86e9-7fa3-451b-8b34-31ca6e008c82
+lambda[:10000]
 
 # ╔═╡ d39ddcf4-e70b-4359-ace4-23b294f37daf
 md"""
@@ -1379,9 +1481,15 @@ version = "1.4.1+1"
 # ╠═f2a9cf3b-24d7-4044-869d-3255a509ba2d
 # ╟─8b6ac200-bd2b-4664-b4bd-91fe3073aa12
 # ╠═ded856bd-41b4-4ff6-85b0-98257cbde70c
-# ╠═b3586bfd-8d92-498e-9bb2-d4e3f38a30ea
 # ╟─3f6052d7-5868-4b2e-baa6-d598a3238e3c
+# ╟─e493b80b-3dcd-4842-b8f3-ff15be811156
+# ╠═b3586bfd-8d92-498e-9bb2-d4e3f38a30ea
 # ╟─f41ca8d7-17f7-4211-a4dd-5a6f2fec5485
+# ╠═ce71edf6-8c70-4a39-ad81-96b83a5d8625
+# ╠═253d3b53-2900-417b-ba3a-8b0db5427bd2
+# ╠═79bbc86b-de8b-44e2-8329-1edcc5c4f31d
+# ╠═4b79be8e-6454-41b3-9687-2d0a0c74d9da
+# ╠═94ff86e9-7fa3-451b-8b34-31ca6e008c82
 # ╟─d39ddcf4-e70b-4359-ace4-23b294f37daf
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
