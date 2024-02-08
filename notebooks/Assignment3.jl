@@ -191,17 +191,18 @@ $$\begin{split}
 
 Where we have used the fact that $h=1/(N+1)$. This is precisely the expression for the smallest eigenvalues of the L operator, up to an $O(h^2)$ error.
 
-For large eigenvalues, $j \rightarrow N$, $j/N \rightarrow 1$: we can still use a Taylor expansion for the cosine, but this time around $\pi$:
+For large eigenvalues, $j \rightarrow N$, $j/N \rightarrow 1$. $N$ is still large. We can still use a Taylor expansion for the cosine, but this time around $\pi$:
 
 $$\begin{split}
 \mu_j & \approx 2h^{-2}(1- (-1 + \frac{1}{2}(\frac{\pi N}{N+1} - \pi )^2) = \\
-& = \dots\\
-& = h^{-2}[4 - \frac{\pi^2}{(N+1)^2}]
+& = \dots = \\
+& = h^{-2}[4 - \frac{\pi^2}{(N+1)^2}] \approx \\
+& \approx 4(N+1)^2
 \end{split}$$
 
 Where the part in square brackets is the eigenvalue approximation for $T_N$.
 
-	non so bene che commentare qui, quell'h^-2 e' rimasto i mezzo alle balle e non otteniamo esattamente 4(N+1)^2 come valore asintotico
+	non so bene che commentare qui, quell'h^-2 e' rimasto i mezzo alle balle e non otteniamo esattamente 4(N+1)^2 come valore asintotico. pero' approssimando se trascuriamo il pi lo riotteniamo!
 """
 
 # ╔═╡ e046c608-7a00-4a44-a9e2-6123ef8af6f9
@@ -234,6 +235,35 @@ $$\begin{split}
 md"""
 ### Task 4
 """
+
+# ╔═╡ ded856bd-41b4-4ff6-85b0-98257cbde70c
+begin
+	N = 21
+	j = 1:N
+	μ = 2 * (1 .- cos.(π * j / (N + 1)))
+
+	plot(j, μ, xlabel="j", ylabel="μ_j", label="T_21")
+	plot!(j, μ, seriestype=:scatter, label="")
+end
+
+# ╔═╡ b3586bfd-8d92-498e-9bb2-d4e3f38a30ea
+begin
+	u(k, j) = sqrt(2/(N+1)) * sin(π * j * k / (N+1))
+	j1 = [1,2,3,5,11,21]
+	eigenvectors = [u(k, j) for k in 1:N, j in j1]
+
+# Now plot
+# Initialize the plot with the first series to ensure it creates a plot object
+plo = plot(1:N, eigenvectors[:, 1], label="j = $(j1[1])", legend=:outertopright)
+
+# Add the rest of the series in a loop
+for idx in 2:length(j1)-1
+    plot!(plo, 1:N, eigenvectors[:, idx], label="j = $(j1[idx])")
+end
+
+# Display the plot
+plot!(plo, 1:N, eigenvectors[:, 6], label="j = $(j1[6])")
+end
 
 # ╔═╡ 3f6052d7-5868-4b2e-baa6-d598a3238e3c
 md"""
@@ -1342,12 +1372,14 @@ version = "1.4.1+1"
 # ╠═4b18ed84-1ebb-47cf-b8ad-e3047570a173
 # ╟─94b15ec3-cdfc-4046-b83f-897c10c41550
 # ╟─36ec5b09-c6cd-42dd-97e2-a8a254d53281
-# ╟─d7ce59a1-f112-4035-80e2-65d8076d09d6
+# ╠═d7ce59a1-f112-4035-80e2-65d8076d09d6
 # ╟─e046c608-7a00-4a44-a9e2-6123ef8af6f9
 # ╟─b6249f4a-95fd-420a-9df7-ccac0976330d
 # ╟─4472fe79-18d7-4e58-8f05-106838651c04
 # ╠═f2a9cf3b-24d7-4044-869d-3255a509ba2d
 # ╟─8b6ac200-bd2b-4664-b4bd-91fe3073aa12
+# ╠═ded856bd-41b4-4ff6-85b0-98257cbde70c
+# ╠═b3586bfd-8d92-498e-9bb2-d4e3f38a30ea
 # ╟─3f6052d7-5868-4b2e-baa6-d598a3238e3c
 # ╟─f41ca8d7-17f7-4211-a4dd-5a6f2fec5485
 # ╟─d39ddcf4-e70b-4359-ace4-23b294f37daf
