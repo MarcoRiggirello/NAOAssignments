@@ -175,14 +175,59 @@ md"""
 ### Task 1
 """
 
+# ╔═╡ d7ce59a1-f112-4035-80e2-65d8076d09d6
+md"""
+We start from the expression:
+
+$$\mu_j = 2h^{-2}(1-\cos(\frac{\pi j}{N+1}))$$
+
+For $j/N \rightarrow 0$ we can use the Taylor expansion for the cosine around $0$, and we get:
+
+$$\begin{split}
+\mu_j & \approx 2h^{-2}(1- (1 - \frac{1}{2}(\frac{\pi j}{N+1})^2 + O(h^4(\pi j)^4)) = \\
+& = h^{-2}(\frac{\pi j}{N+1})^2 + O(h^2(\pi j)^4) = \\
+& \approx (\pi j)^2 + O(h^2(\pi j)^4)
+\end{split}$$
+
+Where we have used the fact that $h=1/(N+1)$. This is precisely the expression for the smallest eigenvalues of the L operator, up to an $O(h^2)$ error.
+
+For large eigenvalues, $j \rightarrow N$, $j/N \rightarrow 1$: we can still use a Taylor expansion for the cosine, but this time around $\pi$:
+
+$$\begin{split}
+\mu_j & \approx 2h^{-2}(1- (-1 + \frac{1}{2}(\frac{\pi N}{N+1} - \pi )^2) = \\
+& = \dots\\
+& = h^{-2}[4 - \frac{\pi^2}{(N+1)^2}]
+\end{split}$$
+
+Where the part in square brackets is the eigenvalue approximation for $T_N$.
+
+	non so bene che commentare qui, quell'h^-2 e' rimasto i mezzo alle balle e non otteniamo esattamente 4(N+1)^2 come valore asintotico
+"""
+
 # ╔═╡ e046c608-7a00-4a44-a9e2-6123ef8af6f9
 md"""
 ### Task 2
 """
 
+# ╔═╡ b6249f4a-95fd-420a-9df7-ccac0976330d
+md"""
+It can be noticed from their expression that $\mathbf{u}_j$ are precisely the exact eignefunctions of the L operator evaluated in $x = \frac{k}{N+1}$, up to a normalization factor.
+"""
+
 # ╔═╡ 4472fe79-18d7-4e58-8f05-106838651c04
 md"""
 ### Task 3
+"""
+
+# ╔═╡ f2a9cf3b-24d7-4044-869d-3255a509ba2d
+md"""
+In the limit $N \rightarrow \inf$, we can use the expressions we found in the previous points for the smallest and biggest eigenvalues. The spectral condition number is thus:
+
+$$\begin{split}
+\kappa & = \lambda_N/ \lambda_1 \\
+& \approx (4 - \frac{\pi^2}{(N+1)^2})/(\frac{\pi^2}{(N+1)^2}) = \\
+& = 4 \frac{(N+1)^2}{\pi^2} - 1
+\end{split}$$
 """
 
 # ╔═╡ 8b6ac200-bd2b-4664-b4bd-91fe3073aa12
@@ -1297,8 +1342,11 @@ version = "1.4.1+1"
 # ╠═4b18ed84-1ebb-47cf-b8ad-e3047570a173
 # ╟─94b15ec3-cdfc-4046-b83f-897c10c41550
 # ╟─36ec5b09-c6cd-42dd-97e2-a8a254d53281
+# ╟─d7ce59a1-f112-4035-80e2-65d8076d09d6
 # ╟─e046c608-7a00-4a44-a9e2-6123ef8af6f9
+# ╟─b6249f4a-95fd-420a-9df7-ccac0976330d
 # ╟─4472fe79-18d7-4e58-8f05-106838651c04
+# ╠═f2a9cf3b-24d7-4044-869d-3255a509ba2d
 # ╟─8b6ac200-bd2b-4664-b4bd-91fe3073aa12
 # ╟─3f6052d7-5868-4b2e-baa6-d598a3238e3c
 # ╟─f41ca8d7-17f7-4211-a4dd-5a6f2fec5485
