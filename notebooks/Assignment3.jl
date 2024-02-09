@@ -22,6 +22,162 @@ md"""
 ### Task 1
 """
 
+# ╔═╡ fc477fc5-3370-4714-9293-325aec56f124
+md"""
+The first Householder transformation needed to reduce the matrix
+
+$A=
+\begin{bmatrix}
+ 4 & -1 & -1 &  0 \\
+-1 &  4 &  0 & -1 \\
+-1 &  0 &  4 & -1 \\
+ 0 & -1 & -1 &  4 
+\end{bmatrix}
+\equiv [\mathbf{a}^{(1)},\mathbf{a}^{(2)},\mathbf{a}^{(3)},\mathbf{a}^{(4)}]$
+
+to its triagonal form has to set to zero the term $a_{13}$.
+"""
+
+# ╔═╡ a5b035b7-2111-424e-aa84-e4796603b16e
+md"""
+Thus, we form the first Householder vector in the usual way ($\mathbf{x}\equiv\mathbf{a}^{(1)}_{2:4}$):
+
+$\hat{\mathbf{u}}_1 = \mathbf{x} + \text{sgn}(x_1)||\mathbf{x}||_2 \mathbf\,{e}_1
+= \begin{bmatrix} -1 \\ -1 \\ 0 \end{bmatrix} - \sqrt{2}\begin{bmatrix} 1 \\ 0 \\ 0 \end{bmatrix}$
+"""
+
+# ╔═╡ fa389d33-c210-4b87-863a-c7d7a13de57b
+md"""
+Then, as usual, we can construct the first Householder reflection $\hat{R}_1$ as the operation  on a vector $\mathbf{v}$ such that
+
+$\hat{R}_1\mathbf{v} = \mathbf{v} - 2 \frac{(\hat{\mathbf{u}}_1^T\mathbf{v})}{||\hat{\mathbf{u}}_1||_2^2}\hat{\mathbf{u}}_1$
+
+Thus we can compute
+"""
+
+# ╔═╡ fb662827-a7d6-4e8e-aea0-1fc9488119fa
+md"""
+$\hat{R}_1 \mathbf{a}^{(1)}_{2:4} = \begin{bmatrix}\sqrt{2} \\ 0 \\0\end{bmatrix}$
+"""
+
+# ╔═╡ 9182db06-4369-4fd5-9c27-2fa69798e3d8
+md"""
+$\hat{R}_1 \mathbf{a}^{(2)}_{2:4} = \begin{bmatrix}-2\sqrt{2} \\ -2\sqrt{2} \\-1\end{bmatrix}$
+"""
+
+# ╔═╡ 2b2ee0f4-ae00-4bf6-97a6-e23bb6e7f7c0
+md"""
+$\hat{R}_1 \mathbf{a}^{(3)}_{2:4} = \begin{bmatrix}-2\sqrt{2} \\ 2\sqrt{2} \\-1\end{bmatrix}$
+"""
+
+# ╔═╡ e6c62ed4-4ac9-4334-b904-704140bf6788
+md"""
+$\hat{R}_1 \mathbf{a}^{(4)}_{2:4} = \begin{bmatrix}\sqrt{2} \\ 0 \\ 4\end{bmatrix}$
+"""
+
+# ╔═╡ 64ec662f-8274-4d65-b0d6-dd46319fa40f
+md"""
+Then
+
+$R_1 A=
+\begin{bmatrix}
+1 & 0 \\
+0 & \hat{R}_1
+\end{bmatrix}A=
+\begin{bmatrix}
+       4 &         -1 &         -1 &        0 \\
+\sqrt{2} & -2\sqrt{2} & -2\sqrt{2} & \sqrt{2} \\
+       0 & -2\sqrt{2} &  2\sqrt{2} &        0 \\
+       0 &         -1 &         -1 &        4 
+\end{bmatrix}$
+"""
+
+# ╔═╡ 869ab663-b555-4103-a820-11ca653d175f
+md"""
+Now we have to apply $R_1$ from the right. Since the Householder transformations are symmetric matrices, we note that
+
+$(R_1 A R_1)^T = R_1^T (R_1 A)^T = R_1 (R_1 A)^T$
+
+So to right-apply $R_1$ is equivalent to apply $R_1$ (and thus $\hat{R}_1$) to the rows of $R_1 A$, which is more efficient.
+"""
+
+# ╔═╡ 45b03efe-73b6-42c7-ba7a-8b8fe8058985
+md"""
+$\hat{R}_1 \begin{bmatrix}-1 \\ -1 \\ 0\end{bmatrix} = \begin{bmatrix}\sqrt{2} \\ 0 \\0\end{bmatrix}$
+"""
+
+# ╔═╡ 93c56f55-3e47-4e89-a3dc-ff4055169922
+md"""
+$\hat{R}_1 \begin{bmatrix}-2\sqrt{2} \\ -2\sqrt{2} \\ \sqrt{2}\end{bmatrix} = \begin{bmatrix}4 \\ 0 \\\sqrt{2}\end{bmatrix}$
+"""
+
+# ╔═╡ 1a91d27b-b498-4254-83a9-76f95acaa247
+md"""
+$\hat{R}_1 \begin{bmatrix}-2\sqrt{2} \\ 2\sqrt{2} \\ 0\end{bmatrix} = \begin{bmatrix}0 \\ 4 \\ 0\end{bmatrix}$
+"""
+
+# ╔═╡ 43456022-edee-43ce-a270-4ee41c9f4146
+md"""
+$\hat{R}_1 \begin{bmatrix}-1 \\ -1 \\ 4\end{bmatrix} = \begin{bmatrix}\sqrt{2} \\ 0 \\4\end{bmatrix}$
+"""
+
+# ╔═╡ 76fdfa92-1391-4db8-8350-6c8733fddffb
+md"""
+So, at the end of the first Householder similarity transformation, we get
+
+$R_1 A R_1 =
+\begin{bmatrix}
+       4 & \sqrt{2} & 0 &        0 \\
+\sqrt{2} &        4 & 0 & \sqrt{2} \\
+       0 &        0 & 4 &        0 \\
+       0 & \sqrt{2} & 0 &        4 
+\end{bmatrix}\equiv A_1$
+"""
+
+# ╔═╡ be7351dc-4aa9-4c76-ba11-c3df6246cef7
+md"""
+We proceed with the second transformation to set to zero the element $4,2$ of $A_1$. In this case the Householder vector is
+
+$\hat{\mathbf{u}}_2 = \begin{bmatrix} 0 \\ \sqrt{2} \end{bmatrix} + \sqrt{2} \begin{bmatrix} 1 \\ 0 \end{bmatrix} \Longrightarrow \mathbf{u}_2 = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 \\ 1 \end{bmatrix}$
+
+and the tranformation applied to a vector $\mathbf{v}$ is
+
+$\hat{R}_2\mathbf{v} = \mathbf{v} - 2(\mathbf{u}_2^T\mathbf{v})\mathbf{u}_2
+=\begin{bmatrix} v_1 \\ v_2 \end{bmatrix} - (v_1 + v_2)\begin{bmatrix} 1 \\ 1 \end{bmatrix} = \begin{bmatrix} -v_2 \\ -v_1 \end{bmatrix}$
+
+So the transformation is a swap of elements of the vector plus a change of sign.
+"""
+
+# ╔═╡ 133fae87-e50e-4d0e-9579-9049deccc8ba
+md"""
+We get then
+
+$R_2 A_1 =
+\begin{bmatrix}
+I_{2\times 2} &         0 \\
+            0 & \hat{R_2} \\
+\end{bmatrix}=
+\begin{bmatrix}
+       4 &  \sqrt{2} &  0 &        0 \\
+\sqrt{2} &         4 &  0 & \sqrt{2} \\
+       0 & -\sqrt{2} &  0 &       -4 \\
+       0 &         0 & -4 &        0 
+\end{bmatrix}$
+"""
+
+# ╔═╡ ce70f273-fed0-403b-ace8-4ecc7c8b5fb3
+md"""
+And finally, the tridiagonal form.
+
+$R_2 A_1 R_2=
+\begin{bmatrix}
+       4 &  \sqrt{2} &         0 & 0 \\
+\sqrt{2} &         4 & -\sqrt{2} & 0  \\
+       0 & -\sqrt{2} &         4 & 0 \\
+       0 &         0 &         0 & 4 
+\end{bmatrix}$
+"""
+
 # ╔═╡ 7efb4688-6b27-4291-83f1-f204afc49554
 md"""
 ### Task 2
@@ -254,6 +410,8 @@ md"""
 # ╔═╡ e493b80b-3dcd-4842-b8f3-ff15be811156
 md"""
 	Fa un po' onco il plot cosi' forse
+
+	De forse sì... però dal testo mi sembra di capire che lo chieda esplicitamente così
 """
 
 # ╔═╡ b3586bfd-8d92-498e-9bb2-d4e3f38a30ea
@@ -1451,6 +1609,23 @@ version = "1.4.1+1"
 # ╠═9cbbbf18-3546-46c9-aaae-bab21aa2b408
 # ╟─7da531d7-e6b2-423d-9b67-88e39b1470da
 # ╟─95d97d4a-40f8-4bce-bf14-642a1ff552cd
+# ╟─fc477fc5-3370-4714-9293-325aec56f124
+# ╟─a5b035b7-2111-424e-aa84-e4796603b16e
+# ╟─fa389d33-c210-4b87-863a-c7d7a13de57b
+# ╟─fb662827-a7d6-4e8e-aea0-1fc9488119fa
+# ╟─9182db06-4369-4fd5-9c27-2fa69798e3d8
+# ╟─2b2ee0f4-ae00-4bf6-97a6-e23bb6e7f7c0
+# ╟─e6c62ed4-4ac9-4334-b904-704140bf6788
+# ╟─64ec662f-8274-4d65-b0d6-dd46319fa40f
+# ╟─869ab663-b555-4103-a820-11ca653d175f
+# ╟─45b03efe-73b6-42c7-ba7a-8b8fe8058985
+# ╟─93c56f55-3e47-4e89-a3dc-ff4055169922
+# ╟─1a91d27b-b498-4254-83a9-76f95acaa247
+# ╟─43456022-edee-43ce-a270-4ee41c9f4146
+# ╟─76fdfa92-1391-4db8-8350-6c8733fddffb
+# ╟─be7351dc-4aa9-4c76-ba11-c3df6246cef7
+# ╟─133fae87-e50e-4d0e-9579-9049deccc8ba
+# ╟─ce70f273-fed0-403b-ace8-4ecc7c8b5fb3
 # ╟─7efb4688-6b27-4291-83f1-f204afc49554
 # ╟─d1a7e0b9-4a3b-4ddd-b583-97cc943d4388
 # ╠═693752b2-eed7-4ac8-a4e5-3005b8d8171b
