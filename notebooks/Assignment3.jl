@@ -310,12 +310,12 @@ end
 function cholesky_solver(R,b)
 	# R is a cholesky upper triangular factorization of T_N
 	# solve (R^T)Rx=d
-    w = forwardsub(R',b)           # solves R^T w = d              
+    w = forwardsub(R',b)           # solves R^T w = b              
     x = backsub(R,w)               # solves R x = w      
     return x
 end
 
-function inverse_power_method(T; tol=1e-8, maxitr=10000)
+function inverse_power_method(T; tol=1e-8, maxitr=1000)
     n = size(T, 1)
     x = randn(n)
     x = x / norm(x, 2)
@@ -323,13 +323,12 @@ function inverse_power_method(T; tol=1e-8, maxitr=10000)
     R = cholesky(T).U
     i = 1
     while i <= maxitr
-        y = cholesky_solver(R, x)  # Solve R'Ry = x using backslash operator
-        normy, m = findmax(abs.(y))
-        λ[i] = x[m] / y[m]
-        if norm(x - y / y[m], 2) < tol
-            return λ[1:i], x  # Return current values up to the ith iteration
+        y = cholesky_solver(R, x)  # Solve R'Ry = x
+        if norm(x - y / norm(y, 2), 2) < tol
+            return λ[1:i-1], x  # Return current values up to the i-1 th iteration
         end
-        x = y / y[m]
+        x = y / norm(y, 2)
+		λ[i] = x' * T * x
         i += 1
     end
     return λ, x  # Return outside the loop if maxitr reached without convergence
@@ -363,19 +362,69 @@ h = 1 / (N1 + 1)
 # Adjust T_N accordingly
 T_N = (h^(-2)) * T_N
 
+# just a check on the cholsky decompostion of T_N
 R = cholesky(T_N).U 
 end
 
 # ╔═╡ 79bbc86b-de8b-44e2-8329-1edcc5c4f31d
 begin
-	μ1 = 2 * (1 .- cos.(π * 1 / (N1 + 1)))
+	# store the known value for λ₁
+	λ₁ = pi^2
 end
 
 # ╔═╡ 4b79be8e-6454-41b3-9687-2d0a0c74d9da
-lambda, ex = inverse_power_method(T_N)
+# apply the algorithm!
+lambda, eigenvector = inverse_power_method(T_N)
+
+# ╔═╡ a66dcb3e-c4fe-47b8-8aac-5be6f0843f48
+md"""
+We can check the last value returned for the eigenvalue, and the number of steps taken before convergence:
+"""
 
 # ╔═╡ 94ff86e9-7fa3-451b-8b34-31ca6e008c82
-lambda[:10000]
+lambda[end]
+
+# ╔═╡ d4d3af56-a018-4493-99d1-e6935bf9b798
+size(lambda)
+
+# ╔═╡ 02776ce5-15a9-4764-8e99-61d98bd4a734
+begin
+# now compare lambda[end] and λ₁
+diff = abs(lambda[end] - λ₁)
+# now compare the eigenvectors
+diff2 = norm(eigenvector - sin.(π * (1:N1) / (N1 + 1)), 2)
+# print 
+diff, diff2
+end
+
+# ╔═╡ 3bf1abea-4f17-4d92-bfd0-a983bf752dbc
+begin
+# plot the computed eigenvector against the real one
+plot(1:N1,eigenvector, label="computed", legend=:outertopright, figsize=(1000, 600),  linewidth=2)
+plot!(1:N1, sin.(π * (1:N1) / (N1 + 1)), label="exact",  linewidth=2)
+end
+
+# ╔═╡ ad42d191-aa41-4528-9fb3-ee17d30eb5df
+md"""
+The computed eignevector is off, but just because of the normalization inside of the algorithm (the exact eigenvector is not normalized to 1). If we rescale by the norm of the exact eigenvector we get:
+"""
+
+# ╔═╡ d2cd4a49-ae53-48cb-998f-59ffb8145bc8
+begin
+# plot the computed eigenvector against the real one
+test_norm = norm(sin.(π * (1:N1) / (N1 + 1)),2)
+
+plot(1:N1, sin.(π * (1:N1) / (N1 + 1)), label="exact",  linewidth=6)
+plot!(1:N1,test_norm*eigenvector, label="computed", legend=:outertopright, figsize=(1000, 600),  linewidth=2, seriestype=:scatter, markersize=0.6)
+end
+
+# ╔═╡ 04a36a01-968b-42f1-984f-fc511900d58d
+md"""
+And the computed difference is now:
+"""
+
+# ╔═╡ ab28ce92-9194-4bdf-97e0-5ec4363bc987
+diff3 = norm(test_norm*eigenvector - sin.(π * (1:N1) / (N1 + 1)), 2)
 
 # ╔═╡ d39ddcf4-e70b-4359-ace4-23b294f37daf
 md"""
@@ -1489,7 +1538,15 @@ version = "1.4.1+1"
 # ╠═253d3b53-2900-417b-ba3a-8b0db5427bd2
 # ╠═79bbc86b-de8b-44e2-8329-1edcc5c4f31d
 # ╠═4b79be8e-6454-41b3-9687-2d0a0c74d9da
+# ╟─a66dcb3e-c4fe-47b8-8aac-5be6f0843f48
 # ╠═94ff86e9-7fa3-451b-8b34-31ca6e008c82
+# ╠═d4d3af56-a018-4493-99d1-e6935bf9b798
+# ╠═02776ce5-15a9-4764-8e99-61d98bd4a734
+# ╠═3bf1abea-4f17-4d92-bfd0-a983bf752dbc
+# ╠═ad42d191-aa41-4528-9fb3-ee17d30eb5df
+# ╠═d2cd4a49-ae53-48cb-998f-59ffb8145bc8
+# ╠═04a36a01-968b-42f1-984f-fc511900d58d
+# ╠═ab28ce92-9194-4bdf-97e0-5ec4363bc987
 # ╟─d39ddcf4-e70b-4359-ace4-23b294f37daf
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
