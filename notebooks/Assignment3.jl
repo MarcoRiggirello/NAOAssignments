@@ -468,12 +468,12 @@ end
 function cholesky_solver(R,b)
 	# R is a cholesky upper triangular factorization of T_N
 	# solve (R^T)Rx=d
-    w = forwardsub(R',b)           # solves R^T w = d              
+    w = forwardsub(R',b)           # solves R^T w = b              
     x = backsub(R,w)               # solves R x = w      
     return x
 end
 
-function inverse_power_method(T; tol=1e-8, maxitr=10000)
+function inverse_power_method(T; tol=1e-8, maxitr=1000)
     n = size(T, 1)
     x = randn(n)
     x = x / norm(x, 2)
@@ -481,13 +481,12 @@ function inverse_power_method(T; tol=1e-8, maxitr=10000)
     R = cholesky(T).U
     i = 1
     while i <= maxitr
-        y = cholesky_solver(R, x)  # Solve R'Ry = x using backslash operator
-        normy, m = findmax(abs.(y))
-        λ[i] = x[m] / y[m]
-        if norm(x - y / y[m], 2) < tol
-            return λ[1:i], x  # Return current values up to the ith iteration
+        y = cholesky_solver(R, x)  # Solve R'Ry = x
+        if norm(x - y / norm(y, 2), 2) < tol
+            return λ[1:i-1], x  # Return current values up to the i-1 th iteration
         end
-        x = y / y[m]
+        x = y / norm(y, 2)
+		λ[i] = x' * T * x
         i += 1
     end
     return λ, x  # Return outside the loop if maxitr reached without convergence
@@ -521,24 +520,184 @@ h = 1 / (N1 + 1)
 # Adjust T_N accordingly
 T_N = (h^(-2)) * T_N
 
+# just a check on the cholsky decompostion of T_N
 R = cholesky(T_N).U 
+
+display(T_N)
+display(R)
 end
 
 # ╔═╡ 79bbc86b-de8b-44e2-8329-1edcc5c4f31d
 begin
-	μ1 = 2 * (1 .- cos.(π * 1 / (N1 + 1)))
+	# store the known value for λ₁
+	λ₁ = pi^2
 end
 
 # ╔═╡ 4b79be8e-6454-41b3-9687-2d0a0c74d9da
-lambda, ex = inverse_power_method(T_N)
+# apply the algorithm!
+lambda, eigenvector = inverse_power_method(T_N)
+
+# ╔═╡ a66dcb3e-c4fe-47b8-8aac-5be6f0843f48
+md"""
+We can check the last value returned for the eigenvalue, and the number of steps taken before convergence:
+"""
 
 # ╔═╡ 94ff86e9-7fa3-451b-8b34-31ca6e008c82
-lambda[:10000]
+lambda[end]
+
+# ╔═╡ d4d3af56-a018-4493-99d1-e6935bf9b798
+size(lambda)
+
+# ╔═╡ 02776ce5-15a9-4764-8e99-61d98bd4a734
+begin
+# now compare lambda[end] and λ₁
+diff = abs(lambda[end] - λ₁)
+# now compare the eigenvectors
+diff2 = norm(eigenvector - sin.(π * (1:N1) / (N1 + 1)), 2)
+# print 
+diff, diff2
+end
+
+# ╔═╡ 3bf1abea-4f17-4d92-bfd0-a983bf752dbc
+begin
+# plot the computed eigenvector against the real one
+plot(1:N1,eigenvector, label="computed", legend=:outertopright, figsize=(1000, 600),  linewidth=2)
+plot!(1:N1, sin.(π * (1:N1) / (N1 + 1)), label="exact",  linewidth=2)
+end
+
+# ╔═╡ ad42d191-aa41-4528-9fb3-ee17d30eb5df
+md"""
+The computed eignevector is off, but just because of the normalization inside of the algorithm (the exact eigenvector is not normalized to 1). If we rescale by the norm of the exact eigenvector we get:
+"""
+
+# ╔═╡ d2cd4a49-ae53-48cb-998f-59ffb8145bc8
+begin
+# plot the computed eigenvector against the real one
+test_norm = norm(sin.(π * (1:N1) / (N1 + 1)),2)
+
+plot(1:N1, sin.(π * (1:N1) / (N1 + 1)), label="exact",  linewidth=6)
+plot!(1:N1,test_norm*eigenvector, label="computed", legend=:outertopright, figsize=(1000, 600),  linewidth=2, seriestype=:scatter, markersize=0.6)
+end
+
+# ╔═╡ 04a36a01-968b-42f1-984f-fc511900d58d
+md"""
+And the computed difference is now:
+"""
+
+# ╔═╡ ab28ce92-9194-4bdf-97e0-5ec4363bc987
+diff3 = norm(test_norm*eigenvector - sin.(π * (1:N1) / (N1 + 1)), 2)
 
 # ╔═╡ d39ddcf4-e70b-4359-ace4-23b294f37daf
 md"""
 ### Task 7
 """
+
+# ╔═╡ 572da270-6b0e-409a-bcde-4d7f1a99077f
+begin
+function shift_and_invert_power_method(T, shift; tol=1e-12, maxitr=1000)
+    n = size(T, 1)
+    x = randn(n)
+	θ₀=shift
+    x = x / norm(x, 2)
+	λ = zeros(maxitr)
+	λ[1] = θ₀
+	A = (T - θ₀*I(n))
+	L, U, p = lu(A)
+    i = 1
+    while i <= maxitr
+		residual = norm((T - λ[i]*I(n))*x, Inf)
+        if residual <= tol*norm(T, Inf)
+			println("Exited early")
+            return λ[1:i-1], x  # Return current values up to the i-1 th iteration
+        end
+		w = forwardsub(L, x)
+        y = backsub(U, w)  # Solve Ay = x
+        x = y / norm(y, 2)
+		λ[i] = x' * T * x
+        i += 1
+    end
+    return λ, x  # Return outside the loop if maxitr reached without convergence
+end
+
+"""
+
+    inviter(A,s,numiter)
+
+
+Perform `numiter` inverse iterations with the matrix `A` and shift
+
+`s`, starting from a random vector. Returns a vector of
+
+eigenvalue estimates and the final eigenvector approximation.
+
+"""
+
+function inviter(A,s,numiter)
+
+    n = size(A,1)
+
+    x = normalize(randn(n),Inf)
+
+    β = zeros(numiter)
+
+    fact = lu(A - s*I)
+
+    for k in 1:numiter
+
+        y = fact\x
+
+        normy,m = findmax(abs.(y))
+
+        β[k] = x[m]/y[m] + s
+
+        x = y/y[m]
+
+    end
+
+    return β,x
+
+end
+end
+
+# ╔═╡ b0c997e3-826d-4aa4-a449-71c2d1cc1f35
+md"""
+	la situazione e' questa: non convergiamo mai con la sua richiesta sul resiudo. nemmeno la funzione scritta in modo totalmente diverso da quelli di NAO Julia funziona meglio. non capisco troppo bene il perche', stiamo facendo come spiegato. forse perche' uso x' e non conj(x)??
+"""
+
+# ╔═╡ e9e71b59-be33-4663-971c-c91fccf500fa
+md"""
+Let's apply the new algorithm. The cholesky decomposition could not be used as A is no longer positive-definite!
+"""
+
+# ╔═╡ 604a3cb3-7220-4d8a-b4b8-7bef7e847066
+lambda5, eigenvector5 = shift_and_invert_power_method(T_N, 25*pi^2+1)
+
+# ╔═╡ 8eeecc56-014f-4bb8-99ac-a67fd7bfb1a4
+size(lambda5)
+
+# ╔═╡ e150d8fd-d9b1-44b4-9bf5-fc02266f353f
+begin
+# plot the computed eigenvector against the real one
+plot(1:N1,eigenvector5, label="computed", legend=:outertopright, figsize=(1000, 600),  linewidth=2)
+plot!(1:N1, sin.(5*π * (1:N1) / (N1 + 1)), label="exact",  linewidth=2)
+end
+
+# ╔═╡ 9b5db795-c184-4aab-8148-02bd99fb91a9
+begin
+# plot the computed eigenvector against the real one
+test_norm5 = norm(sin.(5*π * (1:N1) / (N1 + 1)),2)
+
+plot(1:N1, sin.(5*π * (1:N1) / (N1 + 1)), label="exact",  linewidth=6)
+plot!(1:N1,test_norm5*eigenvector5, label="computed", legend=:outertopright, figsize=(1000, 600),  linewidth=2, seriestype=:scatter, markersize=0.6)
+end
+
+# ╔═╡ b25a59c2-53c6-437d-b37f-482a92c97f55
+diff5 = norm(test_norm5*eigenvector5 - sin.(5*π * (1:N1) / (N1 + 1)), 2)
+
+# ╔═╡ 196cf814-d3ae-415c-84ad-763f27536e9b
+begin
+norm(25*pi^2*eigenvector5 - T_N*eigenvector5, Inf)
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1664,7 +1823,24 @@ version = "1.4.1+1"
 # ╠═253d3b53-2900-417b-ba3a-8b0db5427bd2
 # ╠═79bbc86b-de8b-44e2-8329-1edcc5c4f31d
 # ╠═4b79be8e-6454-41b3-9687-2d0a0c74d9da
+# ╟─a66dcb3e-c4fe-47b8-8aac-5be6f0843f48
 # ╠═94ff86e9-7fa3-451b-8b34-31ca6e008c82
+# ╠═d4d3af56-a018-4493-99d1-e6935bf9b798
+# ╠═02776ce5-15a9-4764-8e99-61d98bd4a734
+# ╠═3bf1abea-4f17-4d92-bfd0-a983bf752dbc
+# ╟─ad42d191-aa41-4528-9fb3-ee17d30eb5df
+# ╠═d2cd4a49-ae53-48cb-998f-59ffb8145bc8
+# ╟─04a36a01-968b-42f1-984f-fc511900d58d
+# ╠═ab28ce92-9194-4bdf-97e0-5ec4363bc987
 # ╟─d39ddcf4-e70b-4359-ace4-23b294f37daf
+# ╠═572da270-6b0e-409a-bcde-4d7f1a99077f
+# ╟─b0c997e3-826d-4aa4-a449-71c2d1cc1f35
+# ╟─e9e71b59-be33-4663-971c-c91fccf500fa
+# ╠═604a3cb3-7220-4d8a-b4b8-7bef7e847066
+# ╠═8eeecc56-014f-4bb8-99ac-a67fd7bfb1a4
+# ╠═e150d8fd-d9b1-44b4-9bf5-fc02266f353f
+# ╠═9b5db795-c184-4aab-8148-02bd99fb91a9
+# ╠═b25a59c2-53c6-437d-b37f-482a92c97f55
+# ╠═196cf814-d3ae-415c-84ad-763f27536e9b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
