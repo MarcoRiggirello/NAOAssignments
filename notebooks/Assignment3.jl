@@ -288,17 +288,21 @@ function qr_deflated_rayleigh(A; tol=1e-4, deflation_tol=1e-4, i0=0, maxitr=1000
 	Aₖ = Matrix{Float64}(A)
 	eigen_true = eigvals(A)
 	i = i0
-	while (
-		any(j -> j >= tol, abs.(eigen_true .- A[end,end])) &&
-		any(j -> j >= deflation_tol, abs.(A[end,1:end-1])) &&
-		any(j -> j >= deflation_tol, abs.(A[1:end-1,end])) &&
-		i <= maxitr
-	)
+	while i <= maxitr
 		i += 1
-		μₖ = A[end, end]
-		Q, R = qr(Aₖ - μₖ * one(A))
-		Aₖ = R * Q + μₖ * one(A)
-		
+		μₖ = Aₖ[end, end]
+		Q, R = qr(Aₖ - μₖ * one(Aₖ))
+		Aₖ = R * Q + μₖ * one(Aₖ)
+		if all(abs.(vcat(Aₖ[end,1:end-1], Aₖ[1:end-1,end])) .<= deflation_tol)
+			Aₖ[end,1:end-1] .= 0
+			Aₖ[1:end-1,end] .= 0
+		end
+		if any(abs.(Aₖ[end:end] .- eigen_true) .<= tol)
+			Aₖ = Aₖ[1:end-1,1:end-1]
+			if size(Aₖ) == (1,1)
+				break
+			end
+		end
 	end
 	return i
 end
