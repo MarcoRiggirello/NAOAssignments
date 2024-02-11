@@ -156,7 +156,7 @@ $R_2 A_1 =
 \begin{bmatrix}
 I_{2\times 2} &         0 \\
             0 & \hat{R_2} \\
-\end{bmatrix}=
+\end{bmatrix}A_1=
 \begin{bmatrix}
        4 &  \sqrt{2} &  0 &        0 \\
 \sqrt{2} &         4 &  0 & \sqrt{2} \\
@@ -240,6 +240,11 @@ md"""
 #### Subtask c
 """
 
+# ╔═╡ 0b90cbdb-10ec-4211-a2d8-dc99b03d4e9c
+md"""
+Now we perform the same qr iteration as before, but we change the stopping criteria. Instead of setting a threshold on the absolute value of the nondiagonal elements, we set a threshold on the absolute difference between the eigenvalues found by the default Julia `eigvals()` method and the values found by our implementation of the QR iteration.
+"""
+
 # ╔═╡ 23471ccf-c736-4ed4-8a50-f7370341056a
 function qr_comparison(A; tol=1e-4, maxitr=1000)
 	Aₖ = Matrix{Float64}(A)
@@ -256,6 +261,13 @@ end
 # ╔═╡ c0a887a2-bcb1-44d9-9ac7-3217f9845072
 md"""
 	secondo te solo la matrice di prima o delle matrici a caso?
+"""
+
+# ╔═╡ 952584da-93cf-4d68-a0ed-387a400c77a1
+md"""
+In the plot below we can see how many iteration the algorithm must perform in order to achieve a given precision (w.r.t. the vlues found with the standard method). The increase is roughly logarithmic with the precision requested.
+
+	vero?
 """
 
 # ╔═╡ 110314c7-9d1b-40a7-ae24-7877ef9be38f
@@ -283,11 +295,20 @@ md"""
 	ma quando famo la deflation vuole che splittiamo il problema???
 """
 
+# ╔═╡ 4705881c-fdd7-4fe9-8483-3ad8aa510372
+md"""
+Now we proceed with the (Rayleigh) shifted QR iteration with deflation.
+
+The implemetation is organized as follows: at each iteration, we perform the 
+	
+	troppo stanco per continuare. domani
+"""
+
 # ╔═╡ 8c9b0f69-8e6c-49cb-ab52-89b4f039e499
-function qr_deflated_rayleigh(A; tol=1e-4, deflation_tol=1e-4, i0=0, maxitr=1000)
+function qr_deflated_rayleigh(A; tol=1e-4, deflation_tol=1e-4, maxitr=1000)
 	Aₖ = Matrix{Float64}(A)
 	eigen_true = eigvals(A)
-	i = i0
+	i = 0
 	while i <= maxitr
 		i += 1
 		μₖ = Aₖ[end, end]
@@ -298,6 +319,7 @@ function qr_deflated_rayleigh(A; tol=1e-4, deflation_tol=1e-4, i0=0, maxitr=1000
 			Aₖ[1:end-1,end] .= 0
 		end
 		if any(abs.(Aₖ[end:end] .- eigen_true) .<= tol)
+			eigen_true = eigen_true[abs.(Aₖ[end:end] .- eigen_true) .>= tol]
 			Aₖ = Aₖ[1:end-1,1:end-1]
 			if size(Aₖ) == (1,1)
 				break
@@ -316,14 +338,6 @@ begin
 	p2 = plot(x,yrd, xscale=:log10, xlabel="Absolute tolerance", ylabel="Number of QR iterations", marker=true, line=false, label="rayleigh shift + depletion")
 	plot!(p2, x, y, marker=true, line=false, label="simple qr")
 end
-
-# ╔═╡ 7b5a0c83-e3b1-4904-8c60-8fe5a0eff3eb
-md"""
-	Mi sarei aspettato migliori performance da rayleigh. Boh va debuggato.
-"""
-
-# ╔═╡ 4b18ed84-1ebb-47cf-b8ad-e3047570a173
-
 
 # ╔═╡ 94b15ec3-cdfc-4046-b83f-897c10c41550
 md"""
@@ -1800,16 +1814,17 @@ version = "1.4.1+1"
 # ╟─53bcdb32-c65e-4de1-8086-d3f258ed9b8b
 # ╠═51cb4351-d7ca-4d23-82f5-32b15d9da4d8
 # ╟─876e1168-0c41-4b9d-98f0-63f498c6db3f
+# ╟─0b90cbdb-10ec-4211-a2d8-dc99b03d4e9c
 # ╠═23471ccf-c736-4ed4-8a50-f7370341056a
 # ╟─c0a887a2-bcb1-44d9-9ac7-3217f9845072
+# ╟─952584da-93cf-4d68-a0ed-387a400c77a1
 # ╠═110314c7-9d1b-40a7-ae24-7877ef9be38f
 # ╟─385b1755-1f4c-46f3-8908-1a5cbfd5ef1f
 # ╟─f12b1a44-ac70-4e54-8922-3dad22580061
 # ╟─51f7a5fc-9366-43da-9c3e-1831ff45f5fb
+# ╠═4705881c-fdd7-4fe9-8483-3ad8aa510372
 # ╠═8c9b0f69-8e6c-49cb-ab52-89b4f039e499
 # ╠═bfd78ed1-4047-45ce-afd5-540e5101b9bf
-# ╟─7b5a0c83-e3b1-4904-8c60-8fe5a0eff3eb
-# ╠═4b18ed84-1ebb-47cf-b8ad-e3047570a173
 # ╟─94b15ec3-cdfc-4046-b83f-897c10c41550
 # ╟─36ec5b09-c6cd-42dd-97e2-a8a254d53281
 # ╠═d7ce59a1-f112-4035-80e2-65d8076d09d6
