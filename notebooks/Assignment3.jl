@@ -222,7 +222,7 @@ md"""
 """
 
 # ╔═╡ afff1c0a-db73-41db-9c52-0181a6d6a5b6
-eigen_true = eigen(A).values
+eigen_true = eigvals(A)
 
 # ╔═╡ 9e8dbf8d-11c1-4c3e-9e90-9d16c1cce412
 eigen_qr = sort(diag(Aₖ[end].second))
@@ -243,7 +243,7 @@ md"""
 # ╔═╡ 23471ccf-c736-4ed4-8a50-f7370341056a
 function qr_comparison(A; tol=1e-4, maxitr=1000)
 	Aₖ = Matrix{Float64}(A)
-	eigen_true = eigen(A).values
+	eigen_true = eigvals(A)
 	i = 0
 	while any(j -> j >= tol, abs.(sort(diag(Aₖ)) - eigen_true)) && i <= maxitr
 		i += 1
@@ -284,21 +284,21 @@ md"""
 """
 
 # ╔═╡ 8c9b0f69-8e6c-49cb-ab52-89b4f039e499
-function qr_deflated_rayleigh(A; tol=1e-4, maxitr=1000)
+function qr_deflated_rayleigh(A; tol=1e-4, deflation_tol=1e-4, i0=0, maxitr=1000)
 	Aₖ = Matrix{Float64}(A)
-	eigen_true = eigen(A).values
-	i = 0
-	n = size(A)[1]
-	while any(j -> j >= tol, abs.(sort(diag(Aₖ)) - eigen_true)) && i <= maxitr
+	eigen_true = eigvals(A)
+	i = i0
+	while (
+		any(j -> j >= tol, abs.(eigen_true .- A[end,end])) &&
+		any(j -> j >= deflation_tol, abs.(A[end,1:end-1])) &&
+		any(j -> j >= deflation_tol, abs.(A[1:end-1,end])) &&
+		i <= maxitr
+	)
 		i += 1
 		μₖ = A[end, end]
-		Q, R = qr(Aₖ - μₖ * Diagonal(one(A)))
-		Aₖ = R * Q + μₖ * Diagonal(one(A))
-		#for i in 1:n, j in i+1:n
-		#	if Aₖ[i,j] < tol && Aₖ != 0
-		#		Aₖ[i,j] = Aₖ[j,i] = 0
-		#	end
-		#end
+		Q, R = qr(Aₖ - μₖ * one(A))
+		Aₖ = R * Q + μₖ * one(A)
+		
 	end
 	return i
 end
@@ -309,7 +309,7 @@ begin
 	for (i,t) in enumerate(x)
 		yrd[i] = qr_deflated_rayleigh(A, tol=t)
 	end
-	p2 = plot(x,yrd, xscale=:log10, xlabel="Absolute tolerance", ylabel="Number of QR iterations", marker=true, line=false, label="rayleigh shift + defletion")
+	p2 = plot(x,yrd, xscale=:log10, xlabel="Absolute tolerance", ylabel="Number of QR iterations", marker=true, line=false, label="rayleigh shift + depletion")
 	plot!(p2, x, y, marker=true, line=false, label="simple qr")
 end
 
