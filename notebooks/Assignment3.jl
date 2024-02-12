@@ -402,7 +402,10 @@ $$\begin{split}
 & = h^{-2}(\frac{\pi j}{N+1})^2 + O(h^2(\pi j)^4) = \\
 & \approx (\pi j)^2 + O(h^2(\pi j)^4)
 \end{split}$$
+"""
 
+# ╔═╡ bc82d464-16c4-4926-bd14-5dc78e02e03c
+md"""
 Where we have used the fact that $h=1/(N+1)$. This is precisely the expression for the smallest eigenvalues of the L operator, up to an $O(h^2)$ error.
 
 For large eigenvalues, $j \rightarrow N$, $j/N \rightarrow 1$. $N$ is still large. We can still use a Taylor expansion for the cosine, but this time around $\pi$:
@@ -456,8 +459,8 @@ begin
 	j = 1:N
 	μ = 2 * (1 .- cos.(π * j / (N + 1)))
 
-	plot(j, μ, xlabel="j", ylabel="μ_j", label="T_21")
-	plot!(j, μ, seriestype=:scatter, label="")
+	p3 = plot(j, μ, xlabel="j", ylabel="μ_j", label="T_21")
+	plot!(p3, j, μ, seriestype=:scatter, label="")
 end
 
 # ╔═╡ 3f6052d7-5868-4b2e-baa6-d598a3238e3c
@@ -478,20 +481,16 @@ begin
 	j1 = [1,2,3,5,11,21]
 	eigenvectors = [u(k, j) for k in 1:N, j in j1]
 
-# Now plot
-# Initialize the plot with the first series to ensure it creates a plot object
-plo = plot(1:N, eigenvectors[:, 1], label="j = $(j1[1])", legend=:outertopright, figsize=(1000, 600),  linewidth=2)
-
-
-# Add the rest of the series in a loop
-for idx in 2:length(j1)
-    plot!(plo, 1:N, eigenvectors[:, idx], label="j = $(j1[idx])", figsize=(1000, 600), linewidth=2)
-end
-
-# Display the plot
-# plot!(plo, 1:N, eigenvectors[:, 6], label="j = $(j1[6])")
-plo
-
+	# Now plot
+	# Initialize the plot with the first series to ensure it creates a plot object
+	plo = plot(1:N, eigenvectors[:, 1], label="j = $(j1[1])", legend=:outertopright, figsize=(1000, 600),  linewidth=2)
+	# Add the rest of the series in a loop
+	for idx in 2:length(j1)
+	    plot!(plo, 1:N, eigenvectors[:, idx], label="j = $(j1[idx])", figsize=(1000, 600), linewidth=2)
+	end
+	
+	# Display the plot
+	plo
 end
 
 # ╔═╡ f41ca8d7-17f7-4211-a4dd-5a6f2fec5485
@@ -499,8 +498,7 @@ md"""
 ### Task 6
 """
 
-# ╔═╡ ce71edf6-8c70-4a39-ad81-96b83a5d8625
- begin
+# ╔═╡ ecd67fe0-87d3-42b8-94de-080d9a064a8a
 function forwardsub(L,b)
      n = size(L,1)
      x = zeros(n)
@@ -512,6 +510,7 @@ function forwardsub(L,b)
     return x
 end
 
+# ╔═╡ ba9dda37-ba85-4d99-971f-e1a21df20dc7
 function backsub(U,b)
      n = size(U,1)
     x = zeros(n)
@@ -523,6 +522,7 @@ function backsub(U,b)
 	return x
 end
 
+# ╔═╡ a18465c9-20c4-4807-a82f-00b8684a11a5
 function cholesky_solver(R,b)
 	# R is a cholesky upper triangular factorization of T_N
 	# solve (R^T)Rx=d
@@ -531,6 +531,7 @@ function cholesky_solver(R,b)
     return x
 end
 
+# ╔═╡ ce71edf6-8c70-4a39-ad81-96b83a5d8625
 function inverse_power_method(T; tol=1e-8, maxitr=1000)
     n = size(T, 1)
     x = randn(n)
@@ -550,40 +551,45 @@ function inverse_power_method(T; tol=1e-8, maxitr=1000)
     return λ, x  # Return outside the loop if maxitr reached without convergence
 end
 
- end
-
 # ╔═╡ 253d3b53-2900-417b-ba3a-8b0db5427bd2
 begin
-
-# Define N1
-N1 = 500
-
-# Initialize TN with zeros
-T_N = zeros(N1, N1)
-
-# Fill the diagonal with 2s
-for i in 1:N1
-    T_N[i, i] = 2
+	# Define N1
+	N1 = 500
+	# Initialize TN with zeros
+	T_N = zeros(N1, N1)
+	# Fill the diagonal with 2s
+	for i in 1:N1
+	    T_N[i, i] = 2
+	end
+	# Fill the off-diagonals with -1s
+	for i in 1:N1-1
+	    T_N[i, i+1] = -1
+	    T_N[i+1, i] = -1
+	end
+	# Since the exercise involves the operator h^(-2)*T_N, we calculate h
+	h = 1 / (N1 + 1)
+	# Adjust T_N accordingly
+	T_N = (h^(-2)) * T_N
+	# just a check on the cholsky decompostion of T_N
+	R = cholesky(T_N).U
+	nothing
 end
 
-# Fill the off-diagonals with -1s
-for i in 1:N1-1
-    T_N[i, i+1] = -1
-    T_N[i+1, i] = -1
-end
+# ╔═╡ 2d6cc215-38e2-4e48-95fc-d86bc2460bd0
+md"""
+The matrix $T_N$ is then
+"""
 
-# Since the exercise involves the operator h^(-2)*T_N, we calculate h
-h = 1 / (N1 + 1)
+# ╔═╡ be610941-c7ad-40ed-8d37-ed8bda6fe3da
+T_N
 
-# Adjust T_N accordingly
-T_N = (h^(-2)) * T_N
+# ╔═╡ 9afacf39-ebd8-4f75-afe4-fbcb91179fef
+md"""
+While $R$ is
+"""
 
-# just a check on the cholsky decompostion of T_N
-R = cholesky(T_N).U 
-
-display(T_N)
-display(R)
-end
+# ╔═╡ 7bfb98db-614b-4878-b751-9f19aa2b664f
+R
 
 # ╔═╡ 79bbc86b-de8b-44e2-8329-1edcc5c4f31d
 begin
@@ -650,8 +656,7 @@ md"""
 ### Task 7
 """
 
-# ╔═╡ 572da270-6b0e-409a-bcde-4d7f1a99077f
-begin
+# ╔═╡ b8cef919-b5bd-404e-8d99-9a117e5ee53d
 function shift_and_invert_power_method(T, shift; tol=1e-12, maxitr=1000)
     n = size(T, 1)
     x = randn(n)
@@ -677,6 +682,7 @@ function shift_and_invert_power_method(T, shift; tol=1e-12, maxitr=1000)
     return λ, x  # Return outside the loop if maxitr reached without convergence
 end
 
+# ╔═╡ 572da270-6b0e-409a-bcde-4d7f1a99077f
 """
 
     inviter(A,s,numiter)
@@ -689,33 +695,23 @@ Perform `numiter` inverse iterations with the matrix `A` and shift
 eigenvalue estimates and the final eigenvector approximation.
 
 """
-
 function inviter(A,s,numiter)
 
     n = size(A,1)
-
     x = normalize(randn(n),Inf)
-
     β = zeros(numiter)
-
     fact = lu(A - s*I)
 
     for k in 1:numiter
-
         y = fact\x
-
         normy,m = findmax(abs.(y))
-
         β[k] = x[m]/y[m] + s
-
         x = y/y[m]
-
     end
 
     return β,x
+end
 
-end
-end
 
 # ╔═╡ b0c997e3-826d-4aa4-a449-71c2d1cc1f35
 md"""
@@ -1873,19 +1869,27 @@ version = "1.4.1+1"
 # ╠═bfd78ed1-4047-45ce-afd5-540e5101b9bf
 # ╟─94b15ec3-cdfc-4046-b83f-897c10c41550
 # ╟─36ec5b09-c6cd-42dd-97e2-a8a254d53281
-# ╠═d7ce59a1-f112-4035-80e2-65d8076d09d6
+# ╟─d7ce59a1-f112-4035-80e2-65d8076d09d6
+# ╟─bc82d464-16c4-4926-bd14-5dc78e02e03c
 # ╟─e046c608-7a00-4a44-a9e2-6123ef8af6f9
 # ╟─b6249f4a-95fd-420a-9df7-ccac0976330d
 # ╟─4472fe79-18d7-4e58-8f05-106838651c04
-# ╠═f2a9cf3b-24d7-4044-869d-3255a509ba2d
+# ╟─f2a9cf3b-24d7-4044-869d-3255a509ba2d
 # ╟─8b6ac200-bd2b-4664-b4bd-91fe3073aa12
 # ╠═ded856bd-41b4-4ff6-85b0-98257cbde70c
 # ╟─3f6052d7-5868-4b2e-baa6-d598a3238e3c
 # ╟─e493b80b-3dcd-4842-b8f3-ff15be811156
 # ╠═b3586bfd-8d92-498e-9bb2-d4e3f38a30ea
 # ╟─f41ca8d7-17f7-4211-a4dd-5a6f2fec5485
+# ╠═ecd67fe0-87d3-42b8-94de-080d9a064a8a
+# ╠═ba9dda37-ba85-4d99-971f-e1a21df20dc7
+# ╠═a18465c9-20c4-4807-a82f-00b8684a11a5
 # ╠═ce71edf6-8c70-4a39-ad81-96b83a5d8625
 # ╠═253d3b53-2900-417b-ba3a-8b0db5427bd2
+# ╟─2d6cc215-38e2-4e48-95fc-d86bc2460bd0
+# ╠═be610941-c7ad-40ed-8d37-ed8bda6fe3da
+# ╟─9afacf39-ebd8-4f75-afe4-fbcb91179fef
+# ╠═7bfb98db-614b-4878-b751-9f19aa2b664f
 # ╠═79bbc86b-de8b-44e2-8329-1edcc5c4f31d
 # ╠═4b79be8e-6454-41b3-9687-2d0a0c74d9da
 # ╟─a66dcb3e-c4fe-47b8-8aac-5be6f0843f48
@@ -1898,6 +1902,7 @@ version = "1.4.1+1"
 # ╟─04a36a01-968b-42f1-984f-fc511900d58d
 # ╠═ab28ce92-9194-4bdf-97e0-5ec4363bc987
 # ╟─d39ddcf4-e70b-4359-ace4-23b294f37daf
+# ╠═b8cef919-b5bd-404e-8d99-9a117e5ee53d
 # ╠═572da270-6b0e-409a-bcde-4d7f1a99077f
 # ╟─b0c997e3-826d-4aa4-a449-71c2d1cc1f35
 # ╟─e9e71b59-be33-4663-971c-c91fccf500fa
