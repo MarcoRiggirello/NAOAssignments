@@ -545,7 +545,8 @@ function inverse_power_method(T; tol=1e-8, maxitr=1000)
             return λ[1:i-1], x  # Return current values up to the i-1 th iteration
         end
         x = y / norm(y, 2)
-		λ[i] = x' * T * x
+		#λ[i] = x' * T * x
+		λ[i] = dot(x, T, x)
         i += 1
     end
     return λ, x  # Return outside the loop if maxitr reached without convergence
@@ -676,7 +677,8 @@ function shift_and_invert_power_method(T, shift; tol=1e-12, maxitr=1000)
 		w = forwardsub(L, x)
         y = backsub(U, w)  # Solve Ay = x
         x = y / norm(y, 2)
-		λ[i] = x' * T * x
+		#λ[i] = x' * T * x
+		λ[i] = dot(x, T, x)
         i += 1
     end
     return λ, x  # Return outside the loop if maxitr reached without convergence
