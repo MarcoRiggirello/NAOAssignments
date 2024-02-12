@@ -499,7 +499,7 @@ md"""
 """
 
 # ╔═╡ ecd67fe0-87d3-42b8-94de-080d9a064a8a
-function forwardsub(L,b)
+function forwardsub(L,b) # DA ELIMINARE
      n = size(L,1)
      x = zeros(n)
     x[1] = b[1]/L[1,1]
@@ -511,7 +511,7 @@ function forwardsub(L,b)
 end
 
 # ╔═╡ ba9dda37-ba85-4d99-971f-e1a21df20dc7
-function backsub(U,b)
+function backsub(U,b) # DA ELIMINARE
      n = size(U,1)
     x = zeros(n)
     x[n] = b[n]/U[n,n]
@@ -523,7 +523,7 @@ function backsub(U,b)
 end
 
 # ╔═╡ a18465c9-20c4-4807-a82f-00b8684a11a5
-function cholesky_solver(R,b)
+function cholesky_solver(R,b) # DA ELIMINARE
 	# R is a cholesky upper triangular factorization of T_N
 	# solve (R^T)Rx=d
     w = forwardsub(R',b)           # solves R^T w = b              
@@ -537,17 +537,18 @@ function inverse_power_method(T; tol=1e-8, maxitr=1000)
     x = randn(n)
     x = x / norm(x, 2)
     λ = zeros(maxitr)
-    R = cholesky(T).U
-    i = 1
+    #R = cholesky(T).U
+    C = cholesky(T)
+	i = 1
     while i <= maxitr
-        y = cholesky_solver(R, x)  # Solve R'Ry = x
-        if norm(x - y / norm(y, 2), 2) < tol
+        #y = cholesky_solver(R, x)  # Solve R'Ry = x
+        y = C\x
+		if norm(x - y / norm(y, 2), 2) < tol
             return λ[1:i-1], x  # Return current values up to the i-1 th iteration
         end
         x = y / norm(y, 2)
-		#λ[i] = x' * T * x
-		λ[i] = dot(x, T, x)
-        i += 1
+		λ[i] = x' * T * x
+		i += 1
     end
     return λ, x  # Return outside the loop if maxitr reached without convergence
 end
@@ -659,61 +660,30 @@ md"""
 
 # ╔═╡ b8cef919-b5bd-404e-8d99-9a117e5ee53d
 function shift_and_invert_power_method(T, shift; tol=1e-12, maxitr=1000)
-    n = size(T, 1)
-    x = randn(n)
+    x = normalize(rand(size(T,1)))
 	θ₀=shift
-    x = x / norm(x, 2)
-	λ = zeros(maxitr)
-	λ[1] = θ₀
-	A = (T - θ₀*I(n))
-	L, U, p = lu(A)
+	#λ = zeros(maxitr)
+	λ = [θ₀]
+	A = (T - θ₀*one(T))
+	#L, U, p = lu(A)
+	LU = lu(A)
     i = 1
     while i <= maxitr
-		residual = norm((T - λ[i]*I(n))*x, Inf)
+		residual = norm((T - λ[i]*one(T))*x, Inf)
         if residual <= tol*norm(T, Inf)
-			println("Exited early")
-            return λ[1:i-1], x  # Return current values up to the i-1 th iteration
+			break
+            #return λ[1:i-1], x  # Return current values up to the i-1 th iteration
         end
-		w = forwardsub(L, x)
-        y = backsub(U, w)  # Solve Ay = x
-        x = y / norm(y, 2)
-		#λ[i] = x' * T * x
-		λ[i] = dot(x, T, x)
+		#w = forwardsub(L, x)
+        #y = backsub(U, w)  # Solve Ay = x
+		y = LU\x
+		x = normalize(y)
+		r = x' * T * x
+		push!(λ, r)
         i += 1
     end
     return λ, x  # Return outside the loop if maxitr reached without convergence
 end
-
-# ╔═╡ 572da270-6b0e-409a-bcde-4d7f1a99077f
-"""
-
-    inviter(A,s,numiter)
-
-
-Perform `numiter` inverse iterations with the matrix `A` and shift
-
-`s`, starting from a random vector. Returns a vector of
-
-eigenvalue estimates and the final eigenvector approximation.
-
-"""
-function inviter(A,s,numiter)
-
-    n = size(A,1)
-    x = normalize(randn(n),Inf)
-    β = zeros(numiter)
-    fact = lu(A - s*I)
-
-    for k in 1:numiter
-        y = fact\x
-        normy,m = findmax(abs.(y))
-        β[k] = x[m]/y[m] + s
-        x = y/y[m]
-    end
-
-    return β,x
-end
-
 
 # ╔═╡ b0c997e3-826d-4aa4-a449-71c2d1cc1f35
 md"""
@@ -1905,7 +1875,6 @@ version = "1.4.1+1"
 # ╠═ab28ce92-9194-4bdf-97e0-5ec4363bc987
 # ╟─d39ddcf4-e70b-4359-ace4-23b294f37daf
 # ╠═b8cef919-b5bd-404e-8d99-9a117e5ee53d
-# ╠═572da270-6b0e-409a-bcde-4d7f1a99077f
 # ╟─b0c997e3-826d-4aa4-a449-71c2d1cc1f35
 # ╟─e9e71b59-be33-4663-971c-c91fccf500fa
 # ╠═604a3cb3-7220-4d8a-b4b8-7bef7e847066
