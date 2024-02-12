@@ -188,6 +188,13 @@ md"""
 #### Subtask a
 """
 
+# ╔═╡ a93416aa-8348-425a-a000-401a08f2a913
+md"""
+Here we present a simple QR iteration implementation. The matrix $A_k$ is updated by computing its QR decomposition, $A_k=QR$ and then setting $A_{k+1}=RQ$ this is done until all the nondiagonal elements of $A_k$ have an absolute values smaller than a given threshold.
+
+The function can store some of the intermediary $A_k$. 
+"""
+
 # ╔═╡ 693752b2-eed7-4ac8-a4e5-3005b8d8171b
 function qr_iteration(A; tol=1e-4, store=(1,5,10,15), maxitr=1000)
 	Aₖ = Matrix{Float64}(A)
@@ -197,13 +204,18 @@ function qr_iteration(A; tol=1e-4, store=(1,5,10,15), maxitr=1000)
 		i += 1
 		Q, R = qr(Aₖ)
 		Aₖ = R * Q
-		if any(j -> i == j, store) || store == :all
+		if any(store .== i) || store == :all
 			push!(d, "Itr $i" => copy(Aₖ))
 		end
 	end
 	push!(d, "Itr $i (End)" => copy(Aₖ))
 	return d
 end
+
+# ╔═╡ 0ec3da7c-5a02-47c0-9eec-44e17dbd335b
+md"""
+We apply our algorithm on the matrix
+"""
 
 # ╔═╡ 075e04b4-cc23-419a-a679-d37c73637a34
 A = [
@@ -213,6 +225,11 @@ A = [
 	1 2 3 4
 ]
 
+# ╔═╡ ef4c23e1-1d88-4d94-a4d1-59c4ed782170
+md"""
+Here we can see the evolution $A_k$ during the process:
+"""
+
 # ╔═╡ 5305fb9f-d910-4e75-8651-0adcf5a257c3
 Aₖ = qr_iteration(A)
 
@@ -221,19 +238,31 @@ md"""
 #### Subtask b
 """
 
+# ╔═╡ 0b464823-7faf-4d08-bd0a-516b7384ea17
+md"""
+Here we compare the eigenvalues found by the standard Julia's library LinearAlgebra (which in this context we consider the *true* eigenvalues of the matrix A). . .
+"""
+
 # ╔═╡ afff1c0a-db73-41db-9c52-0181a6d6a5b6
 eigen_true = eigvals(A)
+
+# ╔═╡ 51cfec66-1155-482c-8e67-040bcb930721
+md"""
+. . . with the eigenvalues found by our simple QR iteration algorithm:
+"""
 
 # ╔═╡ 9e8dbf8d-11c1-4c3e-9e90-9d16c1cce412
 eigen_qr = sort(diag(Aₖ[end].second))
 
 # ╔═╡ 53bcdb32-c65e-4de1-8086-d3f258ed9b8b
 md"""
-	Perché lui vuole format long? Non è meglio l'errore relativo? 
+	Perché lui vuole format long? Non è meglio l'errore ASSOLUTOrelativo? 
+
+Here we see that the absolute difference between the "true" eigenvalues and ours is of the order of $10^{-8}$ in the worst case.
 """
 
 # ╔═╡ 51cb4351-d7ca-4d23-82f5-32b15d9da4d8
-(eigen_true - eigen_qr)./eigen_true
+abs.(eigen_true - eigen_qr)
 
 # ╔═╡ 876e1168-0c41-4b9d-98f0-63f498c6db3f
 md"""
@@ -265,7 +294,7 @@ md"""
 
 # ╔═╡ 952584da-93cf-4d68-a0ed-387a400c77a1
 md"""
-In the plot below we can see how many iteration the algorithm must perform in order to achieve a given precision (w.r.t. the vlues found with the standard method). The increase is roughly logarithmic with the precision requested.
+In the plot below we can see how many iteration the algorithm must perform in order to achieve a given precision (w.r.t. the values found with the standard method). The increase is roughly logarithmic with the precision requested.
 
 	vero?
 """
@@ -299,9 +328,13 @@ md"""
 md"""
 Now we proceed with the (Rayleigh) shifted QR iteration with deflation.
 
-The implemetation is organized as follows: at each iteration, we perform the 
-	
-	troppo stanco per continuare. domani
+The implemetation is organized as follows: at each iteration, we perform a single shifted QR iteration with a Rayleigh shift, that is, a QR decomposition for the matrix $A_k - \mu_k I = QR$, where $\mu_k$ is the last diagonal element of $A_k$, then the matrix $A_k$ is updated such that $A_{k+1} = RQ + \mu_k I$.
+
+After each update, we perform the following checks:
+- if all the elements of the last column and the last row (diagonal element excluded) have an absolute value smaller than a given threshold, all those element are set to zero (*deflation*);
+- if the last diagonal element is close to one of the "true" eigenvalues (that is, the absolute difference between them is less than a given threshold) then the eigenvalue is removed from the list of the eigenvalues to be found and the shifted QR iteration is then performed on the reduced version of $A_k$ without the last column and row.
+
+The loop ends when the size of $A_k$ is $1\times 1$, which means that the eigenvalue search is done.
 """
 
 # ╔═╡ 8c9b0f69-8e6c-49cb-ab52-89b4f039e499
@@ -329,14 +362,21 @@ function qr_deflated_rayleigh(A; tol=1e-4, deflation_tol=1e-4, maxitr=1000)
 	return i
 end
 
+# ╔═╡ 3b8589bd-ba03-4304-a3a2-4c5f91ec4bf2
+md"""
+Here we plot the difference between the number of iteration needed with the depleted/shifted method is less than the simple method.
+
+	forse va detto più quantitativo? anche che so l'andamento?
+"""
+
 # ╔═╡ bfd78ed1-4047-45ce-afd5-540e5101b9bf
 begin
 	yrd = zero(x)
 	for (i,t) in enumerate(x)
 		yrd[i] = qr_deflated_rayleigh(A, tol=t)
 	end
-	p2 = plot(x,yrd, xscale=:log10, xlabel="Absolute tolerance", ylabel="Number of QR iterations", marker=true, line=false, label="rayleigh shift + depletion")
-	plot!(p2, x, y, marker=true, line=false, label="simple qr")
+	p2 = plot(x,yrd, xscale=:log10, xlabel="Absolute tolerance", ylabel="Number of QR iterations", marker=true, line=false, label="Rayleigh shift + depletion")
+	plot!(p2, x, y, marker=true, line=false, label="simple QR")
 end
 
 # ╔═╡ 94b15ec3-cdfc-4046-b83f-897c10c41550
@@ -1805,11 +1845,16 @@ version = "1.4.1+1"
 # ╟─ce70f273-fed0-403b-ace8-4ecc7c8b5fb3
 # ╟─7efb4688-6b27-4291-83f1-f204afc49554
 # ╟─d1a7e0b9-4a3b-4ddd-b583-97cc943d4388
+# ╟─a93416aa-8348-425a-a000-401a08f2a913
 # ╠═693752b2-eed7-4ac8-a4e5-3005b8d8171b
+# ╟─0ec3da7c-5a02-47c0-9eec-44e17dbd335b
 # ╟─075e04b4-cc23-419a-a679-d37c73637a34
+# ╟─ef4c23e1-1d88-4d94-a4d1-59c4ed782170
 # ╠═5305fb9f-d910-4e75-8651-0adcf5a257c3
 # ╟─37fe8308-a211-4a08-8683-ba6d7780158d
+# ╟─0b464823-7faf-4d08-bd0a-516b7384ea17
 # ╠═afff1c0a-db73-41db-9c52-0181a6d6a5b6
+# ╟─51cfec66-1155-482c-8e67-040bcb930721
 # ╠═9e8dbf8d-11c1-4c3e-9e90-9d16c1cce412
 # ╟─53bcdb32-c65e-4de1-8086-d3f258ed9b8b
 # ╠═51cb4351-d7ca-4d23-82f5-32b15d9da4d8
@@ -1822,8 +1867,9 @@ version = "1.4.1+1"
 # ╟─385b1755-1f4c-46f3-8908-1a5cbfd5ef1f
 # ╟─f12b1a44-ac70-4e54-8922-3dad22580061
 # ╟─51f7a5fc-9366-43da-9c3e-1831ff45f5fb
-# ╠═4705881c-fdd7-4fe9-8483-3ad8aa510372
+# ╟─4705881c-fdd7-4fe9-8483-3ad8aa510372
 # ╠═8c9b0f69-8e6c-49cb-ab52-89b4f039e499
+# ╟─3b8589bd-ba03-4304-a3a2-4c5f91ec4bf2
 # ╠═bfd78ed1-4047-45ce-afd5-540e5101b9bf
 # ╟─94b15ec3-cdfc-4046-b83f-897c10c41550
 # ╟─36ec5b09-c6cd-42dd-97e2-a8a254d53281
