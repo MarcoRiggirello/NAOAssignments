@@ -190,7 +190,7 @@ md"""
 
 # ╔═╡ a93416aa-8348-425a-a000-401a08f2a913
 md"""
-Here we present a simple QR iteration implementation. The matrix $A_k$ is updated by computing its QR decomposition, $A_k=QR$ and then setting $A_{k+1}=RQ$ this is done until all the nondiagonal elements of $A_k$ have an absolute values smaller than a given threshold.
+Here we present a simple QR iteration implementation. The matrix $A_k$ is updated by computing its QR decomposition, $A_k=QR$ and then setting $A_{k+1}=RQ$. This is done until all the nondiagonal elements of $A_k$ have an absolute values smaller than a given threshold.
 
 The function can store some of the intermediary $A_k$. 
 """
@@ -244,7 +244,7 @@ Here we compare the eigenvalues found by the standard Julia's library LinearAlge
 """
 
 # ╔═╡ afff1c0a-db73-41db-9c52-0181a6d6a5b6
-eigen_true = eigvals(A)
+@show eigen_true = eigvals(A)
 
 # ╔═╡ 51cfec66-1155-482c-8e67-040bcb930721
 md"""
@@ -252,12 +252,10 @@ md"""
 """
 
 # ╔═╡ 9e8dbf8d-11c1-4c3e-9e90-9d16c1cce412
-eigen_qr = sort(diag(Aₖ[end].second))
+@show eigen_qr = sort(diag(Aₖ[end].second))
 
 # ╔═╡ 53bcdb32-c65e-4de1-8086-d3f258ed9b8b
 md"""
-	Perché lui vuole format long? Non è meglio l'errore ASSOLUTOrelativo? 
-
 Here we see that the absolute difference between the "true" eigenvalues and ours is of the order of $10^{-8}$ in the worst case.
 """
 
@@ -287,16 +285,9 @@ function qr_comparison(A; tol=1e-4, maxitr=1000)
 	return i
 end
 
-# ╔═╡ c0a887a2-bcb1-44d9-9ac7-3217f9845072
-md"""
-	secondo te solo la matrice di prima o delle matrici a caso?
-"""
-
 # ╔═╡ 952584da-93cf-4d68-a0ed-387a400c77a1
 md"""
-In the plot below we can see how many iteration the algorithm must perform in order to achieve a given precision (w.r.t. the values found with the standard method). The increase is roughly logarithmic with the precision requested.
-
-	vero?
+In the plot below we can see how many iteration the algorithm must perform in order to achieve a given precision (w.r.t. the values found with the standard method). The increase in precision is roughly exponential with the number of QR iterations.
 """
 
 # ╔═╡ 110314c7-9d1b-40a7-ae24-7877ef9be38f
@@ -312,16 +303,6 @@ end
 # ╔═╡ 385b1755-1f4c-46f3-8908-1a5cbfd5ef1f
 md"""
 #### Subtask d
-"""
-
-# ╔═╡ f12b1a44-ac70-4e54-8922-3dad22580061
-md"""
-	idem con patate
-"""
-
-# ╔═╡ 51f7a5fc-9366-43da-9c3e-1831ff45f5fb
-md"""
-	ma quando famo la deflation vuole che splittiamo il problema???
 """
 
 # ╔═╡ 4705881c-fdd7-4fe9-8483-3ad8aa510372
@@ -347,10 +328,12 @@ function qr_deflated_rayleigh(A; tol=1e-4, deflation_tol=1e-4, maxitr=1000)
 		μₖ = Aₖ[end, end]
 		Q, R = qr(Aₖ - μₖ * one(Aₖ))
 		Aₖ = R * Q + μₖ * one(Aₖ)
+		# deflation
 		if all(abs.(vcat(Aₖ[end,1:end-1], Aₖ[1:end-1,end])) .<= deflation_tol)
 			Aₖ[end,1:end-1] .= 0
 			Aₖ[1:end-1,end] .= 0
 		end
+		# matrix/"eigenlist" reduction
 		if any(abs.(Aₖ[end:end] .- eigen_true) .<= tol)
 			eigen_true = eigen_true[abs.(Aₖ[end:end] .- eigen_true) .>= tol]
 			Aₖ = Aₖ[1:end-1,1:end-1]
@@ -364,9 +347,7 @@ end
 
 # ╔═╡ 3b8589bd-ba03-4304-a3a2-4c5f91ec4bf2
 md"""
-Here we plot the difference between the number of iteration needed with the depleted/shifted method is less than the simple method.
-
-	forse va detto più quantitativo? anche che so l'andamento?
+Here we plot the difference between the number of iteration needed with the depleted/shifted method and the simple method. We see that the former converges faster than the latter.
 """
 
 # ╔═╡ bfd78ed1-4047-45ce-afd5-540e5101b9bf
@@ -418,8 +399,6 @@ $$\begin{split}
 \end{split}$$
 
 Where the part in square brackets is the eigenvalue approximation for $T_N$.
-
-	non so bene che commentare qui, quell'h^-2 e' rimasto i mezzo alle balle e non otteniamo esattamente 4(N+1)^2 come valore asintotico. pero' approssimando se trascuriamo il pi lo riotteniamo!
 """
 
 # ╔═╡ e046c608-7a00-4a44-a9e2-6123ef8af6f9
@@ -468,28 +447,19 @@ md"""
 ### Task 5
 """
 
-# ╔═╡ e493b80b-3dcd-4842-b8f3-ff15be811156
-md"""
-	Fa un po' onco il plot cosi' forse
-
-	De forse sì... però dal testo mi sembra di capire che lo chieda esplicitamente così
-"""
-
 # ╔═╡ b3586bfd-8d92-498e-9bb2-d4e3f38a30ea
 begin
 	u(k, j) = sqrt(2/(N+1)) * sin(π * j * k / (N+1))
 	j1 = [1,2,3,5,11,21]
 	eigenvectors = [u(k, j) for k in 1:N, j in j1]
 
-	# Now plot
 	# Initialize the plot with the first series to ensure it creates a plot object
 	plo = plot(1:N, eigenvectors[:, 1], label="j = $(j1[1])", legend=:outertopright, figsize=(1000, 600),  linewidth=2)
 	# Add the rest of the series in a loop
 	for idx in 2:length(j1)
 	    plot!(plo, 1:N, eigenvectors[:, idx], label="j = $(j1[idx])", figsize=(1000, 600), linewidth=2)
 	end
-	
-	# Display the plot
+
 	plo
 end
 
@@ -498,66 +468,38 @@ md"""
 ### Task 6
 """
 
-# ╔═╡ ecd67fe0-87d3-42b8-94de-080d9a064a8a
-function forwardsub(L,b) # DA ELIMINARE
-     n = size(L,1)
-     x = zeros(n)
-    x[1] = b[1]/L[1,1]
-    for i in 2:n
-        s = sum( L[i,j]*x[j] for j in 1:i-1 )
-        x[i] = ( b[i] - s ) / L[i,i]
-    end
-    return x
-end
-
-# ╔═╡ ba9dda37-ba85-4d99-971f-e1a21df20dc7
-function backsub(U,b) # DA ELIMINARE
-     n = size(U,1)
-    x = zeros(n)
-    x[n] = b[n]/U[n,n]
-    for i in n-1:-1:1
-		s = sum( U[i,j]*x[j] for j in i+1:n )
-        x[i] = ( b[i] - s ) / U[i,i]
-    end
-	return x
-end
-
-# ╔═╡ a18465c9-20c4-4807-a82f-00b8684a11a5
-function cholesky_solver(R,b) # DA ELIMINARE
-	# R is a cholesky upper triangular factorization of T_N
-	# solve (R^T)Rx=d
-    w = forwardsub(R',b)           # solves R^T w = b              
-    x = backsub(R,w)               # solves R x = w      
-    return x
-end
+# ╔═╡ 623eefdb-5f4b-42ae-b348-1ddd1adb3ab8
+md"""
+In the implementation of the power method we use the Julia's backslash operator which performs a forward-backward substitution if the first argument is a Cholesky object.
+"""
 
 # ╔═╡ ce71edf6-8c70-4a39-ad81-96b83a5d8625
 function inverse_power_method(T; tol=1e-8, maxitr=1000)
-    n = size(T, 1)
-    x = randn(n)
-    x = x / norm(x, 2)
-    λ = zeros(maxitr)
-    #R = cholesky(T).U
+	x = normalize(rand(size(T,1)))
+    λ = [0.]
     C = cholesky(T)
 	i = 1
     while i <= maxitr
-        #y = cholesky_solver(R, x)  # Solve R'Ry = x
-        y = C\x
+        y = C \ x
 		if norm(x - y / norm(y, 2), 2) < tol
-            return λ[1:i-1], x  # Return current values up to the i-1 th iteration
+            break
         end
-        x = y / norm(y, 2)
-		λ[i] = x' * T * x
+		x = normalize(y)
+		r = x' * T * x
+		push!(λ, r)
 		i += 1
     end
-    return λ, x  # Return outside the loop if maxitr reached without convergence
+    return λ, x
 end
+
+# ╔═╡ df22141e-821c-490a-becf-d3af53f462a5
+md"""
+We compute then
+"""
 
 # ╔═╡ 253d3b53-2900-417b-ba3a-8b0db5427bd2
 begin
-	# Define N1
 	N1 = 500
-	# Initialize TN with zeros
 	T_N = zeros(N1, N1)
 	# Fill the diagonal with 2s
 	for i in 1:N1
@@ -572,7 +514,6 @@ begin
 	h = 1 / (N1 + 1)
 	# Adjust T_N accordingly
 	T_N = (h^(-2)) * T_N
-	# just a check on the cholsky decompostion of T_N
 	R = cholesky(T_N).U
 	nothing
 end
@@ -593,14 +534,20 @@ While $R$ is
 # ╔═╡ 7bfb98db-614b-4878-b751-9f19aa2b664f
 R
 
+# ╔═╡ e57fbb60-d5bf-4255-9f22-f1d0e3e3ac34
+md"""
+We store the known value for λ₁
+"""
+
 # ╔═╡ 79bbc86b-de8b-44e2-8329-1edcc5c4f31d
-begin
-	# store the known value for λ₁
-	λ₁ = pi^2
-end
+λ₁ = pi^2
+
+# ╔═╡ ecd5a544-6269-4744-8ad6-e8711836aa95
+md"""
+. . . and we apply the inverse power method to find it: 
+"""
 
 # ╔═╡ 4b79be8e-6454-41b3-9687-2d0a0c74d9da
-# apply the algorithm!
 lambda, eigenvector = inverse_power_method(T_N)
 
 # ╔═╡ a66dcb3e-c4fe-47b8-8aac-5be6f0843f48
@@ -614,35 +561,44 @@ lambda[end]
 # ╔═╡ d4d3af56-a018-4493-99d1-e6935bf9b798
 size(lambda)
 
-# ╔═╡ 02776ce5-15a9-4764-8e99-61d98bd4a734
-begin
-# now compare lambda[end] and λ₁
+# ╔═╡ e63d994a-63c0-4758-b35d-f7f64a0360c7
+md"""
+Here we compare the difference between the true eigenvalue and the one found with the inverse power method:
+"""
+
+# ╔═╡ 771fca7a-ab7b-428a-a298-6fe6cc5e47f1
 diff = abs(lambda[end] - λ₁)
-# now compare the eigenvectors
+
+# ╔═╡ 9eb50ded-dcca-483b-92eb-b9351f542cc9
+md"""
+. . . and the eigenvector:
+"""
+
+# ╔═╡ 02776ce5-15a9-4764-8e99-61d98bd4a734
 diff2 = norm(eigenvector - sin.(π * (1:N1) / (N1 + 1)), 2)
-# print 
-diff, diff2
-end
+
+# ╔═╡ a1490386-eb62-4013-92e2-fd0ec19382ae
+md"""
+Here we plot the computed eigenvector against the real one:
+"""
 
 # ╔═╡ 3bf1abea-4f17-4d92-bfd0-a983bf752dbc
 begin
-# plot the computed eigenvector against the real one
-plot(1:N1,eigenvector, label="computed", legend=:outertopright, figsize=(1000, 600),  linewidth=2)
-plot!(1:N1, sin.(π * (1:N1) / (N1 + 1)), label="exact",  linewidth=2)
+	plot(1:N1,eigenvector, label="computed", legend=:outertopright, figsize=(1000, 600),  linewidth=2)
+	plot!(1:N1, sin.(π * (1:N1) / (N1 + 1)), label="exact",  linewidth=2)
 end
 
 # ╔═╡ ad42d191-aa41-4528-9fb3-ee17d30eb5df
 md"""
-The computed eignevector is off, but just because of the normalization inside of the algorithm (the exact eigenvector is not normalized to 1). If we rescale by the norm of the exact eigenvector we get:
+The computed eigenvector is off, but just because of the normalization inside of the algorithm (the exact eigenvector is not normalized to 1). If we rescale by the norm of the exact eigenvector we get:
 """
 
 # ╔═╡ d2cd4a49-ae53-48cb-998f-59ffb8145bc8
 begin
-# plot the computed eigenvector against the real one
-test_norm = norm(sin.(π * (1:N1) / (N1 + 1)),2)
+	test_norm = norm(sin.(π * (1:N1) / (N1 + 1)),2)
 
-plot(1:N1, sin.(π * (1:N1) / (N1 + 1)), label="exact",  linewidth=6)
-plot!(1:N1,test_norm*eigenvector, label="computed", legend=:outertopright, figsize=(1000, 600),  linewidth=2, seriestype=:scatter, markersize=0.6)
+	plot(1:N1, sin.(π * (1:N1) / (N1 + 1)), label="exact",  linewidth=6)
+	plot!(1:N1,test_norm*eigenvector, label="computed", legend=:outertopright, figsize=(1000, 600),  linewidth=2, seriestype=:scatter, markersize=0.6)
 end
 
 # ╔═╡ 04a36a01-968b-42f1-984f-fc511900d58d
@@ -658,37 +614,32 @@ md"""
 ### Task 7
 """
 
+# ╔═╡ b04b4588-422c-4355-ba72-8873856af232
+md"""
+The Julia backslash operator performs a forward-backward substitution if the first argument is a LU decomposition as well.
+"""
+
 # ╔═╡ b8cef919-b5bd-404e-8d99-9a117e5ee53d
 function shift_and_invert_power_method(T, shift; tol=1e-12, maxitr=1000)
     x = normalize(rand(size(T,1)))
 	θ₀=shift
-	#λ = zeros(maxitr)
 	λ = [θ₀]
 	A = (T - θ₀*one(T))
-	#L, U, p = lu(A)
 	LU = lu(A)
     i = 1
     while i <= maxitr
-		residual = norm((T - λ[i]*one(T))*x, Inf)
-        if residual <= tol*norm(T, Inf)
+		residual = norm((T - λ[i] * one(T)) * x, Inf)
+        if residual <= tol * norm(T, Inf)
 			break
-            #return λ[1:i-1], x  # Return current values up to the i-1 th iteration
         end
-		#w = forwardsub(L, x)
-        #y = backsub(U, w)  # Solve Ay = x
-		y = LU\x
+		y = LU \ x
 		x = normalize(y)
 		r = x' * T * x
 		push!(λ, r)
         i += 1
     end
-    return λ, x  # Return outside the loop if maxitr reached without convergence
+    return λ, x
 end
-
-# ╔═╡ b0c997e3-826d-4aa4-a449-71c2d1cc1f35
-md"""
-	la situazione e' questa: non convergiamo mai con la sua richiesta sul resiudo. nemmeno la funzione scritta in modo totalmente diverso da quelli di NAO Julia funziona meglio. non capisco troppo bene il perche', stiamo facendo come spiegato. forse perche' uso x' e non conj(x)??
-"""
 
 # ╔═╡ e9e71b59-be33-4663-971c-c91fccf500fa
 md"""
@@ -703,27 +654,25 @@ size(lambda5)
 
 # ╔═╡ e150d8fd-d9b1-44b4-9bf5-fc02266f353f
 begin
-# plot the computed eigenvector against the real one
-plot(1:N1,eigenvector5, label="computed", legend=:outertopright, figsize=(1000, 600),  linewidth=2)
-plot!(1:N1, sin.(5*π * (1:N1) / (N1 + 1)), label="exact",  linewidth=2)
+	plot(1:N1,eigenvector5, label="computed", legend=:outertopright, figsize=(1000, 600),  linewidth=2)
+	plot!(1:N1, sin.(5*π * (1:N1) / (N1 + 1)), label="exact",  linewidth=2)
 end
+
+# ╔═╡ a562ca8e-5caf-4860-b32a-29e3a20c6b80
+md"""
+As said before, we need to rescale the computed eigenvector to ensure we can appreciate the overlap between the computed one and the exact one.
+"""
 
 # ╔═╡ 9b5db795-c184-4aab-8148-02bd99fb91a9
 begin
-# plot the computed eigenvector against the real one
-test_norm5 = norm(sin.(5*π * (1:N1) / (N1 + 1)),2)
+	test_norm5 = norm(sin.(5*π * (1:N1) / (N1 + 1)),2)
 
-plot(1:N1, sin.(5*π * (1:N1) / (N1 + 1)), label="exact",  linewidth=6)
-plot!(1:N1,test_norm5*eigenvector5, label="computed", legend=:outertopright, figsize=(1000, 600),  linewidth=2, seriestype=:scatter, markersize=0.6)
+	plot(1:N1, sin.(5*π * (1:N1) / (N1 + 1)), label="exact",  linewidth=6)
+	plot!(1:N1,test_norm5*eigenvector5, label="computed", legend=:outertopright, figsize=(1000, 600),  linewidth=2, seriestype=:scatter, markersize=0.6)
 end
 
 # ╔═╡ b25a59c2-53c6-437d-b37f-482a92c97f55
 diff5 = norm(test_norm5*eigenvector5 - sin.(5*π * (1:N1) / (N1 + 1)), 2)
-
-# ╔═╡ 196cf814-d3ae-415c-84ad-763f27536e9b
-begin
-norm(25*pi^2*eigenvector5 - T_N*eigenvector5, Inf)
-end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1829,12 +1778,9 @@ version = "1.4.1+1"
 # ╟─876e1168-0c41-4b9d-98f0-63f498c6db3f
 # ╟─0b90cbdb-10ec-4211-a2d8-dc99b03d4e9c
 # ╠═23471ccf-c736-4ed4-8a50-f7370341056a
-# ╟─c0a887a2-bcb1-44d9-9ac7-3217f9845072
 # ╟─952584da-93cf-4d68-a0ed-387a400c77a1
 # ╠═110314c7-9d1b-40a7-ae24-7877ef9be38f
 # ╟─385b1755-1f4c-46f3-8908-1a5cbfd5ef1f
-# ╟─f12b1a44-ac70-4e54-8922-3dad22580061
-# ╟─51f7a5fc-9366-43da-9c3e-1831ff45f5fb
 # ╟─4705881c-fdd7-4fe9-8483-3ad8aa510372
 # ╠═8c9b0f69-8e6c-49cb-ab52-89b4f039e499
 # ╟─3b8589bd-ba03-4304-a3a2-4c5f91ec4bf2
@@ -1850,38 +1796,42 @@ version = "1.4.1+1"
 # ╟─8b6ac200-bd2b-4664-b4bd-91fe3073aa12
 # ╠═ded856bd-41b4-4ff6-85b0-98257cbde70c
 # ╟─3f6052d7-5868-4b2e-baa6-d598a3238e3c
-# ╟─e493b80b-3dcd-4842-b8f3-ff15be811156
 # ╠═b3586bfd-8d92-498e-9bb2-d4e3f38a30ea
 # ╟─f41ca8d7-17f7-4211-a4dd-5a6f2fec5485
-# ╠═ecd67fe0-87d3-42b8-94de-080d9a064a8a
-# ╠═ba9dda37-ba85-4d99-971f-e1a21df20dc7
-# ╠═a18465c9-20c4-4807-a82f-00b8684a11a5
+# ╟─623eefdb-5f4b-42ae-b348-1ddd1adb3ab8
 # ╠═ce71edf6-8c70-4a39-ad81-96b83a5d8625
+# ╟─df22141e-821c-490a-becf-d3af53f462a5
 # ╠═253d3b53-2900-417b-ba3a-8b0db5427bd2
 # ╟─2d6cc215-38e2-4e48-95fc-d86bc2460bd0
 # ╠═be610941-c7ad-40ed-8d37-ed8bda6fe3da
 # ╟─9afacf39-ebd8-4f75-afe4-fbcb91179fef
 # ╠═7bfb98db-614b-4878-b751-9f19aa2b664f
+# ╟─e57fbb60-d5bf-4255-9f22-f1d0e3e3ac34
 # ╠═79bbc86b-de8b-44e2-8329-1edcc5c4f31d
+# ╟─ecd5a544-6269-4744-8ad6-e8711836aa95
 # ╠═4b79be8e-6454-41b3-9687-2d0a0c74d9da
 # ╟─a66dcb3e-c4fe-47b8-8aac-5be6f0843f48
 # ╠═94ff86e9-7fa3-451b-8b34-31ca6e008c82
 # ╠═d4d3af56-a018-4493-99d1-e6935bf9b798
+# ╟─e63d994a-63c0-4758-b35d-f7f64a0360c7
+# ╠═771fca7a-ab7b-428a-a298-6fe6cc5e47f1
+# ╟─9eb50ded-dcca-483b-92eb-b9351f542cc9
 # ╠═02776ce5-15a9-4764-8e99-61d98bd4a734
+# ╟─a1490386-eb62-4013-92e2-fd0ec19382ae
 # ╠═3bf1abea-4f17-4d92-bfd0-a983bf752dbc
 # ╟─ad42d191-aa41-4528-9fb3-ee17d30eb5df
 # ╠═d2cd4a49-ae53-48cb-998f-59ffb8145bc8
 # ╟─04a36a01-968b-42f1-984f-fc511900d58d
 # ╠═ab28ce92-9194-4bdf-97e0-5ec4363bc987
 # ╟─d39ddcf4-e70b-4359-ace4-23b294f37daf
+# ╟─b04b4588-422c-4355-ba72-8873856af232
 # ╠═b8cef919-b5bd-404e-8d99-9a117e5ee53d
-# ╟─b0c997e3-826d-4aa4-a449-71c2d1cc1f35
 # ╟─e9e71b59-be33-4663-971c-c91fccf500fa
 # ╠═604a3cb3-7220-4d8a-b4b8-7bef7e847066
 # ╠═8eeecc56-014f-4bb8-99ac-a67fd7bfb1a4
 # ╠═e150d8fd-d9b1-44b4-9bf5-fc02266f353f
+# ╟─a562ca8e-5caf-4860-b32a-29e3a20c6b80
 # ╠═9b5db795-c184-4aab-8148-02bd99fb91a9
 # ╠═b25a59c2-53c6-437d-b37f-482a92c97f55
-# ╠═196cf814-d3ae-415c-84ad-763f27536e9b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
