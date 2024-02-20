@@ -47,6 +47,20 @@ g_a! = eval(build_function(∇f_a, [x₁, x₂])[2])
 # ╔═╡ 7074f6d2-94c1-4440-9a44-7936db617bb3
 h_a! = eval(build_function(∇²f_a, [x₁, x₂])[2])
 
+# ╔═╡ 08a58ba7-52d1-4dd2-b30f-c32608ab964a
+md"""
+### Plot
+"""
+
+# ╔═╡ 85a9fbca-7866-4c7f-899e-d6738a96596a
+begin
+	x_a = range(0, 4, 100)
+	y_a = range(-2, 2, 100)
+	z_a = @. f_a(x_a', y_a)
+	#contour(x_a, y_a, z_a)
+	surface(x_a, y_a, z_a)
+end
+
 # ╔═╡ 23ab718b-5237-4cce-927e-ab29ec98deae
 md"""
 ## Optimization b
@@ -101,6 +115,20 @@ g_c! = eval(build_function(∇f_c, [x₁, x₂])[2])
 # ╔═╡ 8fcac8e1-7059-4547-beae-7d1d5ed44420
 h_c! = eval(build_function(∇²f_c, [x₁, x₂])[2])
 
+# ╔═╡ 1c6f05b3-a1c0-4294-9316-a1e0049550b2
+md"""
+### Plot
+"""
+
+# ╔═╡ 925503d2-4262-4da0-b00a-c970ebde0318
+begin
+	x_c = range(2, 4, 100)
+	y_c = range(-1, 1, 100)
+	z_c = @. f_c(x_c', y_c)
+	#contour(x_a, y_a, z_a)
+	surface(x_c, y_c, z_c)
+end
+
 # ╔═╡ 775a3f3b-94aa-4502-8b99-57824fa8a805
 md"""
 ## Optimization d
@@ -120,6 +148,20 @@ g_d! = eval(build_function(∇f_d, [x₁, x₂])[2])
 
 # ╔═╡ 09203146-bf72-491c-82f3-41c686a7e829
 h_d! = eval(build_function(∇²f_d, [x₁, x₂])[2])
+
+# ╔═╡ d51eba6e-809e-4c41-991d-5d90c65182b4
+md"""
+### Plot
+"""
+
+# ╔═╡ b22fa713-2fe9-475c-97b8-688329d6969d
+begin
+	x_d = range(-2, 2, 100)
+	y_d = range(-2, 2, 100)
+	z_d = @. f_d(x_d', y_d)
+	#contour(x_d, y_d, z_d)
+	surface(x_d, y_d, z_d)
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1672,6 +1714,8 @@ version = "1.4.1+1"
 # ╠═d30f8a04-5fde-4b1c-933c-577229b8de77
 # ╠═b86e5b21-7b90-4111-b6da-eddbf7402bf2
 # ╠═7074f6d2-94c1-4440-9a44-7936db617bb3
+# ╟─08a58ba7-52d1-4dd2-b30f-c32608ab964a
+# ╠═85a9fbca-7866-4c7f-899e-d6738a96596a
 # ╟─23ab718b-5237-4cce-927e-ab29ec98deae
 # ╟─0b6ed726-232f-484b-9e20-28bfdb812a67
 # ╠═015c5739-0e4a-426a-a6f9-376213da2424
@@ -1685,11 +1729,15 @@ version = "1.4.1+1"
 # ╠═ba043839-e13d-475a-a93e-b170af23327d
 # ╠═851793c3-b9fd-44ee-b96f-0f0734fae4d9
 # ╠═8fcac8e1-7059-4547-beae-7d1d5ed44420
+# ╟─1c6f05b3-a1c0-4294-9316-a1e0049550b2
+# ╠═925503d2-4262-4da0-b00a-c970ebde0318
 # ╟─775a3f3b-94aa-4502-8b99-57824fa8a805
 # ╠═3fbe3908-eee9-440b-993c-67e8a84d10e9
 # ╠═9b835cfe-2206-4deb-b958-d3672e1a77fe
 # ╠═c7220592-fc91-4c1f-9c71-5dab5475c32d
 # ╠═bef5fb16-a753-4375-90ef-e4bf70be23c9
 # ╠═09203146-bf72-491c-82f3-41c686a7e829
+# ╟─d51eba6e-809e-4c41-991d-5d90c65182b4
+# ╠═b22fa713-2fe9-475c-97b8-688329d6969d
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
