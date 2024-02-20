@@ -159,8 +159,12 @@ begin
 	x_d = range(-2, 2, 100)
 	y_d = range(-2, 2, 100)
 	z_d = @. f_d(x_d', y_d)
-	#contour(x_d, y_d, z_d)
-	surface(x_d, y_d, z_d)
+	plt = plot([-2],[-2], dpi=300, color=:black)
+	contour!(plt, x_d, y_d, z_d)
+	@gif for (i,j) in zip(x_d, y_d)
+		push!(plt, i,j+0.2*rand())
+	end every 10
+	#surface(x_d, y_d, z_d)
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
