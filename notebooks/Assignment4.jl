@@ -15,6 +15,71 @@ md"""
 # NAO 4
 """
 
+# ╔═╡ ed785d1d-54e9-49df-b45f-dffa161d978c
+struct OptimizationResults
+	algorithm::String
+	converged::Bool
+	last_grad_norm::Real
+	last_step_norm::Real
+	n_iterations::Int
+	steps::Matrix
+	values::Vector
+end
+
+# ╔═╡ 52387950-56cc-414e-a434-8480757fdd45
+md"""
+## Newton
+"""
+
+# ╔═╡ fa77e47e-6876-42d5-ae9d-9c68e9afd174
+function optimize_newton(f, g, h; x0=[0,0])
+	return Dict("Newton" => [1 1; 2 2; 3 3])
+end
+
+# ╔═╡ 27a151a4-1028-4baf-b4b4-138fa5ce9040
+md"""
+## BFGS
+"""
+
+# ╔═╡ 6698003b-240b-4f1b-b1e4-8e70107c4150
+md"""
+## Backtracking
+"""
+
+# ╔═╡ 35f73a6e-ada1-412a-a770-175427d1e443
+md"""
+## Trust region?
+"""
+
+# ╔═╡ f8dc799a-d2ef-43ae-aa8b-5a43b094d7c3
+md"""
+## Graphics
+"""
+
+# ╔═╡ 2b253872-ca18-4f81-9a90-565d1503576d
+function plot_optimization(f, opts...; xlim=(-10,10), ylim=(-10,10), gridsize=100)
+	x = range(xlim..., gridsize)
+	y = range(ylim..., gridsize)
+	z = @. f(x', y)
+
+	if any(j -> size(j.steps, 2) != 2, opts)
+		throw(ValueError("Optimizations are not of size 2"))
+	end
+
+	xx = [j.steps[1,1] for j in opts]
+	yy = [j.steps[1,1] for j in opts]
+
+	for (i,o) in enumerate(opts)
+		for (i, c) in eachcol(o.steps)
+			xx = [xx xx[:,end]]
+			xx[end,i] = c[1]
+			yy = [yy yy[:,end]]
+			yy[end,i] = c[2]
+		end
+	end
+end	
+	
+
 # ╔═╡ 96e08046-c44d-421c-9784-72a97ff8fbf8
 md"""
 ## Optimization a
@@ -159,12 +224,33 @@ begin
 	x_d = range(-2, 2, 100)
 	y_d = range(-2, 2, 100)
 	z_d = @. f_d(x_d', y_d)
-	plt = plot([-2],[-2], dpi=300, color=:black)
+	plt = plot(
+		1,
+		xlim=(x_d[1], x_d[end]),
+		ylim=(y_d[1], y_d[end]),
+		dpi=180,
+		color=:black
+	)
+	plot!(plt, 1, color=:plasma)
+	#plot!(plt, 1, color=:plasma)
 	contour!(plt, x_d, y_d, z_d)
-	@gif for (i,j) in zip(x_d, y_d)
-		push!(plt, i,j+0.2*rand())
+	
+	x_dd = vcat(x_d, [x_d[end] for i in 1:100])
+	x_d2 = vcat([-x_d[1] for i in 1:100], -x_d)
+
+	xx = hcat(x_dd, x_d2)
+	
+	y_dd = vcat(x_d, [x_d[end] for i in 1:100])
+	y_d2 = vcat([y_d[1] for i in 1:100], y_d)
+
+	yy = hcat(y_dd, y_d2)
+	
+	@gif for (i, j) in zip(eachrow(xx), eachrow(yy))
+		push!(plt, i, j)
 	end every 10
 	#surface(x_d, y_d, z_d)
+
+	
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -1709,7 +1795,15 @@ version = "1.4.1+1"
 # ╔═╡ Cell order:
 # ╠═6e15ed80-1938-4ea9-82f8-a7d0b8dfd6ce
 # ╠═45ad341c-765c-40e1-a726-8a575dc3ab9a
-# ╠═61498356-cf52-11ee-3c16-038f22b043c9
+# ╟─61498356-cf52-11ee-3c16-038f22b043c9
+# ╠═ed785d1d-54e9-49df-b45f-dffa161d978c
+# ╟─52387950-56cc-414e-a434-8480757fdd45
+# ╠═fa77e47e-6876-42d5-ae9d-9c68e9afd174
+# ╟─27a151a4-1028-4baf-b4b4-138fa5ce9040
+# ╟─6698003b-240b-4f1b-b1e4-8e70107c4150
+# ╟─35f73a6e-ada1-412a-a770-175427d1e443
+# ╟─f8dc799a-d2ef-43ae-aa8b-5a43b094d7c3
+# ╠═2b253872-ca18-4f81-9a90-565d1503576d
 # ╟─96e08046-c44d-421c-9784-72a97ff8fbf8
 # ╟─cdfc565c-c18b-4e8e-aa17-dfb9483e9eee
 # ╠═57c33dc0-1e46-4c33-a432-550307367839
