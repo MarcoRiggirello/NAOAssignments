@@ -19,6 +19,8 @@ md"""
 struct OptimizationResults
 	algorithm::String
 	converged::Bool
+	min::Real
+	argmin::Vector
 	last_grad_norm::Real
 	last_step_norm::Real
 	n_iterations::Int
@@ -32,8 +34,41 @@ md"""
 """
 
 # ╔═╡ fa77e47e-6876-42d5-ae9d-9c68e9afd174
-function optimize_newton(f, g, h; x0=[0,0])
-	return Dict("Newton" => [1 1; 2 2; 3 3])
+function optimize_newton(f, g!, H!, x₀; tol=1e-5, maxitr=100)
+	n = length(x₀)
+	xₖ = x₀
+	gₖ = zeros(n)
+	Hₖ = zeros(n,n)
+	steps = xₖ
+	values = [f(xₖ)]
+	step_norm = 0.
+	grad_norm = 0.
+	k = 0
+	converged = false
+	while k ≤ maxitr && !converged
+		k += 1
+		k ≤ maxitr
+		g!(gₖ, xₖ)
+		H!(Hₖ, xₖ)
+		pₖ = Hₖ\gₖ
+		xₖ -= pₖ
+		step_norm = norm(pₖ)
+		grad_norm = norm(gₖ)
+		steps = [steps xₖ]
+		push!(values, f(xₖ))
+		converged = grad_norm ≤ tol && step_norm ≤ tol * (1 + norm(xₖ))
+	end
+	return OptimizationResults(
+		"Newton",
+		converged,
+		f(xₖ),
+		xₖ,
+		grad_norm,
+		step_norm,
+		k,
+		steps,
+		values
+	)
 end
 
 # ╔═╡ 27a151a4-1028-4baf-b4b4-138fa5ce9040
@@ -57,25 +92,54 @@ md"""
 """
 
 # ╔═╡ 2b253872-ca18-4f81-9a90-565d1503576d
-function plot_optimization(f, opts...; xlim=(-10,10), ylim=(-10,10), gridsize=100)
+function plot_optimization(f, truemin, opts...; xlim=(-10,10), ylim=(-10,10), gridsize=100)
+	if any(j -> size(j.steps, 1) != 2, opts)
+		throw(ArgumentError("Optimizations are not of size 2: impossible to plot."))
+	end
+	# Function landscape
 	x = range(xlim..., gridsize)
 	y = range(ylim..., gridsize)
 	z = @. f(x', y)
-
-	if any(j -> size(j.steps, 2) != 2, opts)
-		throw(ValueError("Optimizations are not of size 2"))
-	end
-
-	xx = [j.steps[1,1] for j in opts]
-	yy = [j.steps[1,1] for j in opts]
-
+	# Optimization steps
+	X = [o.steps[1,1] for o in opts]
+	Y = [o.steps[2,1] for o in opts]
+	# Black magic to animate optimization
 	for (i,o) in enumerate(opts)
-		for (i, c) in eachcol(o.steps)
-			xx = [xx xx[:,end]]
-			xx[end,i] = c[1]
-			yy = [yy yy[:,end]]
-			yy[end,i] = c[2]
+		for c in eachcol(o.steps)
+			X = [X X[:, end]]
+			Y = [Y Y[:, end]]
+			X[i, end] = c[1]
+			Y[i, end] = c[2]
 		end
+	end
+	# Dealing with the scatter min
+	X = [NaN; X]
+	Y = [NaN; Y]
+	# Plotting! (Finally)
+	plt = contour(
+		x, y, z,
+		xlim=xlim,
+		ylim=ylim,
+		xlabel="x₁",
+		ylabel="x₂",
+		dpi=180,
+	)
+	for o in opts
+		plot!(
+			plt,
+			1,
+			label=o.algorithm
+		)
+	end
+	scatter!(
+		plt,
+		truemin,
+		marker=:circle,
+		label="True min"
+	)
+	# Animation of minimization steps
+	@gif for (i, j) in zip(eachcol(X), eachcol(Y))
+		push!(plt, i, j)
 	end
 end	
 	
@@ -85,15 +149,23 @@ md"""
 ## Optimization a
 """
 
+# ╔═╡ 57c33dc0-1e46-4c33-a432-550307367839
+f_a(x₁, x₂) = (x₁ - 2)^2 + (x₁  - 2)^2 * x₂^2 + (x₂ + 1)^2
+
+# ╔═╡ 85a9fbca-7866-4c7f-899e-d6738a96596a
+begin
+	x_a = range(1, 3, 100)
+	y_a = range(-1.5, 1., 100)
+	z_a = @. f_a(x_a', y_a)
+	surface(x_a, y_a, z_a)
+end
+
 # ╔═╡ cdfc565c-c18b-4e8e-aa17-dfb9483e9eee
 md"""
 We use the power of Symbolics.jl to
 	
 	sfamare la nostra sete di fancazzismo
 """
-
-# ╔═╡ 57c33dc0-1e46-4c33-a432-550307367839
-f_a(x₁, x₂) = (x₁ - 2)^2 + (x₁  - 2)^2 * x₂^2 + (x₂ + 1)^2
 
 # ╔═╡ afc86c35-5c79-4f26-881d-45fcaea8dbb1
 ∇f_a = Symbolics.gradient(f_a(x₁, x₂), [x₁, x₂])
@@ -110,21 +182,21 @@ g_a! = eval(build_function(∇f_a, [x₁, x₂])[2])
 ∇²f_a = Symbolics.hessian(f_a(x₁, x₂), [x₁, x₂])
 
 # ╔═╡ 7074f6d2-94c1-4440-9a44-7936db617bb3
-h_a! = eval(build_function(∇²f_a, [x₁, x₂])[2])
+H_a! = eval(build_function(∇²f_a, [x₁, x₂])[2])
 
-# ╔═╡ 08a58ba7-52d1-4dd2-b30f-c32608ab964a
+# ╔═╡ c95a8234-9729-451b-9745-1abf35819000
 md"""
-### Plot
+### Runs
 """
 
-# ╔═╡ 85a9fbca-7866-4c7f-899e-d6738a96596a
+# ╔═╡ a0d5ab72-f12d-4a75-93cd-40365b6bd4df
 begin
-	x_a = range(0, 4, 100)
-	y_a = range(-2, 2, 100)
-	z_a = @. f_a(x_a', y_a)
-	#contour(x_a, y_a, z_a)
-	surface(x_a, y_a, z_a)
+	r1 = optimize_newton(x -> f_a(x[1], x[2]), g_a!, H_a!, [-2,-4.])
+	r2 = optimize_newton(x -> f_a(x[1], x[2]), g_a!, H_a!, [4.,4])
 end
+
+# ╔═╡ 40df2ad0-0189-474c-bb71-3e00effae4b1
+plot_optimization(f_a, (2,-1), r1, r2)#, xlim=(-4, 3), ylim=(-6,2))
 
 # ╔═╡ 23ab718b-5237-4cce-927e-ab29ec98deae
 md"""
@@ -156,9 +228,17 @@ function g_b!(g, x)
 end
 
 # ╔═╡ 36afaf29-e07a-450d-a7e0-b9c057c2a698
-function h_b!(h, x)
+function H_b!(h, x)
 	h .= H
 end
+
+# ╔═╡ 376b44e1-7227-4e83-a558-55780235c568
+md"""
+### Runs
+"""
+
+# ╔═╡ 32fd9af2-16a6-44bd-8382-9f822395d3e6
+newt_b = optimize_newton(f_b, g_b!, H_b!, [-1.,3.,3.,0.])
 
 # ╔═╡ b46d53a0-d52a-463c-951f-e5cb7a4e86fb
 md"""
@@ -167,6 +247,14 @@ md"""
 
 # ╔═╡ f59d3dac-21ad-45bc-9933-8182eebd5ce4
 f_c(x₁, x₂) = (1.5 - x₁ * (x₂))^2 + (2.25 - x₁ * (1 - x₂^2))^2 + (2.625 - x₁ * (1 - x₂^3))^2
+
+# ╔═╡ 925503d2-4262-4da0-b00a-c970ebde0318
+begin
+	x_c = range(0, 8, 100)
+	y_c = range(0, 1, 100)
+	z_c = @. f_c(x_c', y_c)
+	surface(x_c, y_c, z_c)
+end
 
 # ╔═╡ bfffcc68-3719-40ef-87b7-ff944d9b6ae2
 ∇f_c = Symbolics.gradient(f_c(x₁, x₂), [x₁, x₂])
@@ -178,21 +266,21 @@ g_c! = eval(build_function(∇f_c, [x₁, x₂])[2])
 ∇²f_c = Symbolics.hessian(f_c(x₁, x₂), [x₁, x₂])
 
 # ╔═╡ 8fcac8e1-7059-4547-beae-7d1d5ed44420
-h_c! = eval(build_function(∇²f_c, [x₁, x₂])[2])
+H_c! = eval(build_function(∇²f_c, [x₁, x₂])[2])
 
 # ╔═╡ 1c6f05b3-a1c0-4294-9316-a1e0049550b2
 md"""
-### Plot
+### Runs
 """
 
-# ╔═╡ 925503d2-4262-4da0-b00a-c970ebde0318
-begin
-	x_c = range(2, 4, 100)
-	y_c = range(-1, 1, 100)
-	z_c = @. f_c(x_c', y_c)
-	#contour(x_a, y_a, z_a)
-	surface(x_c, y_c, z_c)
-end
+# ╔═╡ 059f8000-ea4e-4338-b75e-89f136794c67
+newt_c_1 = optimize_newton(x -> f_c(x[1], x[2]), g_c!, H_c!, [8.,0.2])
+
+# ╔═╡ 424974c8-a2e6-447b-b7f5-29e28572314d
+newt_c_2 = optimize_newton(x -> f_c(x[1], x[2]), g_c!, H_c!, [8.,0.8])
+
+# ╔═╡ e12fdb33-d126-415b-b195-f75a2697f5e3
+plot_optimization(f_c, (3,0.5), newt_c_1, newt_c_2, xlim=(2.5,8.5), ylim=(0,1))
 
 # ╔═╡ 775a3f3b-94aa-4502-8b99-57824fa8a805
 md"""
@@ -201,6 +289,14 @@ md"""
 
 # ╔═╡ 3fbe3908-eee9-440b-993c-67e8a84d10e9
 f_d(x₁, x₂) = x₁^4 + x₁ * x₂ + (1 + x₂)^2
+
+# ╔═╡ b22fa713-2fe9-475c-97b8-688329d6969d
+begin
+	x_d = range(-2, 2, 100)
+	y_d = range(-2, 2, 100)
+	z_d = @. f_d(x_d', y_d)
+	surface(x_d, y_d, z_d)
+end
 
 # ╔═╡ 9b835cfe-2206-4deb-b958-d3672e1a77fe
 ∇f_d = Symbolics.gradient(f_d(x₁, x₂), [x₁, x₂])
@@ -212,46 +308,21 @@ g_d! = eval(build_function(∇f_d, [x₁, x₂])[2])
 ∇²f_d = Symbolics.hessian(f_d(x₁, x₂), [x₁, x₂])
 
 # ╔═╡ 09203146-bf72-491c-82f3-41c686a7e829
-h_d! = eval(build_function(∇²f_d, [x₁, x₂])[2])
+H_d! = eval(build_function(∇²f_d, [x₁, x₂])[2])
 
 # ╔═╡ d51eba6e-809e-4c41-991d-5d90c65182b4
 md"""
-### Plot
+### Runs
 """
 
-# ╔═╡ b22fa713-2fe9-475c-97b8-688329d6969d
-begin
-	x_d = range(-2, 2, 100)
-	y_d = range(-2, 2, 100)
-	z_d = @. f_d(x_d', y_d)
-	plt = plot(
-		1,
-		xlim=(x_d[1], x_d[end]),
-		ylim=(y_d[1], y_d[end]),
-		dpi=180,
-		color=:black
-	)
-	plot!(plt, 1, color=:plasma)
-	#plot!(plt, 1, color=:plasma)
-	contour!(plt, x_d, y_d, z_d)
-	
-	x_dd = vcat(x_d, [x_d[end] for i in 1:100])
-	x_d2 = vcat([-x_d[1] for i in 1:100], -x_d)
+# ╔═╡ 76226106-ff98-41ba-94f8-63d02a563b48
+newt_d_1 = optimize_newton(x -> f_d(x[1], x[2]), g_d!, H_d!, [0.75,-1.25])
 
-	xx = hcat(x_dd, x_d2)
-	
-	y_dd = vcat(x_d, [x_d[end] for i in 1:100])
-	y_d2 = vcat([y_d[1] for i in 1:100], y_d)
+# ╔═╡ 15fdb3ce-2d5b-4b94-a462-5c438ff94e8e
+newt_d_2 = optimize_newton(x -> f_d(x[1], x[2]), g_d!, H_d!, [0.,0.])
 
-	yy = hcat(y_dd, y_d2)
-	
-	@gif for (i, j) in zip(eachrow(xx), eachrow(yy))
-		push!(plt, i, j)
-	end every 10
-	#surface(x_d, y_d, z_d)
-
-	
-end
+# ╔═╡ 65b9915c-dcc8-4ef7-bde3-423c709afc5e
+plot_optimization(f_d, (0.695884386,−1.34794219), newt_d_1, newt_d_2, xlim=(-3.,1), ylim=(-2.,0.5))
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1805,15 +1876,17 @@ version = "1.4.1+1"
 # ╟─f8dc799a-d2ef-43ae-aa8b-5a43b094d7c3
 # ╠═2b253872-ca18-4f81-9a90-565d1503576d
 # ╟─96e08046-c44d-421c-9784-72a97ff8fbf8
-# ╟─cdfc565c-c18b-4e8e-aa17-dfb9483e9eee
 # ╠═57c33dc0-1e46-4c33-a432-550307367839
+# ╠═85a9fbca-7866-4c7f-899e-d6738a96596a
+# ╟─cdfc565c-c18b-4e8e-aa17-dfb9483e9eee
 # ╠═afc86c35-5c79-4f26-881d-45fcaea8dbb1
 # ╟─c156f0f0-1c1f-4c19-bb92-8cd3db60215d
 # ╠═d30f8a04-5fde-4b1c-933c-577229b8de77
 # ╠═b86e5b21-7b90-4111-b6da-eddbf7402bf2
 # ╠═7074f6d2-94c1-4440-9a44-7936db617bb3
-# ╟─08a58ba7-52d1-4dd2-b30f-c32608ab964a
-# ╠═85a9fbca-7866-4c7f-899e-d6738a96596a
+# ╟─c95a8234-9729-451b-9745-1abf35819000
+# ╠═a0d5ab72-f12d-4a75-93cd-40365b6bd4df
+# ╠═40df2ad0-0189-474c-bb71-3e00effae4b1
 # ╟─23ab718b-5237-4cce-927e-ab29ec98deae
 # ╟─0b6ed726-232f-484b-9e20-28bfdb812a67
 # ╠═015c5739-0e4a-426a-a6f9-376213da2424
@@ -1821,21 +1894,29 @@ version = "1.4.1+1"
 # ╠═89e8b816-6a52-461c-b76d-c72b94c29974
 # ╠═45081330-abf2-4ff3-bd32-9197446d3962
 # ╠═36afaf29-e07a-450d-a7e0-b9c057c2a698
+# ╟─376b44e1-7227-4e83-a558-55780235c568
+# ╠═32fd9af2-16a6-44bd-8382-9f822395d3e6
 # ╟─b46d53a0-d52a-463c-951f-e5cb7a4e86fb
 # ╠═f59d3dac-21ad-45bc-9933-8182eebd5ce4
+# ╠═925503d2-4262-4da0-b00a-c970ebde0318
 # ╠═bfffcc68-3719-40ef-87b7-ff944d9b6ae2
 # ╠═ba043839-e13d-475a-a93e-b170af23327d
 # ╠═851793c3-b9fd-44ee-b96f-0f0734fae4d9
 # ╠═8fcac8e1-7059-4547-beae-7d1d5ed44420
 # ╟─1c6f05b3-a1c0-4294-9316-a1e0049550b2
-# ╠═925503d2-4262-4da0-b00a-c970ebde0318
+# ╠═059f8000-ea4e-4338-b75e-89f136794c67
+# ╠═424974c8-a2e6-447b-b7f5-29e28572314d
+# ╠═e12fdb33-d126-415b-b195-f75a2697f5e3
 # ╟─775a3f3b-94aa-4502-8b99-57824fa8a805
 # ╠═3fbe3908-eee9-440b-993c-67e8a84d10e9
+# ╠═b22fa713-2fe9-475c-97b8-688329d6969d
 # ╠═9b835cfe-2206-4deb-b958-d3672e1a77fe
 # ╠═c7220592-fc91-4c1f-9c71-5dab5475c32d
 # ╠═bef5fb16-a753-4375-90ef-e4bf70be23c9
 # ╠═09203146-bf72-491c-82f3-41c686a7e829
 # ╟─d51eba6e-809e-4c41-991d-5d90c65182b4
-# ╠═b22fa713-2fe9-475c-97b8-688329d6969d
+# ╠═76226106-ff98-41ba-94f8-63d02a563b48
+# ╠═15fdb3ce-2d5b-4b94-a462-5c438ff94e8e
+# ╠═65b9915c-dcc8-4ef7-bde3-423c709afc5e
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
