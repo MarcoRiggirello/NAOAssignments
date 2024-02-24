@@ -100,7 +100,7 @@ function plot_optimization(f, truemin, opts...; xlim=(-10,10), ylim=(-10,10), gr
 	x = range(xlim..., gridsize)
 	y = range(ylim..., gridsize)
 	z = @. f(x', y)
-	# Optimization steps
+	# Optimization steps array
 	X = [o.steps[1,1] for o in opts]
 	Y = [o.steps[2,1] for o in opts]
 	# Black magic to animate optimization
@@ -112,9 +112,10 @@ function plot_optimization(f, truemin, opts...; xlim=(-10,10), ylim=(-10,10), gr
 			Y[i, end] = c[2]
 		end
 	end
-	# Dealing with the scatter min
-	X = [NaN; X]
-	Y = [NaN; Y]
+	# Dealing with the contour plot and the scatter plot
+	# (we don't want to update them in the animation)
+	X = [NaN; NaN; X]
+	Y = [NaN; NaN; Y]
 	# Plotting! (Finally)
 	plt = contour(
 		x, y, z,
@@ -124,6 +125,12 @@ function plot_optimization(f, truemin, opts...; xlim=(-10,10), ylim=(-10,10), gr
 		ylabel="x₂",
 		dpi=180,
 	)
+	scatter!(
+		plt,
+		truemin,
+		marker=:circle,
+		label="True min"
+	)
 	for o in opts
 		plot!(
 			plt,
@@ -131,12 +138,6 @@ function plot_optimization(f, truemin, opts...; xlim=(-10,10), ylim=(-10,10), gr
 			label=o.algorithm
 		)
 	end
-	scatter!(
-		plt,
-		truemin,
-		marker=:circle,
-		label="True min"
-	)
 	# Animation of minimization steps
 	@gif for (i, j) in zip(eachcol(X), eachcol(Y))
 		push!(plt, i, j)
