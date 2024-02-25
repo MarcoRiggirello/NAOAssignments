@@ -34,7 +34,7 @@ md"""
 """
 
 # ╔═╡ fa77e47e-6876-42d5-ae9d-9c68e9afd174
-function optimize_newton(f, g!, H!, x₀; tol=1e-5, maxitr=100)
+function optimize_newton(f, g!, H!, x₀; tol=1e-5, maxitr=100, linesearch=Nothing)
 	n = length(x₀)
 	xₖ = zeros(n)
 	gₖ = zeros(n)
@@ -64,15 +64,17 @@ function optimize_newton(f, g!, H!, x₀; tol=1e-5, maxitr=100)
 				end
 			end
 		pₖ = Cₖ \ gₖ
-		xₖ -= pₖ
+		αₖ = linesearch ≠ Nothing ? linesearch(f, xₖ, gₖ, -pₖ) : 1.
+		xₖ -= αₖ * pₖ
 		step_norm = norm(pₖ)
 		grad_norm = norm(gₖ)
 		steps = [steps xₖ]
 		push!(values, f(xₖ))
 		converged = grad_norm ≤ tol && step_norm ≤ tol * (1 + norm(xₖ))
 	end
+	ls_name = linesearch ≠ Nothing ? " - $linesearch" : ""
 	return OptimizationResults(
-		"Newton",
+		"Newton" * ls_name,
 		converged,
 		f(xₖ),
 		xₖ,
@@ -90,7 +92,7 @@ md"""
 """
 
 # ╔═╡ 41e06b52-3b8c-47be-9a75-fdf3d708def4
-function optimize_bfgs(f, g!, G₀, x₀; tol=1e-5, maxitr=100, comment=Nothing)
+function optimize_bfgs(f, g!, G₀, x₀; tol=1e-5, maxitr=100, linesearch=Nothing, comment=Nothing)
 	n = length(x₀)
 	xₖ   = zeros(n)
 	gₖ   = zeros(n)
@@ -109,14 +111,15 @@ function optimize_bfgs(f, g!, G₀, x₀; tol=1e-5, maxitr=100, comment=Nothing)
 		k += 1
 		k ≤ maxitr
 		pₖ = Gₖ * gₖ
-		xₖ -= pₖ
+		αₖ = linesearch ≠ Nothing ? linesearch(f, xₖ, gₖ, -pₖ) : 1.
+		xₖ -= αₖ * pₖ
 		step_norm = norm(pₖ)
 		grad_norm = norm(gₖ)
 		steps = [steps xₖ]
 		push!(values, f(xₖ))
 		converged = grad_norm ≤ tol && step_norm ≤ tol * (1 + norm(xₖ))
 		# gradient and secant update
-		sₖ = -pₖ
+		sₖ = -αₖ * pₖ
 		gₖ₋₁ .= gₖ
 		g!(gₖ, xₖ)
 		yₖ = gₖ - gₖ₋₁
@@ -126,12 +129,16 @@ function optimize_bfgs(f, g!, G₀, x₀; tol=1e-5, maxitr=100, comment=Nothing)
 		yₖᵀGₖ   = yₖ'   * Gₖ
 		yₖᵀGₖyₖ = yₖᵀGₖ * yₖ
 		# Gₖ update
+		if yₖᵀsₖ ≤ 0
+			throw(DomainError("yₖᵀsₖ value is $yₖᵀsₖ at $xₖ"))
+		end
 		Gₖ .-= (Gₖyₖ .* sₖ' .+ sₖ .* yₖᵀGₖ) ./ yₖᵀsₖ
 		Gₖ .+= ((yₖᵀsₖ + yₖᵀGₖyₖ)/(yₖᵀsₖ)^2) .* sₖ .* sₖ'
 	end
-	comment = comment != Nothing ? " (" * comment * ")" : ""
+	ls_name = linesearch ≠ Nothing ? " - $linesearch" : ""
+	comment = comment ≠ Nothing ? " (" * comment * ")" : ""
 	return OptimizationResults(
-		"BFGS" * comment,
+		"BFGS" * ls_name * comment,
 		converged,
 		f(xₖ),
 		xₖ,
@@ -147,6 +154,20 @@ end
 md"""
 ## Backtracking
 """
+
+# ╔═╡ b4c6e46a-f47e-4ce2-8cd9-c6229be6fdf4
+function backtracking(f, xₖ, gₖ, pₖ; c=.5, ρ=.5, α₀=1.)
+	# sanity checks su c e rho da fare
+	α = α₀
+	fₖ = f(xₖ)
+	pₖᵀ∇f = pₖ' * gₖ
+	fₜ = f(xₖ + α * pₖ)
+	while fₜ > f(xₖ) + c * α * pₖᵀ∇f
+		α *= ρ
+		fₜ = f(xₖ + α * pₖ)
+	end
+	return α
+end
 
 # ╔═╡ 35f73a6e-ada1-412a-a770-175427d1e443
 md"""
@@ -190,7 +211,8 @@ function plot_optimization(f, truemin, opts...; xlim=(-10,10), ylim=(-10,10), gr
 		ylim=ylim,
 		xlabel="x₁",
 		ylabel="x₂",
-		legend=:outertopleft,
+		legend=:outertop,
+		legend_column = 2,
 		dpi=180,
 	)
 	scatter!(
@@ -253,22 +275,31 @@ g_a! = eval(build_function(∇f_a, [x₁, x₂])[2])
 # ╔═╡ 7074f6d2-94c1-4440-9a44-7936db617bb3
 H_a! = eval(build_function(∇²f_a, [x₁, x₂])[2])
 
+# ╔═╡ f975f7e7-1790-47b3-a0ef-014df5f5a9fb
+H_a = eval(build_function(∇²f_a, [x₁, x₂])[1])
+
 # ╔═╡ c95a8234-9729-451b-9745-1abf35819000
 md"""
 ### Runs
 """
 
 # ╔═╡ 5edc0250-8d8c-4c94-91ab-08a813845668
-r1 = optimize_newton(x -> f_a(x[1], x[2]), g_a!, H_a!, [1,1])
+newt_a_1 = optimize_newton(x -> f_a(x[1], x[2]), g_a!, H_a!, [1,1])
 
 # ╔═╡ a0d5ab72-f12d-4a75-93cd-40365b6bd4df
-r2 = optimize_newton(x -> f_a(x[1], x[2]), g_a!, H_a!, [2,-1])
+newt_a_2 = optimize_newton(x -> f_a(x[1], x[2]), g_a!, H_a!, [2,-1])
 
 # ╔═╡ c5a4de9b-e452-4428-83ae-6f9209e22cf9
-r3 = optimize_bfgs(x -> f_a(x[1], x[2]), g_a!, [1 0; 0 1], [1,1])
+bfgs_a_1 = optimize_bfgs(x -> f_a(x[1], x[2]), g_a!, [1 0; 0 1], [1,1], comment="G₀=Id")
+
+# ╔═╡ e446999e-490d-4afc-aaf7-9536d3ecd1f0
+bfgs_a_2 = optimize_bfgs(x -> f_a(x[1], x[2]), g_a!, inv(H_a([1,1])+1e-4*I(2)), [1,1], comment="G₀=(∇²f(x₀)+1e-4Id)⁻¹")
+
+# ╔═╡ 12d943f9-83b3-44e2-a0f5-f7becb7b614f
+bfgs_a_3 = optimize_bfgs(x -> f_a(x[1], x[2]), g_a!, [1 0; 0 1], [1,1], linesearch=backtracking, comment="G₀=Id")
 
 # ╔═╡ 40df2ad0-0189-474c-bb71-3e00effae4b1
-plot_optimization(f_a, (2,-1), r2, r3, xlim=(-5, 5), ylim=(-5,5))
+plot_optimization(f_a, (2,-1), newt_a_2, bfgs_a_1, bfgs_a_2, bfgs_a_3, xlim=(-5, 5), ylim=(-5,5))
 
 # ╔═╡ 23ab718b-5237-4cce-927e-ab29ec98deae
 md"""
@@ -355,19 +386,28 @@ newt_c_1 = optimize_newton(x -> f_c(x[1], x[2]), g_c!, H_c!, [8.,0.2])
 newt_c_2 = optimize_newton(x -> f_c(x[1], x[2]), g_c!, H_c!, [8.,0.8])
 
 # ╔═╡ caaf83db-4701-45a1-9649-e34576470735
-bfgs_c_1 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.2])
+bfgs_c_1 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.2], comment="G₀ = I")
+
+# ╔═╡ 8853d92c-a774-40ee-a71f-4c6b7511686d
+bfgs_c_1_bt = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.2], linesearch=backtracking, comment="G₀ = I")
 
 # ╔═╡ 72ab53df-83e8-4ecf-a811-c1e8e848d249
-bfgs_c_2 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, inv(H_c([8,0.2])), [8.,0.2])
+bfgs_c_2 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, inv(H_c([8,0.2])), [8.,0.2], comment="G₀=(∇²f(x₀))⁻¹")
 
 # ╔═╡ bdb8361d-e904-4857-bd96-16e609c4fe85
-bfgs_c_3 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.8])
+bfgs_c_3 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.8], comment="G₀ = I")
 
 # ╔═╡ 7f792dcd-e1f6-40c5-bf76-55bc640ceb81
 bfgs_c_4 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, inv(H_c([8,0.8])), [8.,0.8], comment="G₀=(∇²f(x₀))⁻¹")
 
+# ╔═╡ 7b3cd1cb-e2b6-408d-b981-0ffbb3174822
+bfgs_c_5 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.8], linesearch=backtracking, comment="G₀ = I")
+
+# ╔═╡ a02f8144-9b20-4caa-aadc-0fe00a8709d9
+bfgs_c_6 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, inv(H_c([8,0.8])), [8.,0.8], linesearch=backtracking, comment="G₀=(∇²f(x₀))⁻¹")
+
 # ╔═╡ e12fdb33-d126-415b-b195-f75a2697f5e3
-plot_optimization(f_c, (3,0.5), newt_c_2, bfgs_c_2, bfgs_c_4, xlim=(2.5,8.5), ylim=(0,1))
+plot_optimization(f_c, (3,0.5), newt_c_2,  bfgs_c_1_bt, bfgs_c_2, bfgs_c_4, bfgs_c_5, bfgs_c_6, xlim=(2.5,8.5), ylim=(0,1))
 
 # ╔═╡ 775a3f3b-94aa-4502-8b99-57824fa8a805
 md"""
@@ -1960,6 +2000,7 @@ version = "1.4.1+1"
 # ╟─27a151a4-1028-4baf-b4b4-138fa5ce9040
 # ╠═41e06b52-3b8c-47be-9a75-fdf3d708def4
 # ╟─6698003b-240b-4f1b-b1e4-8e70107c4150
+# ╠═b4c6e46a-f47e-4ce2-8cd9-c6229be6fdf4
 # ╟─35f73a6e-ada1-412a-a770-175427d1e443
 # ╟─f8dc799a-d2ef-43ae-aa8b-5a43b094d7c3
 # ╠═2b253872-ca18-4f81-9a90-565d1503576d
@@ -1972,10 +2013,13 @@ version = "1.4.1+1"
 # ╠═d30f8a04-5fde-4b1c-933c-577229b8de77
 # ╠═b86e5b21-7b90-4111-b6da-eddbf7402bf2
 # ╠═7074f6d2-94c1-4440-9a44-7936db617bb3
+# ╠═f975f7e7-1790-47b3-a0ef-014df5f5a9fb
 # ╟─c95a8234-9729-451b-9745-1abf35819000
 # ╠═5edc0250-8d8c-4c94-91ab-08a813845668
 # ╠═a0d5ab72-f12d-4a75-93cd-40365b6bd4df
 # ╠═c5a4de9b-e452-4428-83ae-6f9209e22cf9
+# ╠═e446999e-490d-4afc-aaf7-9536d3ecd1f0
+# ╠═12d943f9-83b3-44e2-a0f5-f7becb7b614f
 # ╠═40df2ad0-0189-474c-bb71-3e00effae4b1
 # ╟─23ab718b-5237-4cce-927e-ab29ec98deae
 # ╟─0b6ed726-232f-484b-9e20-28bfdb812a67
@@ -1998,9 +2042,12 @@ version = "1.4.1+1"
 # ╠═059f8000-ea4e-4338-b75e-89f136794c67
 # ╠═424974c8-a2e6-447b-b7f5-29e28572314d
 # ╠═caaf83db-4701-45a1-9649-e34576470735
+# ╠═8853d92c-a774-40ee-a71f-4c6b7511686d
 # ╠═72ab53df-83e8-4ecf-a811-c1e8e848d249
 # ╠═bdb8361d-e904-4857-bd96-16e609c4fe85
 # ╠═7f792dcd-e1f6-40c5-bf76-55bc640ceb81
+# ╠═7b3cd1cb-e2b6-408d-b981-0ffbb3174822
+# ╠═a02f8144-9b20-4caa-aadc-0fe00a8709d9
 # ╠═e12fdb33-d126-415b-b195-f75a2697f5e3
 # ╟─775a3f3b-94aa-4502-8b99-57824fa8a805
 # ╠═3fbe3908-eee9-440b-993c-67e8a84d10e9
