@@ -36,9 +36,10 @@ md"""
 # ╔═╡ fa77e47e-6876-42d5-ae9d-9c68e9afd174
 function optimize_newton(f, g!, H!, x₀; tol=1e-5, maxitr=100)
 	n = length(x₀)
-	xₖ = x₀
+	xₖ = zeros(n)
 	gₖ = zeros(n)
 	Hₖ = zeros(n,n)
+	xₖ .= x₀
 	steps = xₖ
 	values = [f(xₖ)]
 	step_norm = 0.
@@ -50,7 +51,19 @@ function optimize_newton(f, g!, H!, x₀; tol=1e-5, maxitr=100)
 		k ≤ maxitr
 		g!(gₖ, xₖ)
 		H!(Hₖ, xₖ)
-		pₖ = Hₖ\gₖ
+		Cₖ = 
+			try 
+				cholesky(Symmetric(Hₖ))
+			catch e
+				if e isa(PosDefException)
+					throw(
+						DomainError("Hessian is not positive definite at $xₖ.")
+					)
+				else
+					throw(e)
+				end
+			end
+		pₖ = Cₖ \ gₖ
 		xₖ -= pₖ
 		step_norm = norm(pₖ)
 		grad_norm = norm(gₖ)
@@ -75,6 +88,60 @@ end
 md"""
 ## BFGS
 """
+
+# ╔═╡ 41e06b52-3b8c-47be-9a75-fdf3d708def4
+function optimize_bfgs(f, g!, G₀, x₀; tol=1e-5, maxitr=100, comment=Nothing)
+	n = length(x₀)
+	xₖ   = zeros(n)
+	gₖ   = zeros(n)
+	gₖ₋₁ = zeros(n)
+	Gₖ   = zeros(n,n)
+	xₖ .= x₀
+	g!(gₖ, x₀)
+	Gₖ .= G₀
+	steps = xₖ
+	values = [f(xₖ)]
+	step_norm = 0.
+	grad_norm = 0.
+	k = 0
+	converged = false
+	while k ≤ maxitr && !converged
+		k += 1
+		k ≤ maxitr
+		pₖ = Gₖ * gₖ
+		xₖ -= pₖ
+		step_norm = norm(pₖ)
+		grad_norm = norm(gₖ)
+		steps = [steps xₖ]
+		push!(values, f(xₖ))
+		converged = grad_norm ≤ tol && step_norm ≤ tol * (1 + norm(xₖ))
+		# gradient and secant update
+		sₖ = -pₖ
+		gₖ₋₁ .= gₖ
+		g!(gₖ, xₖ)
+		yₖ = gₖ - gₖ₋₁
+		# intermediary variables
+		yₖᵀsₖ   = yₖ'   * sₖ
+		Gₖyₖ    = Gₖ    * yₖ
+		yₖᵀGₖ   = yₖ'   * Gₖ
+		yₖᵀGₖyₖ = yₖᵀGₖ * yₖ
+		# Gₖ update
+		Gₖ .-= (Gₖyₖ .* sₖ' .+ sₖ .* yₖᵀGₖ) ./ yₖᵀsₖ
+		Gₖ .+= ((yₖᵀsₖ + yₖᵀGₖyₖ)/(yₖᵀsₖ)^2) .* sₖ .* sₖ'
+	end
+	comment = comment != Nothing ? " (" * comment * ")" : ""
+	return OptimizationResults(
+		"BFGS" * comment,
+		converged,
+		f(xₖ),
+		xₖ,
+		grad_norm,
+		step_norm,
+		k,
+		steps,
+		values
+	)
+end
 
 # ╔═╡ 6698003b-240b-4f1b-b1e4-8e70107c4150
 md"""
@@ -123,6 +190,7 @@ function plot_optimization(f, truemin, opts...; xlim=(-10,10), ylim=(-10,10), gr
 		ylim=ylim,
 		xlabel="x₁",
 		ylabel="x₂",
+		legend=:outertopleft,
 		dpi=180,
 	)
 	scatter!(
@@ -190,14 +258,17 @@ md"""
 ### Runs
 """
 
+# ╔═╡ 5edc0250-8d8c-4c94-91ab-08a813845668
+r1 = optimize_newton(x -> f_a(x[1], x[2]), g_a!, H_a!, [1,1])
+
 # ╔═╡ a0d5ab72-f12d-4a75-93cd-40365b6bd4df
-begin
-	r1 = optimize_newton(x -> f_a(x[1], x[2]), g_a!, H_a!, [-2,-4.])
-	r2 = optimize_newton(x -> f_a(x[1], x[2]), g_a!, H_a!, [4.,4])
-end
+r2 = optimize_newton(x -> f_a(x[1], x[2]), g_a!, H_a!, [2,-1])
+
+# ╔═╡ c5a4de9b-e452-4428-83ae-6f9209e22cf9
+r3 = optimize_bfgs(x -> f_a(x[1], x[2]), g_a!, [1 0; 0 1], [1,1])
 
 # ╔═╡ 40df2ad0-0189-474c-bb71-3e00effae4b1
-plot_optimization(f_a, (2,-1), r1, r2)#, xlim=(-4, 3), ylim=(-6,2))
+plot_optimization(f_a, (2,-1), r2, r3, xlim=(-5, 5), ylim=(-5,5))
 
 # ╔═╡ 23ab718b-5237-4cce-927e-ab29ec98deae
 md"""
@@ -269,6 +340,9 @@ g_c! = eval(build_function(∇f_c, [x₁, x₂])[2])
 # ╔═╡ 8fcac8e1-7059-4547-beae-7d1d5ed44420
 H_c! = eval(build_function(∇²f_c, [x₁, x₂])[2])
 
+# ╔═╡ 3adc0e72-05e1-4c8b-8c7a-d2a176d18d49
+H_c = eval(build_function(∇²f_c, [x₁, x₂])[1])
+
 # ╔═╡ 1c6f05b3-a1c0-4294-9316-a1e0049550b2
 md"""
 ### Runs
@@ -280,8 +354,20 @@ newt_c_1 = optimize_newton(x -> f_c(x[1], x[2]), g_c!, H_c!, [8.,0.2])
 # ╔═╡ 424974c8-a2e6-447b-b7f5-29e28572314d
 newt_c_2 = optimize_newton(x -> f_c(x[1], x[2]), g_c!, H_c!, [8.,0.8])
 
+# ╔═╡ caaf83db-4701-45a1-9649-e34576470735
+bfgs_c_1 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.2])
+
+# ╔═╡ 72ab53df-83e8-4ecf-a811-c1e8e848d249
+bfgs_c_2 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, inv(H_c([8,0.2])), [8.,0.2])
+
+# ╔═╡ bdb8361d-e904-4857-bd96-16e609c4fe85
+bfgs_c_3 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.8])
+
+# ╔═╡ 7f792dcd-e1f6-40c5-bf76-55bc640ceb81
+bfgs_c_4 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, inv(H_c([8,0.8])), [8.,0.8], comment="G₀=(∇²f(x₀))⁻¹")
+
 # ╔═╡ e12fdb33-d126-415b-b195-f75a2697f5e3
-plot_optimization(f_c, (3,0.5), newt_c_1, newt_c_2, xlim=(2.5,8.5), ylim=(0,1))
+plot_optimization(f_c, (3,0.5), newt_c_2, bfgs_c_2, bfgs_c_4, xlim=(2.5,8.5), ylim=(0,1))
 
 # ╔═╡ 775a3f3b-94aa-4502-8b99-57824fa8a805
 md"""
@@ -323,7 +409,7 @@ newt_d_1 = optimize_newton(x -> f_d(x[1], x[2]), g_d!, H_d!, [0.75,-1.25])
 newt_d_2 = optimize_newton(x -> f_d(x[1], x[2]), g_d!, H_d!, [0.,0.])
 
 # ╔═╡ 65b9915c-dcc8-4ef7-bde3-423c709afc5e
-plot_optimization(f_d, (0.695884386,−1.34794219), newt_d_1, newt_d_2, xlim=(-3.,1), ylim=(-2.,0.5))
+plot_optimization(f_d, (0.695884386,−1.34794219), newt_d_1, xlim=(0,1), ylim=(-1.5,-1.))
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1872,6 +1958,7 @@ version = "1.4.1+1"
 # ╟─52387950-56cc-414e-a434-8480757fdd45
 # ╠═fa77e47e-6876-42d5-ae9d-9c68e9afd174
 # ╟─27a151a4-1028-4baf-b4b4-138fa5ce9040
+# ╠═41e06b52-3b8c-47be-9a75-fdf3d708def4
 # ╟─6698003b-240b-4f1b-b1e4-8e70107c4150
 # ╟─35f73a6e-ada1-412a-a770-175427d1e443
 # ╟─f8dc799a-d2ef-43ae-aa8b-5a43b094d7c3
@@ -1886,7 +1973,9 @@ version = "1.4.1+1"
 # ╠═b86e5b21-7b90-4111-b6da-eddbf7402bf2
 # ╠═7074f6d2-94c1-4440-9a44-7936db617bb3
 # ╟─c95a8234-9729-451b-9745-1abf35819000
+# ╠═5edc0250-8d8c-4c94-91ab-08a813845668
 # ╠═a0d5ab72-f12d-4a75-93cd-40365b6bd4df
+# ╠═c5a4de9b-e452-4428-83ae-6f9209e22cf9
 # ╠═40df2ad0-0189-474c-bb71-3e00effae4b1
 # ╟─23ab718b-5237-4cce-927e-ab29ec98deae
 # ╟─0b6ed726-232f-484b-9e20-28bfdb812a67
@@ -1904,9 +1993,14 @@ version = "1.4.1+1"
 # ╠═ba043839-e13d-475a-a93e-b170af23327d
 # ╠═851793c3-b9fd-44ee-b96f-0f0734fae4d9
 # ╠═8fcac8e1-7059-4547-beae-7d1d5ed44420
+# ╠═3adc0e72-05e1-4c8b-8c7a-d2a176d18d49
 # ╟─1c6f05b3-a1c0-4294-9316-a1e0049550b2
 # ╠═059f8000-ea4e-4338-b75e-89f136794c67
 # ╠═424974c8-a2e6-447b-b7f5-29e28572314d
+# ╠═caaf83db-4701-45a1-9649-e34576470735
+# ╠═72ab53df-83e8-4ecf-a811-c1e8e848d249
+# ╠═bdb8361d-e904-4857-bd96-16e609c4fe85
+# ╠═7f792dcd-e1f6-40c5-bf76-55bc640ceb81
 # ╠═e12fdb33-d126-415b-b195-f75a2697f5e3
 # ╟─775a3f3b-94aa-4502-8b99-57824fa8a805
 # ╠═3fbe3908-eee9-440b-993c-67e8a84d10e9
