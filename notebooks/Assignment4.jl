@@ -48,7 +48,6 @@ function optimize_newton(f, g!, H!, x₀; tol=1e-5, maxitr=100, linesearch=Nothi
 	converged = false
 	while k ≤ maxitr && !converged
 		k += 1
-		k ≤ maxitr
 		g!(gₖ, xₖ)
 		H!(Hₖ, xₖ)
 		Cₖ = 
@@ -109,7 +108,6 @@ function optimize_bfgs(f, g!, G₀, x₀; tol=1e-5, maxitr=100, linesearch=Nothi
 	converged = false
 	while k ≤ maxitr && !converged
 		k += 1
-		k ≤ maxitr
 		pₖ = Gₖ * gₖ
 		αₖ = linesearch ≠ Nothing ? linesearch(f, xₖ, gₖ, -pₖ) : 1.
 		xₖ -= αₖ * pₖ
@@ -173,6 +171,52 @@ end
 md"""
 ## Trust region?
 """
+
+# ╔═╡ e5d9ac0a-7cfc-44ab-b29f-fb8d2f1f69c7
+function solve_penalty_problem(g, H, Δ)
+	n = length(g)
+	pⱼ = fill(Δ, n) # dummy initial condition
+	candidates_found = 0
+	μᵤ = eigmax(H) # we ensure pos def
+	μₗ = 2 * μᵤ
+	while candidates_found < 8
+		j += 1
+		μⱼ = (μᵤ + μₗ) / 2
+		Cⱼ = 
+			try
+				cholesky(H + μⱼ * I(n))
+			catch e
+				if e isa(PosDefException)
+					continue
+				else
+					throw(e)
+				end
+			end
+		
+		
+		
+
+# ╔═╡ 54500345-520f-479c-88ce-f7d1a373389f
+function optimize_trustregion(f, g!, H!, x₀; Δ₀=1., η=0.020, tol=1e-5, maxitr=100)
+	n = length(x₀)
+	xₖ = zeros(n)
+	gₖ = zeros(n)
+	Hₖ = zeros(n,n)
+	xₖ .= x₀
+	Δₖ = Δ₀ # HERE DIFFERENT FROM NOTES!
+	steps = xₖ
+	values = [f(xₖ)]
+	step_norm = 0.
+	grad_norm = 0.
+	k = 0
+	converged = false
+	while k ≤ maxitr && !converged
+		k += 1
+		g!(gₖ, xₖ)
+		H!(Hₖ, xₖ)
+		pₖ = solve_penalty_problem(f, gₖ, Hₖ, Δₖ)
+		
+end
 
 # ╔═╡ f8dc799a-d2ef-43ae-aa8b-5a43b094d7c3
 md"""
@@ -299,7 +343,7 @@ bfgs_a_2 = optimize_bfgs(x -> f_a(x[1], x[2]), g_a!, inv(H_a([1,1])+1e-4*I(2)), 
 bfgs_a_3 = optimize_bfgs(x -> f_a(x[1], x[2]), g_a!, [1 0; 0 1], [1,1], linesearch=backtracking, comment="G₀=Id")
 
 # ╔═╡ 40df2ad0-0189-474c-bb71-3e00effae4b1
-plot_optimization(f_a, (2,-1), newt_a_2, bfgs_a_1, bfgs_a_2, bfgs_a_3, xlim=(-5, 5), ylim=(-5,5))
+plot_optimization(f_a, (2,-1), newt_a_2, bfgs_a_1, bfgs_a_2, bfgs_a_3, xlim=(0, 5), ylim=(-2.5,2.5))
 
 # ╔═╡ 23ab718b-5237-4cce-927e-ab29ec98deae
 md"""
@@ -2052,6 +2096,8 @@ version = "1.4.1+1"
 # ╟─6698003b-240b-4f1b-b1e4-8e70107c4150
 # ╠═b4c6e46a-f47e-4ce2-8cd9-c6229be6fdf4
 # ╟─35f73a6e-ada1-412a-a770-175427d1e443
+# ╠═e5d9ac0a-7cfc-44ab-b29f-fb8d2f1f69c7
+# ╠═54500345-520f-479c-88ce-f7d1a373389f
 # ╟─f8dc799a-d2ef-43ae-aa8b-5a43b094d7c3
 # ╠═2b253872-ca18-4f81-9a90-565d1503576d
 # ╟─96e08046-c44d-421c-9784-72a97ff8fbf8
