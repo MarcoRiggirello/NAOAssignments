@@ -379,35 +379,85 @@ md"""
 ### Runs
 """
 
+# ╔═╡ 1f83f39f-2e67-4bc4-bc23-c5f5093fd7aa
+md"""
+	Che questo problema serva da esempio
+"""
+
+# ╔═╡ cc42fc4f-c0ab-461e-822f-07d9b36afc79
+md"""
+	si prova newton, non va
+"""
+
 # ╔═╡ 059f8000-ea4e-4338-b75e-89f136794c67
 newt_c_1 = optimize_newton(x -> f_c(x[1], x[2]), g_c!, H_c!, [8.,0.2])
 
-# ╔═╡ 424974c8-a2e6-447b-b7f5-29e28572314d
-newt_c_2 = optimize_newton(x -> f_c(x[1], x[2]), g_c!, H_c!, [8.,0.8])
+# ╔═╡ 94d79163-fa2a-4183-8802-213f605dcf59
+md"""
+	si prova bfgs con l'identità come G0, non va
+"""
 
 # ╔═╡ caaf83db-4701-45a1-9649-e34576470735
 bfgs_c_1 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.2], comment="G₀ = I")
 
-# ╔═╡ 8853d92c-a774-40ee-a71f-4c6b7511686d
-bfgs_c_1_bt = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.2], linesearch=backtracking, comment="G₀ = I")
+# ╔═╡ f4e6494d-6c74-4a5f-ac8a-8ca7b0d2243d
+md"""
+	Si prova bfgs con l'inverso dell'hessiana, va
+"""
 
 # ╔═╡ 72ab53df-83e8-4ecf-a811-c1e8e848d249
 bfgs_c_2 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, inv(H_c([8,0.2])), [8.,0.2], comment="G₀=(∇²f(x₀))⁻¹")
 
+# ╔═╡ 7b4cfc1c-17f6-44c1-a009-102e9f60d044
+md"""
+	si prova bfgs con bactrackin tornado a una stima spannometrica dell'hessiana, ora va
+"""
+
+# ╔═╡ 8853d92c-a774-40ee-a71f-4c6b7511686d
+bfgs_c_1_bt = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.2], linesearch=backtracking, comment="G₀ = I")
+
+# ╔═╡ 07fe8486-decd-43ea-bdbb-b97551edeb3a
+md"""
+	Si prova da un altro punto iniziale, Newton va
+"""
+
+# ╔═╡ 424974c8-a2e6-447b-b7f5-29e28572314d
+newt_c_2 = optimize_newton(x -> f_c(x[1], x[2]), g_c!, H_c!, [8.,0.8])
+
+# ╔═╡ 8f15f324-0cff-4737-ad0e-895173e8914e
+md"""
+	si prova bfgs spannometrico, non va manco da qui
+"""
+
 # ╔═╡ bdb8361d-e904-4857-bd96-16e609c4fe85
 bfgs_c_3 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.8], comment="G₀ = I")
+
+# ╔═╡ e3a3d369-70ff-4f9b-9daa-5df76be0b071
+md"""
+	stima accurata va
+"""
 
 # ╔═╡ 7f792dcd-e1f6-40c5-bf76-55bc640ceb81
 bfgs_c_4 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, inv(H_c([8,0.8])), [8.,0.8], comment="G₀=(∇²f(x₀))⁻¹")
 
+# ╔═╡ 6eafa5e6-5eb6-4c4c-889a-85093320ea26
+md"""
+	bactracking migliora
+"""
+
 # ╔═╡ 7b3cd1cb-e2b6-408d-b981-0ffbb3174822
-bfgs_c_5 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.8], linesearch=backtracking, comment="G₀ = I")
+bfgs_c_3_bt = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.8], linesearch=backtracking, comment="G₀ = I")
+
+# ╔═╡ 2b727c28-62a5-4290-82e8-c486467b98b3
+md"""
+	questo inutile gia andava
+"""
 
 # ╔═╡ a02f8144-9b20-4caa-aadc-0fe00a8709d9
 bfgs_c_6 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, inv(H_c([8,0.8])), [8.,0.8], linesearch=backtracking, comment="G₀=(∇²f(x₀))⁻¹")
 
 # ╔═╡ e12fdb33-d126-415b-b195-f75a2697f5e3
-plot_optimization(f_c, (3,0.5), newt_c_2,  bfgs_c_1_bt, bfgs_c_2, bfgs_c_4, bfgs_c_5, bfgs_c_6, xlim=(2.5,8.5), ylim=(0,1))
+plot_optimization(f_c, (3,0.5), bfgs_c_2, bfgs_c_1_bt, newt_c_2,  bfgs_c_4, bfgs_c_3_bt, xlim=(2.5,8.5), ylim=(0,1))
 
 # ╔═╡ 775a3f3b-94aa-4502-8b99-57824fa8a805
 md"""
@@ -2039,14 +2089,24 @@ version = "1.4.1+1"
 # ╠═8fcac8e1-7059-4547-beae-7d1d5ed44420
 # ╠═3adc0e72-05e1-4c8b-8c7a-d2a176d18d49
 # ╟─1c6f05b3-a1c0-4294-9316-a1e0049550b2
+# ╟─1f83f39f-2e67-4bc4-bc23-c5f5093fd7aa
+# ╟─cc42fc4f-c0ab-461e-822f-07d9b36afc79
 # ╠═059f8000-ea4e-4338-b75e-89f136794c67
-# ╠═424974c8-a2e6-447b-b7f5-29e28572314d
+# ╟─94d79163-fa2a-4183-8802-213f605dcf59
 # ╠═caaf83db-4701-45a1-9649-e34576470735
-# ╠═8853d92c-a774-40ee-a71f-4c6b7511686d
+# ╟─f4e6494d-6c74-4a5f-ac8a-8ca7b0d2243d
 # ╠═72ab53df-83e8-4ecf-a811-c1e8e848d249
+# ╟─7b4cfc1c-17f6-44c1-a009-102e9f60d044
+# ╠═8853d92c-a774-40ee-a71f-4c6b7511686d
+# ╟─07fe8486-decd-43ea-bdbb-b97551edeb3a
+# ╠═424974c8-a2e6-447b-b7f5-29e28572314d
+# ╟─8f15f324-0cff-4737-ad0e-895173e8914e
 # ╠═bdb8361d-e904-4857-bd96-16e609c4fe85
+# ╟─e3a3d369-70ff-4f9b-9daa-5df76be0b071
 # ╠═7f792dcd-e1f6-40c5-bf76-55bc640ceb81
+# ╟─6eafa5e6-5eb6-4c4c-889a-85093320ea26
 # ╠═7b3cd1cb-e2b6-408d-b981-0ffbb3174822
+# ╟─2b727c28-62a5-4290-82e8-c486467b98b3
 # ╠═a02f8144-9b20-4caa-aadc-0fe00a8709d9
 # ╠═e12fdb33-d126-415b-b195-f75a2697f5e3
 # ╟─775a3f3b-94aa-4502-8b99-57824fa8a805
