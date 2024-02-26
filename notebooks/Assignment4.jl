@@ -40,7 +40,7 @@ function optimize_newton(f, g!, H!, x₀; tol=1e-5, maxitr=100, linesearch=Nothi
 	gₖ = zeros(n)
 	Hₖ = zeros(n,n)
 	xₖ .= x₀
-	steps = xₖ
+	steps = copy(xₖ)
 	values = [f(xₖ)]
 	step_norm = 0.
 	grad_norm = 0.
@@ -62,10 +62,10 @@ function optimize_newton(f, g!, H!, x₀; tol=1e-5, maxitr=100, linesearch=Nothi
 					throw(e)
 				end
 			end
-		pₖ = Cₖ \ gₖ
-		αₖ = linesearch ≠ Nothing ? linesearch(f, xₖ, gₖ, -pₖ) : 1.
-		xₖ -= αₖ * pₖ
-		step_norm = norm(pₖ)
+		pₖ = -(Cₖ \ gₖ)
+		αₖ = linesearch ≠ Nothing ? linesearch(f, xₖ, gₖ, pₖ) : 1.
+		xₖ .+= αₖ * pₖ
+		step_norm = norm(αₖ * pₖ)
 		grad_norm = norm(gₖ)
 		steps = [steps xₖ]
 		push!(values, f(xₖ))
@@ -100,7 +100,7 @@ function optimize_bfgs(f, g!, G₀, x₀; tol=1e-5, maxitr=100, linesearch=Nothi
 	xₖ .= x₀
 	g!(gₖ, x₀)
 	Gₖ .= G₀
-	steps = xₖ
+	steps = copy(xₖ)
 	values = [f(xₖ)]
 	step_norm = 0.
 	grad_norm = 0.
@@ -108,16 +108,16 @@ function optimize_bfgs(f, g!, G₀, x₀; tol=1e-5, maxitr=100, linesearch=Nothi
 	converged = false
 	while k ≤ maxitr && !converged
 		k += 1
-		pₖ = Gₖ * gₖ
-		αₖ = linesearch ≠ Nothing ? linesearch(f, xₖ, gₖ, -pₖ) : 1.
-		xₖ -= αₖ * pₖ
-		step_norm = norm(pₖ)
+		pₖ = -(Gₖ * gₖ)
+		αₖ = linesearch ≠ Nothing ? linesearch(f, xₖ, gₖ, pₖ) : 1.
+		xₖ .+= αₖ * pₖ
+		step_norm = norm(αₖ * pₖ)
 		grad_norm = norm(gₖ)
 		steps = [steps xₖ]
 		push!(values, f(xₖ))
 		converged = grad_norm ≤ tol && step_norm ≤ tol * (1 + norm(xₖ))
 		# gradient and secant update
-		sₖ = -αₖ * pₖ
+		sₖ = αₖ * pₖ
 		gₖ₋₁ .= gₖ
 		g!(gₖ, xₖ)
 		yₖ = gₖ - gₖ₋₁
@@ -175,36 +175,43 @@ md"""
 # ╔═╡ e5d9ac0a-7cfc-44ab-b29f-fb8d2f1f69c7
 function solve_penalty_problem(g, H, Δ)
 	n = length(g)
-	pⱼ = fill(Δ, n) # dummy initial condition
-	candidates_found = 0
-	μᵤ = eigmax(H) # we ensure pos def
-	μₗ = 2 * μᵤ
-	while candidates_found < 8
-		j += 1
-		μⱼ = (μᵤ + μₗ) / 2
-		Cⱼ = 
-			try
-				cholesky(H + μⱼ * I(n))
-			catch e
-				if e isa(PosDefException)
-					continue
-				else
-					throw(e)
-				end
+	steps = 10
+	μₗ = max(0., -eigmin(H))
+	μᵤ = μₗ ≠ 0 ? 2 * μₗ : 1.
+	while steps > 0
+		Cⱼ = cholesky(H + μᵤ * I(n))
+		pⱼ = Cⱼ \ g
+		if norm(pⱼ) > Δ
+			μₗ = μᵤ
+			μᵤ *= 2
+			steps += 1
+		else
+			μⱼ = (μᵤ + μₗ) / 2
+			Cⱼ = cholesky(H + μⱼ * I(n))
+			pⱼ = Cⱼ \ g
+			if norm(pⱼ) > Δ
+				μₗ = μⱼ
+			else
+				μᵤ = μⱼ
 			end
-		
-		
-		
+			steps -= 1
+		end
+	end
+	μ = μᵤ
+	C = cholesky(H + μ * I(n))
+	p = C \ g
+	return -p
+end	
 
 # ╔═╡ 54500345-520f-479c-88ce-f7d1a373389f
-function optimize_trustregion(f, g!, H!, x₀; Δ₀=1., η=0.020, tol=1e-5, maxitr=100)
+function optimize_trustregion(f, g!, H!, x₀; Δ₀=.1, η=0.020, tol=1e-5, maxitr=100)
 	n = length(x₀)
 	xₖ = zeros(n)
 	gₖ = zeros(n)
 	Hₖ = zeros(n,n)
 	xₖ .= x₀
 	Δₖ = Δ₀ # HERE DIFFERENT FROM NOTES!
-	steps = xₖ
+	steps = copy(xₖ)
 	values = [f(xₖ)]
 	step_norm = 0.
 	grad_norm = 0.
@@ -214,8 +221,37 @@ function optimize_trustregion(f, g!, H!, x₀; Δ₀=1., η=0.020, tol=1e-5, max
 		k += 1
 		g!(gₖ, xₖ)
 		H!(Hₖ, xₖ)
-		pₖ = solve_penalty_problem(f, gₖ, Hₖ, Δₖ)
-		
+		pₖ = solve_penalty_problem(gₖ, Hₖ, Δₖ)
+		Δm = - gₖ' * pₖ - 1/2 * dot(pₖ, Hₖ, pₖ)# - 1/2 * norm(pₖ)^2
+		Δf = f(xₖ) - f(xₖ + pₖ)
+		ρₖ = Δf / Δm
+		if 0 < ρₖ < 0.25
+			Δₖ = norm(pₖ) / 4
+		elseif ρₖ > 0.75
+			Δₖ *= 2
+		end
+		if ρₖ > η
+			xₖ .+= pₖ
+		else
+			pₖ = zeros(n)
+		end
+		step_norm = norm(pₖ)
+		grad_norm = norm(gₖ)
+		steps = [steps xₖ]
+		push!(values, f(xₖ))
+		converged = grad_norm ≤ tol && step_norm ≤ tol * (1 + norm(xₖ))
+	end
+	return OptimizationResults(
+		"Trust Region",
+		converged,
+		f(xₖ),
+		xₖ,
+		grad_norm,
+		step_norm,
+		k,
+		steps,
+		values
+	)
 end
 
 # ╔═╡ f8dc799a-d2ef-43ae-aa8b-5a43b094d7c3
@@ -345,6 +381,11 @@ bfgs_a_3 = optimize_bfgs(x -> f_a(x[1], x[2]), g_a!, [1 0; 0 1], [1,1], linesear
 # ╔═╡ 40df2ad0-0189-474c-bb71-3e00effae4b1
 plot_optimization(f_a, (2,-1), newt_a_2, bfgs_a_1, bfgs_a_2, bfgs_a_3, xlim=(0, 5), ylim=(-2.5,2.5))
 
+# ╔═╡ 2057ca79-e9f5-4fba-a975-cd7cb67f833c
+md"""
+	FORSE È PIÙ UTILE FARE PLOT DIVERSI PER QUELLI CHE SCAZZANO E PER QUELLI CHE SCENDONO GIÙ LISCI
+"""
+
 # ╔═╡ 23ab718b-5237-4cce-927e-ab29ec98deae
 md"""
 ## Optimization b
@@ -460,6 +501,14 @@ md"""
 # ╔═╡ 8853d92c-a774-40ee-a71f-4c6b7511686d
 bfgs_c_1_bt = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.2], linesearch=backtracking, comment="G₀ = I")
 
+# ╔═╡ 144103b9-24b2-4772-8d2e-119ff1a73c81
+md"""
+	si prova con trust region, va
+"""
+
+# ╔═╡ 91f47c4c-e334-4741-8105-1a6b14cf0e09
+trrg_c_1 = optimize_trustregion(x -> f_c(x[1], x[2]), g_c!, H_c!, [8.,0.2])
+
 # ╔═╡ 07fe8486-decd-43ea-bdbb-b97551edeb3a
 md"""
 	Si prova da un altro punto iniziale, Newton va
@@ -500,8 +549,16 @@ md"""
 # ╔═╡ a02f8144-9b20-4caa-aadc-0fe00a8709d9
 bfgs_c_6 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, inv(H_c([8,0.8])), [8.,0.8], linesearch=backtracking, comment="G₀=(∇²f(x₀))⁻¹")
 
+# ╔═╡ b0e20e6b-55c8-498c-ba4b-3393624e49ae
+md"""
+	trust region va anche sui sassi
+"""
+
+# ╔═╡ 7a00d2c7-6dc1-4795-8328-a7696a32cc56
+trrg_c_2 = optimize_trustregion(x -> f_c(x[1], x[2]), g_c!, H_c!, [8.,0.8])
+
 # ╔═╡ e12fdb33-d126-415b-b195-f75a2697f5e3
-plot_optimization(f_c, (3,0.5), bfgs_c_2, bfgs_c_1_bt, newt_c_2,  bfgs_c_4, bfgs_c_3_bt, xlim=(2.5,8.5), ylim=(0,1))
+plot_optimization(f_c, (3,0.5), bfgs_c_2, bfgs_c_1_bt, trrg_c_1, newt_c_2,  bfgs_c_4, bfgs_c_3_bt, trrg_c_2, xlim=(2.5,8.5), ylim=(0,1))
 
 # ╔═╡ 775a3f3b-94aa-4502-8b99-57824fa8a805
 md"""
@@ -542,8 +599,11 @@ newt_d_1 = optimize_newton(x -> f_d(x[1], x[2]), g_d!, H_d!, [0.75,-1.25])
 # ╔═╡ 15fdb3ce-2d5b-4b94-a462-5c438ff94e8e
 newt_d_2 = optimize_newton(x -> f_d(x[1], x[2]), g_d!, H_d!, [0.,0.])
 
+# ╔═╡ bc95da07-ceed-45d3-8826-42d29fe783ba
+trrg_d_1 = optimize_trustregion(x -> f_d(x[1], x[2]), g_d!, H_d!, [0.,0.])
+
 # ╔═╡ 65b9915c-dcc8-4ef7-bde3-423c709afc5e
-plot_optimization(f_d, (0.695884386,−1.34794219), newt_d_1, xlim=(0,1), ylim=(-1.5,-1.))
+plot_optimization(f_d, (0.695884386,−1.34794219), newt_d_1, trrg_d_1, xlim=(0,1), ylim=(-1.5,-1.))
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2117,6 +2177,7 @@ version = "1.4.1+1"
 # ╠═e446999e-490d-4afc-aaf7-9536d3ecd1f0
 # ╠═12d943f9-83b3-44e2-a0f5-f7becb7b614f
 # ╠═40df2ad0-0189-474c-bb71-3e00effae4b1
+# ╟─2057ca79-e9f5-4fba-a975-cd7cb67f833c
 # ╟─23ab718b-5237-4cce-927e-ab29ec98deae
 # ╟─0b6ed726-232f-484b-9e20-28bfdb812a67
 # ╠═015c5739-0e4a-426a-a6f9-376213da2424
@@ -2144,6 +2205,8 @@ version = "1.4.1+1"
 # ╠═72ab53df-83e8-4ecf-a811-c1e8e848d249
 # ╟─7b4cfc1c-17f6-44c1-a009-102e9f60d044
 # ╠═8853d92c-a774-40ee-a71f-4c6b7511686d
+# ╟─144103b9-24b2-4772-8d2e-119ff1a73c81
+# ╠═91f47c4c-e334-4741-8105-1a6b14cf0e09
 # ╟─07fe8486-decd-43ea-bdbb-b97551edeb3a
 # ╠═424974c8-a2e6-447b-b7f5-29e28572314d
 # ╟─8f15f324-0cff-4737-ad0e-895173e8914e
@@ -2154,6 +2217,8 @@ version = "1.4.1+1"
 # ╠═7b3cd1cb-e2b6-408d-b981-0ffbb3174822
 # ╟─2b727c28-62a5-4290-82e8-c486467b98b3
 # ╠═a02f8144-9b20-4caa-aadc-0fe00a8709d9
+# ╟─b0e20e6b-55c8-498c-ba4b-3393624e49ae
+# ╠═7a00d2c7-6dc1-4795-8328-a7696a32cc56
 # ╠═e12fdb33-d126-415b-b195-f75a2697f5e3
 # ╟─775a3f3b-94aa-4502-8b99-57824fa8a805
 # ╠═3fbe3908-eee9-440b-993c-67e8a84d10e9
@@ -2165,6 +2230,7 @@ version = "1.4.1+1"
 # ╟─d51eba6e-809e-4c41-991d-5d90c65182b4
 # ╠═76226106-ff98-41ba-94f8-63d02a563b48
 # ╠═15fdb3ce-2d5b-4b94-a462-5c438ff94e8e
+# ╠═bc95da07-ceed-45d3-8826-42d29fe783ba
 # ╠═65b9915c-dcc8-4ef7-bde3-423c709afc5e
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
