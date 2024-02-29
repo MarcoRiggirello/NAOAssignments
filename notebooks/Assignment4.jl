@@ -15,6 +15,17 @@ md"""
 # NAO 4
 """
 
+# ╔═╡ 7435d8e2-dd5c-49bd-981e-46ee8ece3313
+md"""
+In the following, we define the structs and the functions for the assignment. Specifically, we define the following functions:
+
+- `optimize_newton()`, which performs the Newton's optimization with given lineasearch (1 by default);
+- `optimize_bfgs()`, which performs the BFGS quasi-Newton optimization;
+- `optimize_trustregion()`, which performs the optimization via the Trust region algorithm.
+
+As the linesearch algorithm, we implement the `backtracking()` algorithms as seen during the lectures.
+"""
+
 # ╔═╡ ed785d1d-54e9-49df-b45f-dffa161d978c
 struct OptimizationResults
 	algorithm::String
@@ -31,6 +42,11 @@ end
 # ╔═╡ 52387950-56cc-414e-a434-8480757fdd45
 md"""
 ## Newton
+"""
+
+# ╔═╡ 3f060cb3-3465-45ae-9a9a-4ec3f3628cf2
+md"""
+Note that we perform an additional check when doing the Cholesky decomposition of the Hessian to catch those cases where the matrix is not Positive defined. They cannot converge and so the function throws an error.
 """
 
 # ╔═╡ fa77e47e-6876-42d5-ae9d-9c68e9afd174
@@ -88,6 +104,11 @@ end
 # ╔═╡ 27a151a4-1028-4baf-b4b4-138fa5ce9040
 md"""
 ## BFGS
+"""
+
+# ╔═╡ fca61f4d-948a-4a05-a387-16ebe84ab56d
+md"""
+	need to add details about the math
 """
 
 # ╔═╡ 41e06b52-3b8c-47be-9a75-fdf3d708def4
@@ -222,7 +243,7 @@ function optimize_trustregion(f, g!, H!, x₀; Δ₀=.1, η=0.020, tol=1e-5, max
 		g!(gₖ, xₖ)
 		H!(Hₖ, xₖ)
 		pₖ = solve_penalty_problem(gₖ, Hₖ, Δₖ)
-		Δm = - gₖ' * pₖ - 1/2 * dot(pₖ, Hₖ, pₖ)# - 1/2 * norm(pₖ)^2
+		Δm = - gₖ' * pₖ - 1/2 * dot(pₖ, Hₖ, pₖ)
 		Δf = f(xₖ) - f(xₖ + pₖ)
 		ρₖ = Δf / Δm
 		if 0 < ρₖ < 0.25
@@ -257,6 +278,11 @@ end
 # ╔═╡ f8dc799a-d2ef-43ae-aa8b-5a43b094d7c3
 md"""
 ## Graphics
+"""
+
+# ╔═╡ b8e94ea4-4d08-4e64-a134-e2562e7d007e
+md"""
+Here we define an helper function for plotting 2d optimization tasks.
 """
 
 # ╔═╡ 2b253872-ca18-4f81-9a90-565d1503576d
@@ -320,6 +346,11 @@ md"""
 ## Optimization a
 """
 
+# ╔═╡ 81742d93-d761-4ec1-ab3a-571711130fc6
+md"""
+We plot below the shape of the function.
+"""
+
 # ╔═╡ 57c33dc0-1e46-4c33-a432-550307367839
 f_a(x₁, x₂) = (x₁ - 2)^2 + (x₁  - 2)^2 * x₂^2 + (x₂ + 1)^2
 
@@ -333,9 +364,7 @@ end
 
 # ╔═╡ cdfc565c-c18b-4e8e-aa17-dfb9483e9eee
 md"""
-We use the power of Symbolics.jl to
-	
-	sfamare la nostra sete di fancazzismo
+We use the power of Symbolics.jl to derive the analytic form of both the gradient and the Hessian of the function.
 """
 
 # ╔═╡ afc86c35-5c79-4f26-881d-45fcaea8dbb1
@@ -343,11 +372,16 @@ We use the power of Symbolics.jl to
 
 # ╔═╡ c156f0f0-1c1f-4c19-bb92-8cd3db60215d
 md"""
-We use [this trickery](https://symbolics.juliasymbolics.org/dev/getting_started/#Building-Functions) to make the symbolic function callable
+We use [this trickery](https://symbolics.juliasymbolics.org/dev/getting_started/#Building-Functions) to make the symbolic function callable. The function `g_a!` takes as input a preallocated vector, which is more efficient in this scenario.
 """
 
 # ╔═╡ d30f8a04-5fde-4b1c-933c-577229b8de77
 g_a! = eval(build_function(∇f_a, [x₁, x₂])[2])
+
+# ╔═╡ d73ae180-2d77-4e7f-a3fb-c9a0abaa9c51
+md"""
+The same is done for the Hessian. Everything is now ready to perform the opimization.
+"""
 
 # ╔═╡ b86e5b21-7b90-4111-b6da-eddbf7402bf2
 ∇²f_a = Symbolics.hessian(f_a(x₁, x₂), [x₁, x₂])
@@ -363,23 +397,69 @@ md"""
 ### Runs
 """
 
+# ╔═╡ d629443a-45a2-4abe-80fb-0b233863c960
+md"""
+In the first starting point, the Hessian is not SPD, so Newton fails:
+"""
+
 # ╔═╡ 5edc0250-8d8c-4c94-91ab-08a813845668
 newt_a_1 = optimize_newton(x -> f_a(x[1], x[2]), g_a!, H_a!, [1,1])
 
-# ╔═╡ a0d5ab72-f12d-4a75-93cd-40365b6bd4df
-newt_a_2 = optimize_newton(x -> f_a(x[1], x[2]), g_a!, H_a!, [2,-1])
+# ╔═╡ d2b6d03b-45c4-4941-b18e-c7e3fc451889
+md"""
+However, BFGS is capable of converging to the minimum, even by using the Identity as the initial approximation of the Hessian inverse.
+"""
 
 # ╔═╡ c5a4de9b-e452-4428-83ae-6f9209e22cf9
 bfgs_a_1 = optimize_bfgs(x -> f_a(x[1], x[2]), g_a!, [1 0; 0 1], [1,1], comment="G₀=Id")
 
+# ╔═╡ cea16f18-a943-47c2-8803-dc877262ae8f
+md"""
+Convergence is also obtained through BFGS when starting from another approximation of the Hessian inverse.
+"""
+
 # ╔═╡ e446999e-490d-4afc-aaf7-9536d3ecd1f0
 bfgs_a_2 = optimize_bfgs(x -> f_a(x[1], x[2]), g_a!, inv(H_a([1,1])+1e-4*I(2)), [1,1], comment="G₀=(∇²f(x₀)+1e-4Id)⁻¹")
+
+# ╔═╡ 3f27c70f-8ad7-42bb-b93d-e7e7e586e095
+md"""
+If we use the backtracking algorithm as the linesearch (instead of 1 as above) with BFGS and the Identity as initial guess, we obtain a faster convergence than before. However, we observe that results for the argmin are slightly less accurate, while still within the required tolerance.
+"""
 
 # ╔═╡ 12d943f9-83b3-44e2-a0f5-f7becb7b614f
 bfgs_a_3 = optimize_bfgs(x -> f_a(x[1], x[2]), g_a!, [1 0; 0 1], [1,1], linesearch=backtracking, comment="G₀=Id")
 
+# ╔═╡ d6007def-8349-4678-aa6c-4b3c771b3c15
+md"""
+We repeat the backtracking with the different approximation for the Hessian inverse. The number of steps is again reduced.
+"""
+
+# ╔═╡ 29a1ba8e-e27a-45b4-a1ac-dcc2eefa05eb
+bfgs_a_4 = optimize_bfgs(x -> f_a(x[1], x[2]), g_a!, inv(H_a([1,1])+1e-4*I(2)), [1,1], linesearch=backtracking, comment="G₀=(∇²f(x₀)+1e-4Id)⁻¹")
+
+# ╔═╡ 51a11fce-5808-4479-b79f-fe8ae9310c3e
+md"""
+The trust region approach converges to accurate results with the least amount of steps.
+"""
+
+# ╔═╡ 5a78ea6c-b4ce-4d4f-9719-e09e9c1f36fd
+trrg_a_1 = optimize_trustregion(x -> f_a(x[1], x[2]), g_a!, H_a!, [1,1])
+
+# ╔═╡ 4fca73b7-be7c-427e-9b22-0c60f50279e4
+md"""
+We show below the animation for the different minimization routines. When BFGS is used without backtracking, the fixed step size results in a series of sharp steps across the domain. Instead, the use of backtracking allows for smoother descent towards the minimum.
+"""
+
 # ╔═╡ 40df2ad0-0189-474c-bb71-3e00effae4b1
-plot_optimization(f_a, (2,-1), newt_a_2, bfgs_a_1, bfgs_a_2, bfgs_a_3, xlim=(0, 5), ylim=(-2.5,2.5))
+plot_optimization(f_a, (2,-1), bfgs_a_1, bfgs_a_2, bfgs_a_3, bfgs_a_4, trrg_a_1, xlim=(0, 5), ylim=(-2.5,2.5))
+
+# ╔═╡ 95212305-bd5b-4c47-87dc-116231452373
+md"""
+The other starting point is exactly the minimum, so Newton converges in one step.
+"""
+
+# ╔═╡ a0d5ab72-f12d-4a75-93cd-40365b6bd4df
+newt_a_2 = optimize_newton(x -> f_a(x[1], x[2]), g_a!, H_a!, [2,-1])
 
 # ╔═╡ 2057ca79-e9f5-4fba-a975-cd7cb67f833c
 md"""
@@ -2148,10 +2228,13 @@ version = "1.4.1+1"
 # ╠═6e15ed80-1938-4ea9-82f8-a7d0b8dfd6ce
 # ╠═45ad341c-765c-40e1-a726-8a575dc3ab9a
 # ╟─61498356-cf52-11ee-3c16-038f22b043c9
+# ╟─7435d8e2-dd5c-49bd-981e-46ee8ece3313
 # ╠═ed785d1d-54e9-49df-b45f-dffa161d978c
 # ╟─52387950-56cc-414e-a434-8480757fdd45
+# ╟─3f060cb3-3465-45ae-9a9a-4ec3f3628cf2
 # ╠═fa77e47e-6876-42d5-ae9d-9c68e9afd174
 # ╟─27a151a4-1028-4baf-b4b4-138fa5ce9040
+# ╟─fca61f4d-948a-4a05-a387-16ebe84ab56d
 # ╠═41e06b52-3b8c-47be-9a75-fdf3d708def4
 # ╟─6698003b-240b-4f1b-b1e4-8e70107c4150
 # ╠═b4c6e46a-f47e-4ce2-8cd9-c6229be6fdf4
@@ -2159,24 +2242,37 @@ version = "1.4.1+1"
 # ╠═e5d9ac0a-7cfc-44ab-b29f-fb8d2f1f69c7
 # ╠═54500345-520f-479c-88ce-f7d1a373389f
 # ╟─f8dc799a-d2ef-43ae-aa8b-5a43b094d7c3
+# ╟─b8e94ea4-4d08-4e64-a134-e2562e7d007e
 # ╠═2b253872-ca18-4f81-9a90-565d1503576d
 # ╟─96e08046-c44d-421c-9784-72a97ff8fbf8
+# ╟─81742d93-d761-4ec1-ab3a-571711130fc6
 # ╠═57c33dc0-1e46-4c33-a432-550307367839
 # ╠═85a9fbca-7866-4c7f-899e-d6738a96596a
 # ╟─cdfc565c-c18b-4e8e-aa17-dfb9483e9eee
 # ╠═afc86c35-5c79-4f26-881d-45fcaea8dbb1
 # ╟─c156f0f0-1c1f-4c19-bb92-8cd3db60215d
 # ╠═d30f8a04-5fde-4b1c-933c-577229b8de77
+# ╟─d73ae180-2d77-4e7f-a3fb-c9a0abaa9c51
 # ╠═b86e5b21-7b90-4111-b6da-eddbf7402bf2
 # ╠═7074f6d2-94c1-4440-9a44-7936db617bb3
 # ╠═f975f7e7-1790-47b3-a0ef-014df5f5a9fb
 # ╟─c95a8234-9729-451b-9745-1abf35819000
+# ╟─d629443a-45a2-4abe-80fb-0b233863c960
 # ╠═5edc0250-8d8c-4c94-91ab-08a813845668
-# ╠═a0d5ab72-f12d-4a75-93cd-40365b6bd4df
+# ╟─d2b6d03b-45c4-4941-b18e-c7e3fc451889
 # ╠═c5a4de9b-e452-4428-83ae-6f9209e22cf9
+# ╟─cea16f18-a943-47c2-8803-dc877262ae8f
 # ╠═e446999e-490d-4afc-aaf7-9536d3ecd1f0
+# ╟─3f27c70f-8ad7-42bb-b93d-e7e7e586e095
 # ╠═12d943f9-83b3-44e2-a0f5-f7becb7b614f
+# ╟─d6007def-8349-4678-aa6c-4b3c771b3c15
+# ╠═29a1ba8e-e27a-45b4-a1ac-dcc2eefa05eb
+# ╟─51a11fce-5808-4479-b79f-fe8ae9310c3e
+# ╠═5a78ea6c-b4ce-4d4f-9719-e09e9c1f36fd
+# ╟─4fca73b7-be7c-427e-9b22-0c60f50279e4
 # ╠═40df2ad0-0189-474c-bb71-3e00effae4b1
+# ╟─95212305-bd5b-4c47-87dc-116231452373
+# ╠═a0d5ab72-f12d-4a75-93cd-40365b6bd4df
 # ╟─2057ca79-e9f5-4fba-a975-cd7cb67f833c
 # ╟─23ab718b-5237-4cce-927e-ab29ec98deae
 # ╟─0b6ed726-232f-484b-9e20-28bfdb812a67
