@@ -534,6 +534,11 @@ md"""
 ### Runs
 """
 
+# ╔═╡ f9c3903b-49d1-4f05-8800-ad8e54fa4e57
+md"""
+The Hessian now is positive definite, so as expected we observe convergence for all the different approaches.
+"""
+
 # ╔═╡ 32fd9af2-16a6-44bd-8382-9f822395d3e6
 newt_b_1 = optimize_newton(f_b, g_b!, H_b!, [-1.,3.,3.,0.])
 
@@ -2339,6 +2344,7 @@ version = "1.4.1+1"
 # ╠═45081330-abf2-4ff3-bd32-9197446d3962
 # ╠═36afaf29-e07a-450d-a7e0-b9c057c2a698
 # ╟─376b44e1-7227-4e83-a558-55780235c568
+# ╟─f9c3903b-49d1-4f05-8800-ad8e54fa4e57
 # ╠═32fd9af2-16a6-44bd-8382-9f822395d3e6
 # ╠═299e411b-6ccc-4f12-9d79-2b7275547e52
 # ╠═0c0114d3-ab4a-4631-b8a7-3fc0ec922859
