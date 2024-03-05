@@ -109,13 +109,13 @@ md"""
 # ╔═╡ fca61f4d-948a-4a05-a387-16ebe84ab56d
 md"""
 Here the BFGS update is carried out on the approzimation of the hessian inverse, as seen during lectures.
-We used a slightly different version of the update formula to avoid computation of intermediary matrices. Starting from the form
+We used a slightly different version of the update formula to avoid computation of intermediary matrices. Starting from the usual form
 
-$G_{k+1} = etc...$
+$G_{k+1} = \left(I - \frac{\mathbf{s}_k \mathbf{y}_k^T}{\mathbf{y}_k^T \mathbf{s}_k}\right) G_k \left(I - \frac{\mathbf{y}_k \mathbf{s}_k^T}{\mathbf{y}_k^T \mathbf{s}_k}\right) + \frac{\mathbf{s}_k \mathbf{s}_k^T}{\mathbf{y}_k^T \mathbf{s}_k}$
 
 by expanding the matrix product we can write
 
-$etc$
+$G_{k+1} = G_k + \frac{\left(\mathbf{s}_k^T \mathbf{y}_k + \mathbf{y}_k^T G_k \mathbf{y}_k\right)(\mathbf{s}_k \mathbf{s}_k^T)}{(\mathbf{s}_k^T \mathbf{y}_k)^2} - \frac{G_k \mathbf{y}_k \mathbf{s}_k^T + \mathbf{s}_k \mathbf{y}_k^T G_k}{\mathbf{s}_k^T \mathbf{y}_k}$
 
 By proper collecting the terms in the above formula, we note that we can perform only matrix--vector products and scalar products. We used this in the code implementation of the BFGS.
 """
