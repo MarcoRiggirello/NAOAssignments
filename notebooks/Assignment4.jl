@@ -19,8 +19,8 @@ md"""
 md"""
 In the following, we define the structs and the functions for the assignment. Specifically, we define the following functions:
 
-- `optimize_newton()`, which performs the Newton's optimization with given lineasearch (1 by default);
-- `optimize_bfgs()`, which performs the BFGS quasi-Newton optimization;
+- `optimize_newton()`, which performs the Newton's optimization. Optionally, a linesearch function can be passed to determine the optimal steplength;
+- `optimize_bfgs()`, which performs the BFGS quasi-Newton optimization (optional linesearch is available here as well);
 - `optimize_trustregion()`, which performs the optimization via the Trust region algorithm.
 
 As the linesearch algorithm, we implement the `backtracking()` algorithms as seen during the lectures.
@@ -46,7 +46,7 @@ md"""
 
 # ╔═╡ 3f060cb3-3465-45ae-9a9a-4ec3f3628cf2
 md"""
-Note that we perform an additional check when doing the Cholesky decomposition of the Hessian to catch those cases where the matrix is not Positive defined. They cannot converge and so the function throws an error.
+Note that we perform an additional check when doing the Cholesky decomposition of the Hessian to catch those cases where the matrix is not Positive defined. In this case the algorithm can converge to a saddle point and not to a minimum and so the function throws an error.
 """
 
 # ╔═╡ fa77e47e-6876-42d5-ae9d-9c68e9afd174
@@ -108,7 +108,16 @@ md"""
 
 # ╔═╡ fca61f4d-948a-4a05-a387-16ebe84ab56d
 md"""
-	need to add details about the math
+Here the BFGS update is carried out on the approzimation of the hessian inverse, as seen during lectures.
+We used a slightly different version of the update formula to avoid computation of intermediary matrices. Starting from the form
+
+$G_{k+1} = etc...$
+
+by expanding the matrix product we can write
+
+$etc$
+
+By proper collecting the terms in the above formula, we note that we can perform only matrix--vector products and scalar products. We used this in the code implementation of the BFGS.
 """
 
 # ╔═╡ 41e06b52-3b8c-47be-9a75-fdf3d708def4
@@ -176,7 +185,9 @@ md"""
 
 # ╔═╡ b4c6e46a-f47e-4ce2-8cd9-c6229be6fdf4
 function backtracking(f, xₖ, gₖ, pₖ; c=.5, ρ=.5, α₀=1.)
-	# sanity checks su c e rho da fare
+	if !(0 < c < 1) || !(0 < ρ < 1)
+		throw(DomainError("Parameters c and/or ρ outside proper bound."))
+	end
 	α = α₀
 	fₖ = f(xₖ)
 	pₖᵀ∇f = pₖ' * gₖ
@@ -190,14 +201,29 @@ end
 
 # ╔═╡ 35f73a6e-ada1-412a-a770-175427d1e443
 md"""
-## Trust region?
+## Trust region
+"""
+
+# ╔═╡ 3220a80c-bd63-4683-99db-5a53901c9b0c
+md"""
+Here the trust region subproblem, defined as
+
+$\arg \min_{||\mathbf{p}|| < \Delta} \mathbf{p}^T \mathbf{g} + \frac12 \mathbf{p}^T H \mathbf{p}$
+
+is solved with penalty method by finding a $\mu$ such that 
+
+$\mathbf{p} = (H + \mu I)^{-1} \mathbf{g}$
+
+is within the trust region. As we proved during lectures, $||\mathbf{p}||$ is monothonically decrescent function of $μ$, so our alorithm proceed iteratively in two phases:
+- First, starting from a initial value $\mu_0$, we double at each step the value of $μ_k$ until we get $||\mathbf{p}||_{\mu_k} < \Delta$;
+- Then, we perform a binary search in the window $[\mu_{k-1}, \mu_k]$ to be as close as possible to the threshold $||\mathbf{p}||_{\mu_\text{thr}} = \Delta$ (we don't want to flatten the hessian information over the identity).
 """
 
 # ╔═╡ e5d9ac0a-7cfc-44ab-b29f-fb8d2f1f69c7
 function solve_penalty_problem(g, H, Δ)
 	n = length(g)
 	steps = 10
-	μₗ = max(0., -eigmin(H))
+	μₗ = max(0., -eigmin(H)) # ensure positive definiteness
 	μᵤ = μₗ ≠ 0 ? 2 * μₗ : 1.
 	while steps > 0
 		Cⱼ = cholesky(H + μᵤ * I(n))
@@ -231,7 +257,7 @@ function optimize_trustregion(f, g!, H!, x₀; Δ₀=.1, η=0.020, tol=1e-5, max
 	gₖ = zeros(n)
 	Hₖ = zeros(n,n)
 	xₖ .= x₀
-	Δₖ = Δ₀ # HERE DIFFERENT FROM NOTES!
+	Δₖ = Δ₀
 	steps = copy(xₖ)
 	values = [f(xₖ)]
 	step_norm = 0.
@@ -364,7 +390,7 @@ end
 
 # ╔═╡ cdfc565c-c18b-4e8e-aa17-dfb9483e9eee
 md"""
-We use the power of Symbolics.jl to derive the analytic form of both the gradient and the Hessian of the function.
+We use the power of [Symbolics.jl](https://symbolics.juliasymbolics.org/stable/) to derive the analytic form of both the gradient and the Hessian of the function.
 """
 
 # ╔═╡ afc86c35-5c79-4f26-881d-45fcaea8dbb1
@@ -415,7 +441,7 @@ bfgs_a_1 = optimize_bfgs(x -> f_a(x[1], x[2]), g_a!, [1 0; 0 1], [1,1], comment=
 
 # ╔═╡ cea16f18-a943-47c2-8803-dc877262ae8f
 md"""
-Convergence is also obtained through BFGS when starting from another approximation of the Hessian inverse.
+Convergence is also obtained through BFGS when starting from another (positive definite) approximation of the Hessian inverse.
 """
 
 # ╔═╡ e446999e-490d-4afc-aaf7-9536d3ecd1f0
@@ -423,7 +449,7 @@ bfgs_a_2 = optimize_bfgs(x -> f_a(x[1], x[2]), g_a!, inv(H_a([1,1])+1e-4*I(2)), 
 
 # ╔═╡ 3f27c70f-8ad7-42bb-b93d-e7e7e586e095
 md"""
-If we use the backtracking algorithm as the linesearch (instead of 1 as above) with BFGS and the Identity as initial guess, we obtain a faster convergence than before. However, we observe that results for the argmin are slightly less accurate, while still within the required tolerance.
+If we use the backtracking algorithm to determine the steplength (instead of using  just $α_k = 1$ as above) with BFGS and the Identity as initial guess, we obtain a faster convergence than before. However, we observe that results for the argmin are slightly less accurate, while still within the required tolerance.
 """
 
 # ╔═╡ 12d943f9-83b3-44e2-a0f5-f7becb7b614f
@@ -447,11 +473,19 @@ trrg_a_1 = optimize_trustregion(x -> f_a(x[1], x[2]), g_a!, H_a!, [1,1])
 
 # ╔═╡ 4fca73b7-be7c-427e-9b22-0c60f50279e4
 md"""
-We show below the animation for the different minimization routines. When BFGS is used without backtracking, the fixed step size results in a series of sharp steps across the domain. Instead, the use of backtracking allows for smoother descent towards the minimum.
+We show below the animation for the different minimization routines. When BFGS is used without backtracking, the fixed step size results in a series of sharp steps across the domain.
+"""
+
+# ╔═╡ e11ee2fb-af2b-4daf-8c12-4e625f891f84
+plot_optimization(f_a, (2,-1), bfgs_a_1, bfgs_a_2)
+
+# ╔═╡ f3acf4de-592e-4709-a687-ad66e355360c
+md"""
+ Instead, the use of backtracking allows for smoother descent towards the minimum.
 """
 
 # ╔═╡ 40df2ad0-0189-474c-bb71-3e00effae4b1
-plot_optimization(f_a, (2,-1), bfgs_a_1, bfgs_a_2, bfgs_a_3, bfgs_a_4, trrg_a_1, xlim=(0, 5), ylim=(-2.5,2.5))
+plot_optimization(f_a, (2,-1), bfgs_a_3, bfgs_a_4, trrg_a_1, xlim=(0, 3), ylim=(-2.5,2.5))
 
 # ╔═╡ 95212305-bd5b-4c47-87dc-116231452373
 md"""
@@ -460,11 +494,6 @@ The other starting point is exactly the minimum, so Newton converges in one step
 
 # ╔═╡ a0d5ab72-f12d-4a75-93cd-40365b6bd4df
 newt_a_2 = optimize_newton(x -> f_a(x[1], x[2]), g_a!, H_a!, [2,-1])
-
-# ╔═╡ 2057ca79-e9f5-4fba-a975-cd7cb67f833c
-md"""
-	FORSE È PIÙ UTILE FARE PLOT DIVERSI PER QUELLI CHE SCAZZANO E PER QUELLI CHE SCENDONO GIÙ LISCI
-"""
 
 # ╔═╡ 23ab718b-5237-4cce-927e-ab29ec98deae
 md"""
@@ -506,7 +535,16 @@ md"""
 """
 
 # ╔═╡ 32fd9af2-16a6-44bd-8382-9f822395d3e6
-newt_b = optimize_newton(f_b, g_b!, H_b!, [-1.,3.,3.,0.])
+newt_b_1 = optimize_newton(f_b, g_b!, H_b!, [-1.,3.,3.,0.])
+
+# ╔═╡ 299e411b-6ccc-4f12-9d79-2b7275547e52
+bfgs_b_1 = optimize_bfgs(f_b, g_b!, I(4), [-1.,3.,3.,0.], linesearch=backtracking)
+
+# ╔═╡ 0c0114d3-ab4a-4631-b8a7-3fc0ec922859
+bfgs_b_2 = optimize_bfgs(f_b, g_b!, inv(H), [-1.,3.,3.,0.])
+
+# ╔═╡ 207e0b4c-3a6b-41b8-a760-0f02e048a6df
+trrg_b_1 = optimize_trustregion(f_b, g_b!, H_b!, [-1.,3.,3.,0.])
 
 # ╔═╡ b46d53a0-d52a-463c-951f-e5cb7a4e86fb
 md"""
@@ -676,14 +714,31 @@ md"""
 # ╔═╡ 76226106-ff98-41ba-94f8-63d02a563b48
 newt_d_1 = optimize_newton(x -> f_d(x[1], x[2]), g_d!, H_d!, [0.75,-1.25])
 
+# ╔═╡ 26b48bdf-8532-4e94-a2dc-8a4536fc45a2
+md"""
+	non cambia niente e ci piace, vuol dire che linesearch non interferisce con newton quando newton è forte
+"""
+
+# ╔═╡ 047ae524-591d-4e20-bcd5-28e92e9f560f
+newt_d_2 = optimize_newton(x -> f_d(x[1], x[2]), g_d!, H_d!, [0.75,-1.25], linesearch=backtracking)
+
+# ╔═╡ 765b22a5-2edd-4d16-81d6-a9665f1e5c1f
+bfgs_d_1 = optimize_bfgs(x -> f_d(x[1], x[2]), g_d!, I(2), [0.75,-1.25], linesearch=backtracking)
+
 # ╔═╡ 15fdb3ce-2d5b-4b94-a462-5c438ff94e8e
-newt_d_2 = optimize_newton(x -> f_d(x[1], x[2]), g_d!, H_d!, [0.,0.])
+newt_d_3 = optimize_newton(x -> f_d(x[1], x[2]), g_d!, H_d!, [0.,0.])
+
+# ╔═╡ c44fb844-61c8-44fb-aad0-dbbc9f1b554a
+bfgs_d_2 = optimize_bfgs(x -> f_d(x[1], x[2]), g_d!, I(2), [0.,0.], linesearch=backtracking)
 
 # ╔═╡ bc95da07-ceed-45d3-8826-42d29fe783ba
 trrg_d_1 = optimize_trustregion(x -> f_d(x[1], x[2]), g_d!, H_d!, [0.,0.])
 
 # ╔═╡ 65b9915c-dcc8-4ef7-bde3-423c709afc5e
-plot_optimization(f_d, (0.695884386,−1.34794219), newt_d_1, trrg_d_1, xlim=(0,1), ylim=(-1.5,-1.))
+plot_optimization(f_d, (0.695884386,−1.34794219), newt_d_1, bfgs_d_1,  xlim=(0.6,0.8), ylim=(-1.4,-1.2))
+
+# ╔═╡ 6a2eb1cf-4e39-4cf0-807c-3080877cdc27
+plot_optimization(f_d, (0.695884386,−1.34794219), bfgs_d_2, trrg_d_1, xlim=(-0.1,1), ylim=(-1.5,0.1))
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2239,6 +2294,7 @@ version = "1.4.1+1"
 # ╟─6698003b-240b-4f1b-b1e4-8e70107c4150
 # ╠═b4c6e46a-f47e-4ce2-8cd9-c6229be6fdf4
 # ╟─35f73a6e-ada1-412a-a770-175427d1e443
+# ╟─3220a80c-bd63-4683-99db-5a53901c9b0c
 # ╠═e5d9ac0a-7cfc-44ab-b29f-fb8d2f1f69c7
 # ╠═54500345-520f-479c-88ce-f7d1a373389f
 # ╟─f8dc799a-d2ef-43ae-aa8b-5a43b094d7c3
@@ -2270,10 +2326,11 @@ version = "1.4.1+1"
 # ╟─51a11fce-5808-4479-b79f-fe8ae9310c3e
 # ╠═5a78ea6c-b4ce-4d4f-9719-e09e9c1f36fd
 # ╟─4fca73b7-be7c-427e-9b22-0c60f50279e4
+# ╠═e11ee2fb-af2b-4daf-8c12-4e625f891f84
+# ╟─f3acf4de-592e-4709-a687-ad66e355360c
 # ╠═40df2ad0-0189-474c-bb71-3e00effae4b1
 # ╟─95212305-bd5b-4c47-87dc-116231452373
 # ╠═a0d5ab72-f12d-4a75-93cd-40365b6bd4df
-# ╟─2057ca79-e9f5-4fba-a975-cd7cb67f833c
 # ╟─23ab718b-5237-4cce-927e-ab29ec98deae
 # ╟─0b6ed726-232f-484b-9e20-28bfdb812a67
 # ╠═015c5739-0e4a-426a-a6f9-376213da2424
@@ -2283,6 +2340,9 @@ version = "1.4.1+1"
 # ╠═36afaf29-e07a-450d-a7e0-b9c057c2a698
 # ╟─376b44e1-7227-4e83-a558-55780235c568
 # ╠═32fd9af2-16a6-44bd-8382-9f822395d3e6
+# ╠═299e411b-6ccc-4f12-9d79-2b7275547e52
+# ╠═0c0114d3-ab4a-4631-b8a7-3fc0ec922859
+# ╠═207e0b4c-3a6b-41b8-a760-0f02e048a6df
 # ╟─b46d53a0-d52a-463c-951f-e5cb7a4e86fb
 # ╠═f59d3dac-21ad-45bc-9933-8182eebd5ce4
 # ╠═925503d2-4262-4da0-b00a-c970ebde0318
@@ -2325,8 +2385,13 @@ version = "1.4.1+1"
 # ╠═09203146-bf72-491c-82f3-41c686a7e829
 # ╟─d51eba6e-809e-4c41-991d-5d90c65182b4
 # ╠═76226106-ff98-41ba-94f8-63d02a563b48
+# ╟─26b48bdf-8532-4e94-a2dc-8a4536fc45a2
+# ╠═047ae524-591d-4e20-bcd5-28e92e9f560f
+# ╠═765b22a5-2edd-4d16-81d6-a9665f1e5c1f
 # ╠═15fdb3ce-2d5b-4b94-a462-5c438ff94e8e
+# ╠═c44fb844-61c8-44fb-aad0-dbbc9f1b554a
 # ╠═bc95da07-ceed-45d3-8826-42d29fe783ba
 # ╠═65b9915c-dcc8-4ef7-bde3-423c709afc5e
+# ╠═6a2eb1cf-4e39-4cf0-807c-3080877cdc27
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
