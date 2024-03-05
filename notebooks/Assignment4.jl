@@ -582,14 +582,9 @@ md"""
 ### Runs
 """
 
-# ╔═╡ 1f83f39f-2e67-4bc4-bc23-c5f5093fd7aa
-md"""
-	Che questo problema serva da esempio
-"""
-
 # ╔═╡ cc42fc4f-c0ab-461e-822f-07d9b36afc79
 md"""
-	si prova newton, non va
+Again, the Newton method fails due to the a not positive definite Hessian:
 """
 
 # ╔═╡ 059f8000-ea4e-4338-b75e-89f136794c67
@@ -597,7 +592,7 @@ newt_c_1 = optimize_newton(x -> f_c(x[1], x[2]), g_c!, H_c!, [8.,0.2])
 
 # ╔═╡ 94d79163-fa2a-4183-8802-213f605dcf59
 md"""
-	si prova bfgs con l'identità come G0, non va
+The BFGS algorithm with the Identity approximation for the inverse fails as well.
 """
 
 # ╔═╡ caaf83db-4701-45a1-9649-e34576470735
@@ -605,7 +600,7 @@ bfgs_c_1 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.2], comme
 
 # ╔═╡ f4e6494d-6c74-4a5f-ac8a-8ca7b0d2243d
 md"""
-	Si prova bfgs con l'inverso dell'hessiana, va
+If we use the analytical inverse of the Hessian as our approximation in BFGS, the algorithm converges.
 """
 
 # ╔═╡ 72ab53df-83e8-4ecf-a811-c1e8e848d249
@@ -613,7 +608,7 @@ bfgs_c_2 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, inv(H_c([8,0.2])), [8.,0.2]
 
 # ╔═╡ 7b4cfc1c-17f6-44c1-a009-102e9f60d044
 md"""
-	si prova bfgs con bactrackin tornado a una stima spannometrica dell'hessiana, ora va
+Actually, we can see that convergence is obtained through the use of backtracking even when starting from the Identity:
 """
 
 # ╔═╡ 8853d92c-a774-40ee-a71f-4c6b7511686d
@@ -621,7 +616,7 @@ bfgs_c_1_bt = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.2], li
 
 # ╔═╡ 144103b9-24b2-4772-8d2e-119ff1a73c81
 md"""
-	si prova con trust region, va
+The Trust Region algorithm converges to the minimum.
 """
 
 # ╔═╡ 91f47c4c-e334-4741-8105-1a6b14cf0e09
@@ -629,7 +624,7 @@ trrg_c_1 = optimize_trustregion(x -> f_c(x[1], x[2]), g_c!, H_c!, [8.,0.2])
 
 # ╔═╡ 07fe8486-decd-43ea-bdbb-b97551edeb3a
 md"""
-	Si prova da un altro punto iniziale, Newton va
+From a different inital poin, Newton's algorithm converges as well.
 """
 
 # ╔═╡ 424974c8-a2e6-447b-b7f5-29e28572314d
@@ -637,7 +632,7 @@ newt_c_2 = optimize_newton(x -> f_c(x[1], x[2]), g_c!, H_c!, [8.,0.8])
 
 # ╔═╡ 8f15f324-0cff-4737-ad0e-895173e8914e
 md"""
-	si prova bfgs spannometrico, non va manco da qui
+However, the naive BFGS with Identity and no backtracking still fails to converge.
 """
 
 # ╔═╡ bdb8361d-e904-4857-bd96-16e609c4fe85
@@ -645,7 +640,7 @@ bfgs_c_3 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.8], comme
 
 # ╔═╡ e3a3d369-70ff-4f9b-9daa-5df76be0b071
 md"""
-	stima accurata va
+If we improve the estimate of the inverse, we recover the minimum as before.
 """
 
 # ╔═╡ 7f792dcd-e1f6-40c5-bf76-55bc640ceb81
@@ -653,7 +648,7 @@ bfgs_c_4 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, inv(H_c([8,0.8])), [8.,0.8]
 
 # ╔═╡ 6eafa5e6-5eb6-4c4c-889a-85093320ea26
 md"""
-	bactracking migliora
+If we add backtracking, convergence is obtained for the Identity BFGS as well.
 """
 
 # ╔═╡ 7b3cd1cb-e2b6-408d-b981-0ffbb3174822
@@ -661,7 +656,7 @@ bfgs_c_3_bt = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, [1 0; 0 1], [8.,0.8], li
 
 # ╔═╡ 2b727c28-62a5-4290-82e8-c486467b98b3
 md"""
-	questo inutile gia andava
+And obviously for BFGS with a more accurate estimate as well.
 """
 
 # ╔═╡ a02f8144-9b20-4caa-aadc-0fe00a8709d9
@@ -669,7 +664,7 @@ bfgs_c_6 = optimize_bfgs(x -> f_c(x[1], x[2]), g_c!, inv(H_c([8,0.8])), [8.,0.8]
 
 # ╔═╡ b0e20e6b-55c8-498c-ba4b-3393624e49ae
 md"""
-	trust region va anche sui sassi
+Finally, the Trust Region converges on this point as well, showing how rock solid this approach is.
 """
 
 # ╔═╡ 7a00d2c7-6dc1-4795-8328-a7696a32cc56
@@ -711,12 +706,17 @@ md"""
 ### Runs
 """
 
+# ╔═╡ 992eb3f1-6a4a-4673-a83e-24ae53f1daa8
+md"""
+We perform different tests on this final problem.
+"""
+
 # ╔═╡ 76226106-ff98-41ba-94f8-63d02a563b48
 newt_d_1 = optimize_newton(x -> f_d(x[1], x[2]), g_d!, H_d!, [0.75,-1.25])
 
 # ╔═╡ 26b48bdf-8532-4e94-a2dc-8a4536fc45a2
 md"""
-	non cambia niente e ci piace, vuol dire che linesearch non interferisce con newton quando newton è forte
+We can actually notice that no change occurs in the results when adding backtracking as linesearch for Newton's algorithm. This is as expected, as we do not expect significant contributions from linesearch when Newton already achieves convergence.
 """
 
 # ╔═╡ 047ae524-591d-4e20-bcd5-28e92e9f560f
@@ -2352,7 +2352,6 @@ version = "1.4.1+1"
 # ╠═8fcac8e1-7059-4547-beae-7d1d5ed44420
 # ╠═3adc0e72-05e1-4c8b-8c7a-d2a176d18d49
 # ╟─1c6f05b3-a1c0-4294-9316-a1e0049550b2
-# ╟─1f83f39f-2e67-4bc4-bc23-c5f5093fd7aa
 # ╟─cc42fc4f-c0ab-461e-822f-07d9b36afc79
 # ╠═059f8000-ea4e-4338-b75e-89f136794c67
 # ╟─94d79163-fa2a-4183-8802-213f605dcf59
@@ -2367,13 +2366,13 @@ version = "1.4.1+1"
 # ╠═424974c8-a2e6-447b-b7f5-29e28572314d
 # ╟─8f15f324-0cff-4737-ad0e-895173e8914e
 # ╠═bdb8361d-e904-4857-bd96-16e609c4fe85
-# ╟─e3a3d369-70ff-4f9b-9daa-5df76be0b071
+# ╠═e3a3d369-70ff-4f9b-9daa-5df76be0b071
 # ╠═7f792dcd-e1f6-40c5-bf76-55bc640ceb81
-# ╟─6eafa5e6-5eb6-4c4c-889a-85093320ea26
+# ╠═6eafa5e6-5eb6-4c4c-889a-85093320ea26
 # ╠═7b3cd1cb-e2b6-408d-b981-0ffbb3174822
-# ╟─2b727c28-62a5-4290-82e8-c486467b98b3
+# ╠═2b727c28-62a5-4290-82e8-c486467b98b3
 # ╠═a02f8144-9b20-4caa-aadc-0fe00a8709d9
-# ╟─b0e20e6b-55c8-498c-ba4b-3393624e49ae
+# ╠═b0e20e6b-55c8-498c-ba4b-3393624e49ae
 # ╠═7a00d2c7-6dc1-4795-8328-a7696a32cc56
 # ╠═e12fdb33-d126-415b-b195-f75a2697f5e3
 # ╟─775a3f3b-94aa-4502-8b99-57824fa8a805
@@ -2384,6 +2383,7 @@ version = "1.4.1+1"
 # ╠═bef5fb16-a753-4375-90ef-e4bf70be23c9
 # ╠═09203146-bf72-491c-82f3-41c686a7e829
 # ╟─d51eba6e-809e-4c41-991d-5d90c65182b4
+# ╟─992eb3f1-6a4a-4673-a83e-24ae53f1daa8
 # ╠═76226106-ff98-41ba-94f8-63d02a563b48
 # ╟─26b48bdf-8532-4e94-a2dc-8a4536fc45a2
 # ╠═047ae524-591d-4e20-bcd5-28e92e9f560f
