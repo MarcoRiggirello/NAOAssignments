@@ -5,7 +5,7 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ 6e15ed80-1938-4ea9-82f8-a7d0b8dfd6ce
-using LinearAlgebra, StaticArrays, Symbolics, Plots
+using LinearAlgebra, Symbolics, Plots
 
 # ╔═╡ 45ad341c-765c-40e1-a726-8a575dc3ab9a
 @variables x₁, x₂
@@ -24,6 +24,11 @@ In the following, we define the structs and the functions for the assignment. Sp
 - `optimize_trustregion()`, which performs the optimization via the Trust region algorithm.
 
 As the linesearch algorithm, we implement the `backtracking()` algorithms as seen during the lectures.
+"""
+
+# ╔═╡ 4dc2781f-1e67-4152-a650-c2957907ab0c
+md"""
+We defined also a custom Julisa struct to better display all the informations about the minimization process. We suggest to click on the `‣OptimizationResults` shown in the output of the code blocks to expand the results and have a clear view of all the details.
 """
 
 # ╔═╡ ed785d1d-54e9-49df-b45f-dffa161d978c
@@ -214,7 +219,7 @@ is solved with penalty method by finding a $\mu$ such that
 
 $\mathbf{p} = (H + \mu I)^{-1} \mathbf{g}$
 
-is within the trust region. As we proved during lectures, $||\mathbf{p}||$ is monothonically decrescent function of $μ$, so our alorithm proceed iteratively in two phases:
+is within the trust region. As we proved during lectures, $||\mathbf{p}||$ is monothonically decrescent function of $μ$, so our algorithm proceed iteratively in two phases:
 - First, starting from a initial value $\mu_0$, we double at each step the value of $μ_k$ until we get $||\mathbf{p}||_{\mu_k} < \Delta$;
 - Then, we perform a binary search in the window $[\mu_{k-1}, \mu_k]$ to be as close as possible to the threshold $||\mathbf{p}||_{\mu_\text{thr}} = \Delta$ (we don't want to flatten the hessian information over the identity).
 """
@@ -502,7 +507,7 @@ md"""
 
 # ╔═╡ 0b6ed726-232f-484b-9e20-28bfdb812a67
 md"""
-here we don't need Symbolics.
+Here we don't need Symbolics.
 """
 
 # ╔═╡ 015c5739-0e4a-426a-a6f9-376213da2424
@@ -545,11 +550,24 @@ newt_b_1 = optimize_newton(f_b, g_b!, H_b!, [-1.,3.,3.,0.])
 # ╔═╡ 299e411b-6ccc-4f12-9d79-2b7275547e52
 bfgs_b_1 = optimize_bfgs(f_b, g_b!, I(4), [-1.,3.,3.,0.], linesearch=backtracking)
 
+# ╔═╡ ed1084db-e01f-4eac-901c-dd842422e029
+md"""
+Here we can see how a better estimate of the hessian inverse leads to fewer steps.
+"""
+
 # ╔═╡ 0c0114d3-ab4a-4631-b8a7-3fc0ec922859
 bfgs_b_2 = optimize_bfgs(f_b, g_b!, inv(H), [-1.,3.,3.,0.])
 
 # ╔═╡ 207e0b4c-3a6b-41b8-a760-0f02e048a6df
 trrg_b_1 = optimize_trustregion(f_b, g_b!, H_b!, [-1.,3.,3.,0.])
+
+# ╔═╡ 1464d6d2-7db3-4be0-b568-4fb779f85324
+md"""
+Since we know that the hessian is positive definite everywhere, we can enlarge the initial guess of the trust region to reduce the number of steps needed to converge.
+"""
+
+# ╔═╡ 22f6b371-13d8-48e6-a314-fbafcb47d526
+trrg_b_2 = optimize_trustregion(f_b, g_b!, H_b!, [-1.,3.,3.,0.], Δ₀=10.)
 
 # ╔═╡ b46d53a0-d52a-463c-951f-e5cb7a4e86fb
 md"""
@@ -629,7 +647,7 @@ trrg_c_1 = optimize_trustregion(x -> f_c(x[1], x[2]), g_c!, H_c!, [8.,0.2])
 
 # ╔═╡ 07fe8486-decd-43ea-bdbb-b97551edeb3a
 md"""
-From a different inital poin, Newton's algorithm converges as well.
+From a different inital point, Newton's algorithm converges as well.
 """
 
 # ╔═╡ 424974c8-a2e6-447b-b7f5-29e28572314d
@@ -750,12 +768,10 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
 Plots = "~1.40.1"
-StaticArrays = "~1.9.2"
 Symbolics = "~5.16.1"
 """
 
@@ -765,7 +781,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.0"
 manifest_format = "2.0"
-project_hash = "e1882a21c78a2322bebbbb71b52a2ef8e7418157"
+project_hash = "3e7d37579977576af90c138231d09e319d22f13f"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "41c37aa88889c171f1300ceac1313c06e891d245"
@@ -2289,6 +2305,7 @@ version = "1.4.1+1"
 # ╠═45ad341c-765c-40e1-a726-8a575dc3ab9a
 # ╟─61498356-cf52-11ee-3c16-038f22b043c9
 # ╟─7435d8e2-dd5c-49bd-981e-46ee8ece3313
+# ╟─4dc2781f-1e67-4152-a650-c2957907ab0c
 # ╠═ed785d1d-54e9-49df-b45f-dffa161d978c
 # ╟─52387950-56cc-414e-a434-8480757fdd45
 # ╟─3f060cb3-3465-45ae-9a9a-4ec3f3628cf2
@@ -2347,8 +2364,11 @@ version = "1.4.1+1"
 # ╟─f9c3903b-49d1-4f05-8800-ad8e54fa4e57
 # ╠═32fd9af2-16a6-44bd-8382-9f822395d3e6
 # ╠═299e411b-6ccc-4f12-9d79-2b7275547e52
+# ╟─ed1084db-e01f-4eac-901c-dd842422e029
 # ╠═0c0114d3-ab4a-4631-b8a7-3fc0ec922859
 # ╠═207e0b4c-3a6b-41b8-a760-0f02e048a6df
+# ╟─1464d6d2-7db3-4be0-b568-4fb779f85324
+# ╠═22f6b371-13d8-48e6-a314-fbafcb47d526
 # ╟─b46d53a0-d52a-463c-951f-e5cb7a4e86fb
 # ╠═f59d3dac-21ad-45bc-9933-8182eebd5ce4
 # ╠═925503d2-4262-4da0-b00a-c970ebde0318
@@ -2372,13 +2392,13 @@ version = "1.4.1+1"
 # ╠═424974c8-a2e6-447b-b7f5-29e28572314d
 # ╟─8f15f324-0cff-4737-ad0e-895173e8914e
 # ╠═bdb8361d-e904-4857-bd96-16e609c4fe85
-# ╠═e3a3d369-70ff-4f9b-9daa-5df76be0b071
+# ╟─e3a3d369-70ff-4f9b-9daa-5df76be0b071
 # ╠═7f792dcd-e1f6-40c5-bf76-55bc640ceb81
-# ╠═6eafa5e6-5eb6-4c4c-889a-85093320ea26
+# ╟─6eafa5e6-5eb6-4c4c-889a-85093320ea26
 # ╠═7b3cd1cb-e2b6-408d-b981-0ffbb3174822
-# ╠═2b727c28-62a5-4290-82e8-c486467b98b3
+# ╟─2b727c28-62a5-4290-82e8-c486467b98b3
 # ╠═a02f8144-9b20-4caa-aadc-0fe00a8709d9
-# ╠═b0e20e6b-55c8-498c-ba4b-3393624e49ae
+# ╟─b0e20e6b-55c8-498c-ba4b-3393624e49ae
 # ╠═7a00d2c7-6dc1-4795-8328-a7696a32cc56
 # ╠═e12fdb33-d126-415b-b195-f75a2697f5e3
 # ╟─775a3f3b-94aa-4502-8b99-57824fa8a805
