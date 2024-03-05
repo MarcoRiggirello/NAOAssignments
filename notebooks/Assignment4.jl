@@ -12,7 +12,7 @@ using LinearAlgebra, StaticArrays, Symbolics, Plots
 
 # ╔═╡ 61498356-cf52-11ee-3c16-038f22b043c9
 md"""
-# NAO 4
+# Numerical Analysis and Optimization Project 4
 """
 
 # ╔═╡ 7435d8e2-dd5c-49bd-981e-46ee8ece3313
