@@ -236,7 +236,7 @@ F\begin{pmatrix}\mathbf{x}^{(k)}\\ \boldsymbol{\lambda}^{(k)}\\ \mathbf{z}^{(k)}
 and $J_F^{(k)}$ its Jacobian
 
 $J_F^{(k)}=\begin{bmatrix}
-\nabla^2f(\mathbf{x}^{(k)}) + \sum_{i=1}^m \lambda_i^{(k)} \nabla^2c_i(\mathbf{x}^{(k)}) & [J_\mathbf{c}(\mathbf{x}^{(k)})]^T & 0 \\
+\nabla^2f(\mathbf{x}^{(k)}) + \sum_{i=1}^m \lambda_i^{(k)} \nabla^2c_i(\mathbf{x}^{(k)}) & -[J_\mathbf{c}(\mathbf{x}^{(k)})]^T & 0 \\
 J_\mathbf{c}(\mathbf{x}^{(k)}) & 0 & -I \\
 0 & Z^{(k)} & \Lambda^{(k)}
 \end{bmatrix}$
@@ -247,30 +247,280 @@ J_\mathbf{c}(\mathbf{x}^{(k)}) & 0 & -I \\
 # ╔═╡ e965ff1e-a0f4-4957-a7c0-8e64cd4c3ab3
 md"""
 Considering our specific cases, for the first problem we have
+
+$\begin{align}
+f(x_1, x_2) &= (x_1 - 4)^2 + x_2^2\\
+\mathbf{c}(x_1, x_2) &= 
+\begin{cases}
+c_1(x_1, x_2) = x_1\\
+c_2(x_1, x_2) = x_2\\
+c_3(x_1, x_2) = 2 - x_1 - x_2 \end{cases}
+\end{align}$
 """
 
 # ╔═╡ fa2b934a-e5e6-4e4b-9104-64a3c3e2c45f
-
-
-# ╔═╡ c5e6b513-6d31-48dd-a836-41fd951c6b61
-f(x₁, x₂) = (x₁ - 4)^2 + x₂^2
-
-# ╔═╡ 537cdf07-38b9-4909-a9a1-60b73c48bd21
-c(x₁, x₂) = [x₁, x₂, 2-x₁-x₂]
-
-# ╔═╡ b6b93cf3-c63c-4e57-b14d-e62d1991e6a1
-∇f = Symbolics.gradient(f(x₁, x₂), [x₁, x₂])
-
-# ╔═╡ b044406a-fed5-4c0d-bcf4-befb98927524
-Jc = Symbolics.jacobian(c(x₁, x₂), [x₁, x₂])
-
-# ╔═╡ ee7a8290-fcc8-4e78-a699-5f2d46232e44
-∇²f = Symbolics.hessian(f(x₁, x₂), [x₁, x₂])
-
-# ╔═╡ a1b360a1-778d-4c93-8443-725f64b588de
 md"""
-The Lagrangian is
+hence
+
+$\begin{align}
+&\nabla f(x_1, x_2) =
+\begin{pmatrix}
+2x_1 - 8 \\
+2x_2\end{pmatrix}
+\\\\
+&\nabla^2 f(x_1, x_2) =
+\begin{bmatrix}
+2 & 0 \\
+0 & 2\end{bmatrix}
+\\\\
+&J_c(x_1, x_2) =
+\begin{bmatrix}
+1 & 0 \\
+0 & 1 \\
+-1 & -1\end{bmatrix}
+\\\\
+&\nabla^2 c_i(x_1, x_2) =
+\begin{bmatrix}
+0 & 0 \\
+0 & 0\end{bmatrix} \quad\forall i
+\end{align}$
 """
+
+# ╔═╡ 416915cd-148b-4cf3-b883-dc6779533801
+md"""
+While for the second problem we have
+
+$\begin{align}
+f(x_1, x_2) &= 2x_1 - x_2^2\\
+\mathbf{c}(x_1, x_2) &= 
+\begin{cases}
+c_1(x_1, x_2) = x_1\\
+c_2(x_1, x_2) = x_2\\
+c_3(x_1, x_2) = 1 - x_1^2 - x_2^2 \end{cases}
+\end{align}$
+"""
+
+# ╔═╡ 8a2c8b7f-d2f5-42c9-a592-44b310f58e53
+md"""
+hence
+
+$\begin{align}
+&\nabla f(x_1, x_2) =
+\begin{pmatrix}
+2 \\
+-2x_2\end{pmatrix}
+\\\\
+&\nabla^2 f(x_1, x_2) =
+\begin{bmatrix}
+0 & 0 \\
+0 & -2\end{bmatrix}
+\\\\
+&J_c(x_1, x_2) =
+\begin{bmatrix}
+1 & 0 \\
+0 & 1 \\
+-2x_1 & -2x_2\end{bmatrix}
+\\\\
+&\nabla^2 c_1(x_1, x_2) =
+\nabla^2 c_2(x_1, x_2) =
+\begin{bmatrix}
+0 & 0 \\
+0 & 0\end{bmatrix}
+\\\\
+&\nabla^2 c_3(x_1, x_2) =
+\begin{bmatrix}
+-2 & 0 \\
+0 & -2\end{bmatrix}
+\end{align}$
+"""
+
+# ╔═╡ 4244e788-4b09-4f36-8e40-433ee07d390d
+md"""
+## Problem 4
+"""
+
+# ╔═╡ ff94aa9a-d724-4dab-89c2-a74b014dc5a2
+md"""
+In order to implement an optimization routine that can solve a given constrained problem from any starting point, we need to exploit some techniques adapted from the lectures and from Chapter 19 and Appendix B of *Nocedal, Wright "Numerical Optimization", 2006*.
+
+First of all, the Jacobian $J_F$ is symmetrized by rewriting the system as
+
+$\begin{multline}
+\begin{bmatrix}
+\nabla^2f(\mathbf{x}^{(k)}) + \sum_{i=1}^m \lambda_i^{(k)} \nabla^2c_i(\mathbf{x}^{(k)}) & [J_\mathbf{c}(\mathbf{x}^{(k)})]^T & 0 \\
+J_\mathbf{c}(\mathbf{x}^{(k)}) & 0 & -I \\
+0 & -I & [Z^{(k)}]^{-1}\Lambda^{(k)}
+\end{bmatrix}
+\begin{pmatrix}
+\delta\mathbf{x}^{(k)}\\ -\delta\boldsymbol{\lambda}^{(k)}\\ \delta\mathbf{z}^{(k)}
+\end{pmatrix}
+=\\
+\begin{pmatrix}
+\nabla f(\mathbf{x}^{(k)}) - [J_\mathbf{c}(\mathbf{x}^{(k)}]^T\boldsymbol{\lambda}^{(k)}\\
+\mathbf{z}^{(k)} - \mathbf{c}(\mathbf{x}^{(k)})\\
+\boldsymbol{\lambda}^{(k)} - \mu [Z^{(k)}]^{-1}\mathbf{e}
+\end{pmatrix}
+\end{multline}$
+"""
+
+# ╔═╡ 126da2ac-3179-47f3-b2b6-8381d3c5a419
+md"""
+A second difference of our implementation from the previous section is the choice of the steplength: following section 19.2 of Nocedal, we use a steplength for $x, z$ and a different one for $\lambda$ 
+
+$\begin{align}
+\mathbf{x}^{(k+1)} &= \mathbf{x}^{(k)} + \tilde{\alpha}_s^{(k)}\delta\mathbf{x}^{(k)}
+\\
+\boldsymbol{\lambda}^{(k+1)} &= \boldsymbol{\lambda}^{(k)} + \tilde{\alpha}_\lambda^{(k)}\delta\boldsymbol{\lambda}^{(k)}
+\\
+\mathbf{z}^{(k+1)} &= \mathbf{z}^{(k)} + \tilde{\alpha}_s^{(k)}\delta\mathbf{z}^{(k)}
+\end{align}$
+"""
+
+# ╔═╡ f7f20ab8-597d-412d-9f04-8ecb23052d43
+md"""
+Where
+
+$\begin{align}
+\tilde{\alpha}_s^{(k)} &= \max\{\alpha \in (0,1] \,\,| \quad\mathbf{z}^{(k)} + \alpha\delta\mathbf{z}^{(k)} \geq (1 - \tau)\mathbf{z}^{(k)}\}
+\\
+\tilde{\alpha}_\lambda^{(k)} &= \max\{\alpha \in (0,1] \,\,| \quad\boldsymbol{\lambda}^{(k)} + \alpha\delta\boldsymbol{\lambda}^{(k)} \geq (1 - \tau)\boldsymbol{\lambda}^{(k)}\}
+\end{align}$
+"""
+
+# ╔═╡ 91a7944b-d148-49a5-9a0b-81e3757b06f0
+md"""
+Where the $\geq$ comparison is element-wise and $\tau$ is a constant, usually 0.995. This prevents to reach the lower bound too quickly (or worse, to exit from the feasibility set).
+"""
+
+# ╔═╡ 463cb596-fb13-464d-bfeb-42ab3186e3ac
+md"""
+	Note that this is not a line search strategy! to do so lo scrivo domani
+"""
+
+# ╔═╡ 8649a2d0-774c-459a-b4e8-84fa67e2a4bc
+md"""
+To provide a convergence criterion, we defined the following error function
+
+$E(\mathbf{x}, \boldsymbol{\lambda}, \mathbf{z}; \mu) = \max\{||\nabla f(\mathbf{x} - [J_\mathbf{c}(\mathbf{x})]^T\boldsymbol{\lambda}||_2,
+||\mathbf{z} - \mathbf{c}(\mathbf{x})||_2,
+||Z\Lambda\mathbf{e} - \mu \mathbf{e}||_2\}$
+
+Such that the convergence is reached when $E(\mathbf{x}^{(k)}, \boldsymbol{\lambda}^{(k)}, \mathbf{z}^{(k)}; 0) \leq \epsilon_\text{tol}$.
+"""
+
+# ╔═╡ ba0b228f-993f-4211-93ef-d203be9b315b
+md"""
+The barrier parameter is updated using the *Fiacco-McCormik approach*: for a given $\mu^{(i)}$, the values $\mathbf{x}^{(k)}, \boldsymbol{\lambda}^{(k)}, \mathbf{z}^{(k)}$ are updated until $E(\mathbf{x}^{(k)}, \boldsymbol{\lambda}^{(k)}, \mathbf{z}^{(k)}; \mu_i) \leq \mu^{(i)}$.
+
+When the condition is reached a new barrier parameter is set: $\mu^{(j+1)}=\sigma\mu^{(j)}$, with $\sigma$ a constant $< 1$, usally 0.2.
+"""
+
+# ╔═╡ eec55f2f-11d0-48bf-aacf-0720aa78646a
+md"""
+Now we are ready to write the code!
+"""
+
+# ╔═╡ 616ac1db-0421-4bb4-ab96-52f002bd2ed2
+struct OptimizationResults
+	converged::Bool
+	min::Real
+	argmin::Vector
+	n_iterations::Int
+	last_error::Real
+	steps::Matrix
+	values::Vector
+end
+
+# ╔═╡ 1f769f01-b9ee-4f00-a365-255791850da3
+md"""
+### Max steplength
+"""
+
+# ╔═╡ 36e044aa-add5-46d3-b8d3-7478f48df637
+function maxstep(qₖ, pₖ; τ=0.995)
+	N = 16
+	u = 1.0
+	l = 2.0^(-N)
+	for _ in 1:N
+		α = (l + u) / 2
+		if qₖ + α * pₖ ≥ (1 - τ) * qₖ
+			l = α
+		else
+			u = α
+		end
+	end
+	return l
+end
+
+# ╔═╡ 795b3837-b5a2-4b57-b888-67a81cbf3f96
+function optimize(f, g, H, c, Jc, Hc, x₀; μ₀=1e-2, tol=1e-7, maxitr=100, linesearch=Nothing)
+	n = length(x₀)
+	m = length(c(x₀))
+	xₖ = zeros(n)
+	λₖ = ones(m)
+	zₖ = ones(m)
+	xₖ .= x₀
+	steps = copy(xₖ)
+	values = [f(xₖ)]
+	error = 0.
+	μ = μ₀
+	k = 0
+	converged = false
+	while k ≤ maxitr && !converged
+		k += 1
+		Jcₖ = Jc(xₖ)
+		Fx = g(xₖ) .- Jcₖ' * λₖ
+		Fλ = zₖ .- c(xₖ)
+		Fz = λₖ .- μ ./ zₖ
+		Fₖ = [
+			Fx
+			Fλ
+			Fz
+		]
+		Hcₖ = (H(xₖ) for H in Hc)
+		∇²ₓₓ𝓛 = H(xₖ) + sum(λₖ .* Hcₖ)
+		JFₖ = [
+			∇²ₓₓ𝓛        Jcₖ'             zeros(m,m)
+			Jcₖ          zeros(m,m)            -I(m)
+			zeros(m,m)   -I(m)       diagm(λₖ ./ zₖ)
+		]
+		Cₖ = 
+			try 
+				cholesky(Symmetric(JFₖ))
+			catch e
+				if e isa(PosDefException)
+					throw(
+						DomainError("Primal Dual system is not positive definite at $xₖ.")
+					)
+				else
+					throw(e)
+				end
+			end
+		δₖ = -(Cₖ \ Fₖ)
+		δxₖ =  δₖ[1:n]
+		δλₖ = -δₖ[n+1:n+m]
+		δzₖ =  δₖ[n+m+1:end]
+		αₛ = maxstep(zₖ, δzₖ)
+		αₗ = maxstep(λₖ, δλₖ)
+		#αsₖ = linesearch ≠ Nothing ? linesearch(f, xₖ, gₖ, pₖ) : 1.
+		xₖ .+= αₛ * δxₖ
+		λₖ .+= αₗ * δλₖ
+		zₖ .+= αₛ * δzₖ
+		steps = [steps xₖ]
+		push!(values, f(xₖ))
+		#converged = grad_norm ≤ tol && step_norm ≤ tol * (1 + norm(xₖ))
+	end
+	return OptimizationResults(
+		converged,
+		f(xₖ),
+		xₖ,
+		grad_norm,
+		step_norm,
+		k,
+		steps,
+		values
+	)
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1822,11 +2072,20 @@ version = "1.4.1+1"
 # ╠═d7c8ab1b-e81d-4089-889d-5524a9d200ab
 # ╠═e965ff1e-a0f4-4957-a7c0-8e64cd4c3ab3
 # ╠═fa2b934a-e5e6-4e4b-9104-64a3c3e2c45f
-# ╠═c5e6b513-6d31-48dd-a836-41fd951c6b61
-# ╠═537cdf07-38b9-4909-a9a1-60b73c48bd21
-# ╠═b6b93cf3-c63c-4e57-b14d-e62d1991e6a1
-# ╠═b044406a-fed5-4c0d-bcf4-befb98927524
-# ╠═ee7a8290-fcc8-4e78-a699-5f2d46232e44
-# ╟─a1b360a1-778d-4c93-8443-725f64b588de
+# ╠═416915cd-148b-4cf3-b883-dc6779533801
+# ╠═8a2c8b7f-d2f5-42c9-a592-44b310f58e53
+# ╟─4244e788-4b09-4f36-8e40-433ee07d390d
+# ╠═ff94aa9a-d724-4dab-89c2-a74b014dc5a2
+# ╠═126da2ac-3179-47f3-b2b6-8381d3c5a419
+# ╠═f7f20ab8-597d-412d-9f04-8ecb23052d43
+# ╠═91a7944b-d148-49a5-9a0b-81e3757b06f0
+# ╠═463cb596-fb13-464d-bfeb-42ab3186e3ac
+# ╠═8649a2d0-774c-459a-b4e8-84fa67e2a4bc
+# ╠═ba0b228f-993f-4211-93ef-d203be9b315b
+# ╟─eec55f2f-11d0-48bf-aacf-0720aa78646a
+# ╠═616ac1db-0421-4bb4-ab96-52f002bd2ed2
+# ╠═1f769f01-b9ee-4f00-a365-255791850da3
+# ╠═36e044aa-add5-46d3-b8d3-7478f48df637
+# ╠═795b3837-b5a2-4b57-b888-67a81cbf3f96
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
