@@ -431,6 +431,16 @@ md"""
 ## Problem 4
 """
 
+# ╔═╡ 6b755d03-8345-40dd-b044-43d816a11c0a
+md"""
+In order to implement an optimization routine that can solve a given constrained problem from any starting point, we need to exploit some techniques adapted from the lectures and from Chapter 19 and Appendix B of *Nocedal, Wright "Numerical Optimization", 2006*.
+"""
+
+# ╔═╡ 6b967062-7262-4ac5-b9f6-376a08d45a09
+md"""
+### The search direction
+"""
+
 # ╔═╡ ff94aa9a-d724-4dab-89c2-a74b014dc5a2
 md"""
 In order to implement an optimization routine that can solve a given constrained problem from any starting point, we need to exploit some techniques adapted from the lectures and from Chapter 19 and Appendix B of *Nocedal, Wright "Numerical Optimization", 2006*.
@@ -453,6 +463,48 @@ J_\mathbf{c}(\mathbf{x}^{(k)}) & 0 & -I \\
 \boldsymbol{\lambda}^{(k)} - \mu [Z^{(k)}]^{-1}\mathbf{e}
 \end{pmatrix}
 \end{multline}$
+"""
+
+# ╔═╡ 6f9dbe0b-ae68-4def-833d-fdc8a795b6ed
+function direction(zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ, ∇²cₖ, μ)
+	n = length(∇fₖ)
+	m = length(zₖ)
+	Fx = gₖ .- Jcₖ' * λₖ
+	Fλ = zₖ .- cₖ
+	Fz = λₖ .- μ ./ zₖ
+	Fₖ = [
+		Fx
+		Fλ
+		Fz
+	]
+	∇²ₓₓ𝓛 = ∇²fₖ + sum(λₖ .* ∇²cₖ)
+	JFₖ = [
+		∇²ₓₓ𝓛        Jcₖ'             zeros(m,m)
+		Jcₖ          zeros(m,m)            -I(m)
+		zeros(m,m)   -I(m)       diagm(λₖ ./ zₖ)
+	]
+	Cₖ = 
+		try 
+			cholesky(Symmetric(JFₖ))
+		catch e
+			if e isa(PosDefException)
+				throw(
+					DomainError("Primal Dual system is not positive definite at $xₖ.")
+				)
+			else
+				throw(e)
+			end
+		end
+	δₖ = -(Cₖ \ Fₖ)
+	δxₖ =  δₖ[1:n]
+	δλₖ = -δₖ[n+1:n+m]
+	δzₖ =  δₖ[n+m+1:end]
+	return δxₖ, δλₖ, δzₖ
+end
+
+# ╔═╡ 4bf04b78-0fc9-48ea-a39e-56b708a12fe6
+md"""
+### Steplength
 """
 
 # ╔═╡ 126da2ac-3179-47f3-b2b6-8381d3c5a419
@@ -484,9 +536,35 @@ md"""
 Where the $\geq$ comparison is element-wise and $\tau$ is a constant, usually 0.995. This prevents to reach the lower bound too quickly (or worse, to exit from the feasibility set).
 """
 
+# ╔═╡ 36e044aa-add5-46d3-b8d3-7478f48df637
+function maxstep(qₖ, pₖ; τ=0.995)
+	N = 16
+	u = 1.0
+	l = 2.0^(-N)
+	for _ in 1:N
+		α = (l + u) / 2
+		if qₖ + α * pₖ ≥ (1 - τ) * qₖ
+			l = α
+		else
+			u = α
+		end
+	end
+	return l
+end
+
+# ╔═╡ 7c31fb85-f06d-4d10-917e-1aa31432e25e
+md"""
+### Line search
+"""
+
 # ╔═╡ 463cb596-fb13-464d-bfeb-42ab3186e3ac
 md"""
 	Note that this is not a line search strategy! to do so lo scrivo domani
+"""
+
+# ╔═╡ e3dc686f-0873-4b66-bbd7-25d0f341b47c
+md"""
+### Stopping condition
 """
 
 # ╔═╡ 8649a2d0-774c-459a-b4e8-84fa67e2a4bc
@@ -512,6 +590,11 @@ md"""
 Now we are ready to write the code!
 """
 
+# ╔═╡ 6a6b6045-f8ed-4a39-a0e6-b7d1eda6ed0f
+md"""
+### Interior point
+"""
+
 # ╔═╡ 616ac1db-0421-4bb4-ab96-52f002bd2ed2
 struct OptimizationResults
 	converged::Bool
@@ -521,27 +604,6 @@ struct OptimizationResults
 	last_error::Real
 	steps::Matrix
 	values::Vector
-end
-
-# ╔═╡ 1f769f01-b9ee-4f00-a365-255791850da3
-md"""
-### Max steplength
-"""
-
-# ╔═╡ 36e044aa-add5-46d3-b8d3-7478f48df637
-function maxstep(qₖ, pₖ; τ=0.995)
-	N = 16
-	u = 1.0
-	l = 2.0^(-N)
-	for _ in 1:N
-		α = (l + u) / 2
-		if qₖ + α * pₖ ≥ (1 - τ) * qₖ
-			l = α
-		else
-			u = α
-		end
-	end
-	return l
 end
 
 # ╔═╡ 795b3837-b5a2-4b57-b888-67a81cbf3f96
@@ -626,7 +688,7 @@ Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.10.0"
+julia_version = "1.10.2"
 manifest_format = "2.0"
 project_hash = "84f006bd682961ff285b36fbc160e4f62b6eb3e0"
 
@@ -783,7 +845,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.5+1"
+version = "1.1.0+0"
 
 [[deps.CompositeTypes]]
 git-tree-sha1 = "02d2316b7ffceff992f3096ae48c7829a8aa0638"
@@ -1362,7 +1424,7 @@ version = "1.3.5+1"
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.23+2"
+version = "0.3.23+4"
 
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -2171,17 +2233,23 @@ version = "1.4.1+1"
 # ╠═416915cd-148b-4cf3-b883-dc6779533801
 # ╠═8a2c8b7f-d2f5-42c9-a592-44b310f58e53
 # ╟─4244e788-4b09-4f36-8e40-433ee07d390d
+# ╠═6b755d03-8345-40dd-b044-43d816a11c0a
+# ╟─6b967062-7262-4ac5-b9f6-376a08d45a09
 # ╠═ff94aa9a-d724-4dab-89c2-a74b014dc5a2
+# ╠═6f9dbe0b-ae68-4def-833d-fdc8a795b6ed
+# ╠═4bf04b78-0fc9-48ea-a39e-56b708a12fe6
 # ╠═126da2ac-3179-47f3-b2b6-8381d3c5a419
 # ╠═f7f20ab8-597d-412d-9f04-8ecb23052d43
 # ╠═91a7944b-d148-49a5-9a0b-81e3757b06f0
+# ╠═36e044aa-add5-46d3-b8d3-7478f48df637
 # ╠═463cb596-fb13-464d-bfeb-42ab3186e3ac
+# ╠═7c31fb85-f06d-4d10-917e-1aa31432e25e
+# ╠═e3dc686f-0873-4b66-bbd7-25d0f341b47c
 # ╠═8649a2d0-774c-459a-b4e8-84fa67e2a4bc
 # ╠═ba0b228f-993f-4211-93ef-d203be9b315b
 # ╟─eec55f2f-11d0-48bf-aacf-0720aa78646a
+# ╠═6a6b6045-f8ed-4a39-a0e6-b7d1eda6ed0f
 # ╠═616ac1db-0421-4bb4-ab96-52f002bd2ed2
-# ╠═1f769f01-b9ee-4f00-a365-255791850da3
-# ╠═36e044aa-add5-46d3-b8d3-7478f48df637
 # ╠═795b3837-b5a2-4b57-b888-67a81cbf3f96
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
