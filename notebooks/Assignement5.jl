@@ -536,6 +536,11 @@ md"""
 Where the $\geq$ comparison is element-wise and $\tau$ is a constant, usually 0.995. This prevents to reach the lower bound too quickly (or worse, to exit from the feasibility set).
 """
 
+# ╔═╡ 964defb4-1696-48dd-bfea-ef87ff4175ed
+md"""
+For the actual implementation, we decided to find $\tilde{\alpha}$ approximately by performing a binary search in the feasible range.
+"""
+
 # ╔═╡ 36e044aa-add5-46d3-b8d3-7478f48df637
 function maxstep(qₖ, pₖ; τ=0.995)
 	N = 16
@@ -543,7 +548,7 @@ function maxstep(qₖ, pₖ; τ=0.995)
 	l = 2.0^(-N)
 	for _ in 1:N
 		α = (l + u) / 2
-		if qₖ + α * pₖ ≥ (1 - τ) * qₖ
+		if all(qₖ + α * pₖ .≥ (1 - τ) * qₖ)
 			l = α
 		else
 			u = α
@@ -552,14 +557,84 @@ function maxstep(qₖ, pₖ; τ=0.995)
 	return l
 end
 
-# ╔═╡ 7c31fb85-f06d-4d10-917e-1aa31432e25e
-md"""
-### Line search
-"""
-
 # ╔═╡ 463cb596-fb13-464d-bfeb-42ab3186e3ac
 md"""
 	Note that this is not a line search strategy! to do so lo scrivo domani
+"""
+
+# ╔═╡ 7c31fb85-f06d-4d10-917e-1aa31432e25e
+md"""
+### Merit function and line search
+"""
+
+# ╔═╡ c865a351-db61-40a7-84d6-20d6112f5b8e
+md"""
+Following chapter 19 of [1], we define a *merit function*:
+
+$\phi_\nu(\mathbf{x}, \mathbf{z}) = f(\mathbf{x}) - \mu \sum_{i=1}^m\log(z_i) + \nu ||\mathbf{c}(\mathbf{x}) - \mathbf{z}||_1$
+"""
+
+# ╔═╡ 512ad415-dd84-4f35-bcf0-b64777f4c657
+merit(f, c, x, z, μ, ν) = f(x) - μ * sum(log.(z)) + ν * norm(c(x) - z, 1)
+
+# ╔═╡ f14ba32d-fafe-4f27-80a5-31cb9ff753cf
+md"""
+We want to find a value $\alpha^{(k)} \in (0, \tilde{\alpha}_z^{(k)}]$ such that
+
+$\phi_\nu(\mathbf{x}^{(k)} + \alpha^{(k)}\delta\mathbf{x}^{(k)}, \mathbf{z}^{(k)} + \alpha^{(k)}\delta\mathbf{z}^{(k)}) \leq \phi_\nu(\mathbf{x}^{(k)}, \mathbf{z}^{(k)}) + \eta\, \alpha^{(k)} D_{\delta\mathbf{x}^{(k)},\delta\mathbf{z}^{(k)}}\,\phi_\nu(\mathbf{x}^{(k)}, \mathbf{z}^{(k)})$
+"""
+
+# ╔═╡ babd8651-99b6-4bbf-a196-45d966e7abc5
+md"""
+Where $D_{\delta\mathbf{x}^{(k)},\delta\mathbf{z}^{(k)}}\phi_\nu(\mathbf{x}^{(k)}, \mathbf{z}^{(k)})$ is the *directional derivative* 
+
+$D_{\delta\mathbf{x},\delta\mathbf{z}}\,\phi_\nu(\mathbf{x}, \mathbf{z}) = \nabla f(\mathbf{x})^T\delta\mathbf{x}  - \mu \mathbf{e}^TZ^{-1}\delta\mathbf{z} - \nu||\mathbf{c}(\mathbf{x}) - \mathbf{z}||_1$
+
+	For a derivation, see the Appendix (FORSE)
+"""
+
+# ╔═╡ 62fe2adf-6f64-43a0-9c6a-4828ae056caa
+dirder(δxₖ, δzₖ, zₖ, ∇fₖ, cₖ, μ, ν) = dot(∇fₖ, δxₖ) - μ * sum(δzₖ./zₖ) - ν * norm(cₖ - zₖ, 1)
+
+# ╔═╡ 83b5c44a-3bbd-4037-98af-b630a8beca9d
+md"""
+To find $\alpha$, we use the backtracking algorithm:
+"""
+
+# ╔═╡ 83ed0f63-84e6-464b-b09f-493dad84c7f0
+function backtracking(f, ∇f, c, xₖ, zₖ, δxₖ, δzₖ, μ, ν; η=.5, ρ=.5, α₀=1.)
+	if !(0 < η < 1) || !(0 < ρ < 1)
+		throw(DomainError("Parameters η and/or ρ outside proper bound."))
+	end
+	α = α₀
+	ϕₖ  = merit(f, c, xₖ, zₖ, μ, ν)
+	∇fₖ = ∇f(xₖ)
+	Dϕₖ = dirder(δxₖ, δzₖ, zₖ, ∇fₖ, cₖ, μ, ν) 
+	ϕₜ = merit(f, c, xₖ + α * δxₖ, zₖ + α * δzₖ, μ, ν)
+	while ϕₜ > ϕₖ + η * α * Dϕₖ
+		α *= ρ
+		fₜ = merit(f, c, xₖ + α * δxₖ, zₖ + α * δzₖ, μ, ν)
+	end
+	return α
+end
+
+# ╔═╡ 5013e2e4-c100-434f-935e-4fe079aef97b
+md"""
+Adapting the strategy outlined in eqq (18.36) and (18.37) of [1], we increase the $\nu$ barried parameter if the condition 
+
+$\nu \geq \frac{\nabla f(\mathbf{x})^T\delta\mathbf{x} + \frac{\sigma}{2}\delta\mathbf{x}^T\left[\nabla^2f(\mathbf{x}^{(k)}) + \sum_{i=1}^m \lambda_i^{(k)} \nabla^2c_i(\mathbf{x}^{(k)})\right]\delta\mathbf{x}}{(1 - \rho)||\mathbf{c}(\mathbf{x}) - \mathbf{z}||_1}$
+
+is not valid.
+"""
+
+# ╔═╡ 364b30aa-c5ef-4c37-9399-c8b2fa76b687
+md"""
+Note that
+
+$\sigma = \begin{cases}
+1 \quad \text{if} \quad \delta\mathbf{x}^T\left[\nabla^2f(\mathbf{x}^{(k)}) + \sum_{i=1}^m \lambda_i^{(k)} \nabla^2c_i(\mathbf{x}^{(k)})\right]\delta\mathbf{x} > 0 \\
+0 \quad \text{otherwise}
+\end{cases}$
 """
 
 # ╔═╡ e3dc686f-0873-4b66-bbd7-25d0f341b47c
@@ -571,12 +646,20 @@ md"""
 md"""
 To provide a convergence criterion, we defined the following error function
 
-$E(\mathbf{x}, \boldsymbol{\lambda}, \mathbf{z}; \mu) = \max\{||\nabla f(\mathbf{x} - [J_\mathbf{c}(\mathbf{x})]^T\boldsymbol{\lambda}||_2,
-||\mathbf{z} - \mathbf{c}(\mathbf{x})||_2,
-||Z\Lambda\mathbf{e} - \mu \mathbf{e}||_2\}$
+$E(\mathbf{x}, \boldsymbol{\lambda}, \mathbf{z}; \mu) = \max\{||\nabla f(\mathbf{x}) - [J_\mathbf{c}(\mathbf{x})]^T\boldsymbol{\lambda}||_1,
+||\mathbf{z} - \mathbf{c}(\mathbf{x})||_1,
+||Z\Lambda\mathbf{e} - \mu \mathbf{e}||_1\}$
 
 Such that the convergence is reached when $E(\mathbf{x}^{(k)}, \boldsymbol{\lambda}^{(k)}, \mathbf{z}^{(k)}; 0) \leq \epsilon_\text{tol}$.
 """
+
+# ╔═╡ f9f8ff55-0e0c-4288-8bc1-b8a817e0c226
+function error(xₖ, zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ, μ)
+	e1 = norm(∇fₖ - Jcₖ' * λₖ, 1)
+	e2 = norm(zₖ - cₖ, 1)
+	e3 = norm(zₖ .* λₖ .- μ)
+	return max(e1, e2, e3)
+end
 
 # ╔═╡ ba0b228f-993f-4211-93ef-d203be9b315b
 md"""
@@ -584,6 +667,15 @@ The barrier parameter is updated using the *Fiacco-McCormik approach*: for a giv
 
 When the condition is reached a new barrier parameter is set: $\mu^{(j+1)}=\sigma\mu^{(j)}$, with $\sigma$ a constant $< 1$, usally 0.2.
 """
+
+# ╔═╡ b4f99c34-b22b-41e9-a297-26681e521d3b
+function update_mu(xₖ, zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ, μ; σ=0.2)
+	if error(xₖ, zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ, μ) ≤ μ
+		return σ * μ
+	else
+		return μ
+	end
+end
 
 # ╔═╡ eec55f2f-11d0-48bf-aacf-0720aa78646a
 md"""
@@ -675,6 +767,31 @@ function optimize(f, g, H, c, Jc, Hc, x₀; μ₀=1e-2, tol=1e-7, maxitr=100, li
 		values
 	)
 end
+
+# ╔═╡ b3da2bc3-edb5-413b-a0f2-502f79da0da0
+c(x₁, x₂) = [x₁, x₂, 2 - x₁ - x₂]
+
+# ╔═╡ 294726d5-00e9-4a44-b0e9-bcb1b4ea2790
+function update_nu(ν, δxₖ, zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, ∇²cₖ; ρ = .5)
+	∇²𝓛 = ∇²fₖ + sum(λₖ .* ∇²cₖ)
+	s = dot(δxₖ, ∇²𝓛, δxₖ)
+	σ = c > 0 ? 1 : 0
+	n = (dot(∇fₖ, δxₖ) + (σ * s)/2)/((1 - ρ) * norm(norm(cₖ - zₖ, 1)))
+	if ν ≥ n
+		return ν
+	else
+		return 2 * n
+	end
+end
+
+# ╔═╡ afcc9a2f-316f-43fc-ae65-8c5bfc4dbe12
+cn(x₁, x₂) = norm([x₁, x₂, 2 - x₁ - x₂], 2)
+
+# ╔═╡ 4806e6c7-e219-47d0-9c68-48a4090a53c7
+Symbolics.jacobian(c(x₁, x₂), [x₁, x₂])
+
+# ╔═╡ 96f846d4-49d1-4fbc-badc-59ff4c22df8e
+Symbolics.gradient(cn(x₁, x₂), [x₁, x₂])
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2241,15 +2358,32 @@ version = "1.4.1+1"
 # ╠═126da2ac-3179-47f3-b2b6-8381d3c5a419
 # ╠═f7f20ab8-597d-412d-9f04-8ecb23052d43
 # ╠═91a7944b-d148-49a5-9a0b-81e3757b06f0
+# ╠═964defb4-1696-48dd-bfea-ef87ff4175ed
 # ╠═36e044aa-add5-46d3-b8d3-7478f48df637
 # ╠═463cb596-fb13-464d-bfeb-42ab3186e3ac
 # ╠═7c31fb85-f06d-4d10-917e-1aa31432e25e
+# ╠═c865a351-db61-40a7-84d6-20d6112f5b8e
+# ╠═512ad415-dd84-4f35-bcf0-b64777f4c657
+# ╠═f14ba32d-fafe-4f27-80a5-31cb9ff753cf
+# ╠═babd8651-99b6-4bbf-a196-45d966e7abc5
+# ╠═62fe2adf-6f64-43a0-9c6a-4828ae056caa
+# ╠═83b5c44a-3bbd-4037-98af-b630a8beca9d
+# ╠═83ed0f63-84e6-464b-b09f-493dad84c7f0
+# ╠═5013e2e4-c100-434f-935e-4fe079aef97b
+# ╠═364b30aa-c5ef-4c37-9399-c8b2fa76b687
+# ╠═294726d5-00e9-4a44-b0e9-bcb1b4ea2790
 # ╠═e3dc686f-0873-4b66-bbd7-25d0f341b47c
 # ╠═8649a2d0-774c-459a-b4e8-84fa67e2a4bc
+# ╠═f9f8ff55-0e0c-4288-8bc1-b8a817e0c226
 # ╠═ba0b228f-993f-4211-93ef-d203be9b315b
+# ╠═b4f99c34-b22b-41e9-a297-26681e521d3b
 # ╟─eec55f2f-11d0-48bf-aacf-0720aa78646a
 # ╠═6a6b6045-f8ed-4a39-a0e6-b7d1eda6ed0f
 # ╠═616ac1db-0421-4bb4-ab96-52f002bd2ed2
 # ╠═795b3837-b5a2-4b57-b888-67a81cbf3f96
+# ╠═b3da2bc3-edb5-413b-a0f2-502f79da0da0
+# ╠═afcc9a2f-316f-43fc-ae65-8c5bfc4dbe12
+# ╠═4806e6c7-e219-47d0-9c68-48a4090a53c7
+# ╠═96f846d4-49d1-4fbc-badc-59ff4c22df8e
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
