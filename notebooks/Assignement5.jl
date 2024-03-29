@@ -257,7 +257,7 @@ $\begin{cases}\min f(\mathbf{x}) -\mu \sum_{i=1}^m\log(z_i)\\
 md"""
 The Lagrangian is
 
-$\mathcal{L}(\mathbf{x}, \boldsymbol{\lambda}, \mathbf{z}) = f(\mathbf{x}) -\mu \sum_{i=1}^m\log(z_i) + \boldsymbol{\lambda}^T(\mathbf{z} - \mathbf{c}(\mathbf{x}))$
+$\mathcal{L}(\mathbf{x}, \boldsymbol{\lambda}, \mathbf{z}) = f(\mathbf{x}) -\mu \sum_{i=1}^m\log(z_i) + \boldsymbol{\lambda}^T(\mathbf{c}(\mathbf{x}) - \mathbf{z})$
 """
 
 # ╔═╡ b4490d88-4db3-4184-aa5b-f3d7c8743381
@@ -266,7 +266,7 @@ And the KKT conditions can be written as
 
 $\begin{cases}
 \nabla\!_x \mathcal{L} = \nabla f(\mathbf{x}) - [J_\mathbf{c}(\mathbf{x})]^T\boldsymbol{\lambda} = \mathbf{0}\\
-\nabla\!_\lambda\mathcal{L} = \mathbf{z} - \mathbf{c}(\mathbf{x}) = \mathbf{0}\\
+\nabla\!_\lambda\mathcal{L} = \mathbf{c}(\mathbf{x}) - \mathbf{z} = \mathbf{0}\\
 \nabla\!_z\mathcal{L} = Z\Lambda\mathbf{e} - \mu \mathbf{e} = \mathbf{0}
 \end{cases}$
 
@@ -544,7 +544,7 @@ J_\mathbf{c}(\mathbf{x}^{(k)}) & 0 & -I \\
 =\\
 -\begin{pmatrix}
 \nabla f(\mathbf{x}^{(k)}) - [J_\mathbf{c}(\mathbf{x}^{(k)}]^T\boldsymbol{\lambda}^{(k)}\\
-\mathbf{z}^{(k)} - \mathbf{c}(\mathbf{x}^{(k)})\\
+\mathbf{c}(\mathbf{x}^{(k)}) - \mathbf{z}^{(k)}\\
 \boldsymbol{\lambda}^{(k)} - \mu [Z^{(k)}]^{-1}\mathbf{e}
 \end{pmatrix}
 \end{multline}$
@@ -615,7 +615,6 @@ function direction_regularized(zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ, ∇
 	n = length(∇fₖ)
 	m = length(zₖ)
 	Fx = ∇fₖ .- Jcₖ' * λₖ
-	#Fλ = zₖ .- cₖ
 	Fλ = cₖ .- zₖ
 	Fz = λₖ .- μ ./ zₖ
 	Fₖ = [
@@ -645,7 +644,6 @@ function direction_regularized(zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ, ∇
 	δpₖ = -(Bₖ \ Fₖ)
 	δxₖ =  δpₖ[1:n]
 	δλₖ = -δpₖ[n+1:n+m]
-	#δλₖ = δpₖ[n+1:n+m]
 	δzₖ =  δpₖ[n+m+1:end]
 	return δxₖ, δλₖ, δzₖ, δ
 end
@@ -767,7 +765,7 @@ function backtracking(f, ∇f, c, xₖ, zₖ, δxₖ, δzₖ, μ, ν; η=.5, ρ=
 	ϕₜ = merit(f, c, xₖ + α * δxₖ, zₖ + α * δzₖ, μ, ν)
 	while ϕₜ > ϕₖ + η * α * Dϕₖ
 		α *= ρ
-		fₜ = merit(f, c, xₖ + α * δxₖ, zₖ + α * δzₖ, μ, ν)
+		ϕₜ = merit(f, c, xₖ + α * δxₖ, zₖ + α * δzₖ, μ, ν)
 	end
 	return α
 end
@@ -861,11 +859,13 @@ md"""
 
 # ╔═╡ 616ac1db-0421-4bb4-ab96-52f002bd2ed2
 struct OptimizationResults
+	name::String
 	converged::Bool
 	min::Real
 	argmin::Vector
 	n_iterations::Int
-	last_error::Real
+	last_tolerance::Real
+	multipliers::Matrix
 	steps::Matrix
 	values::Vector
 end
@@ -878,22 +878,22 @@ Note that to use an approximate jacobian one has to simply pass a null `Hc`.
 """
 
 # ╔═╡ 795b3837-b5a2-4b57-b888-67a81cbf3f96
-function optimize(f, ∇f, ∇²f, c, Jc, ∇²c, x₀; μ₀=1e-2, ν₀=1e-1, δ₀=0, tol=1e-7, maxitr=100, linesearch=true)
+function optimize(f, ∇f, ∇²f, c, Jc, ∇²c, x₀; μ₀=1e-2, ν₀=1e-1, δ₀=0, tol=1e-7, maxitr=1000, update_tol=true, linesearch=true)
 	n = length(x₀)
 	m = length(c(x₀))
 	# Array initialization
 	xₖ   = copy(x₀)
-	zₖ   = 0.1ones(m)
-	λₖ   = 0.1ones(m)
-	#λₖ   = μ₀ ./ zₖ
+	zₖ   = 1e-2ones(m)
+	λₖ   = 1e-1ones(m)
 	∇fₖ  = ∇f(x₀)
 	∇²fₖ = ∇²f(x₀)
 	cₖ   = c(x₀)
 	Jcₖ  = Jc(x₀)
 	∇²cₖ = ∇²c(x₀)
 	# History registers
-	steps = copy(xₖ)
-	values = [f(xₖ)]
+	steps       = copy(xₖ)
+	multipliers = copy(λₖ)
+	values      = [f(xₖ)]
 	# Barriers and other control parameters
 	μ = μ₀
 	δ = δ₀
@@ -919,21 +919,24 @@ function optimize(f, ∇f, ∇²f, c, Jc, ∇²c, x₀; μ₀=1e-2, ν₀=1e-1, 
 		cₖ   .= c(xₖ)
 		Jcₖ  .= Jc(xₖ)
 		∇²cₖ = ∇²c(xₖ)
-		μ = update_mu(μ, xₖ, zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ)
+		μ = update_tol ? update_mu(μ, xₖ, zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ) : μ
 		ν = update_nu(ν, δxₖ, zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, ∇²cₖ)
 		# Saving step
-		steps = [steps xₖ]
+		steps       = [steps xₖ]
+		multipliers = [multipliers λₖ]
 		push!(values, f(xₖ))
 		# Convergence check
 		e = error(xₖ, zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ, 0)
 		converged = e < tol
 	end
 	return OptimizationResults(
+		"μ update: $update_tol; line search: $linesearch.",
 		converged,
 		f(xₖ),
 		xₖ,
 		k,
 		e,
+		multipliers,
 		steps,
 		values
 	)
@@ -945,10 +948,87 @@ md"""
 """
 
 # ╔═╡ 13ae459d-3069-4ba6-8740-48d23825754e
-optimize(f₁, ∇f₁, ∇²f₁, c₁, Jc₁, ∇²c₁, [.2, .2], linesearch=true)
+o1 = optimize(f₁, ∇f₁, ∇²f₁, c₁, Jc₁, ∇²c₁, [0., 0.])
 
 # ╔═╡ 8b1a81f1-d756-41f8-99b3-368e36ffc54e
-optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₁, [.2, .2], linesearch=true)
+o2 = optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₁, [1., 0.], linesearch=true)
+
+# ╔═╡ dfa4de4b-3caa-4128-a035-05ffc2160dae
+function plot_optimization(f, c, truemin, opts...; xlim=(-10,10), ylim=(-10,10), gridsize=400)
+	if any(j -> size(j.steps, 1) != 2, opts)
+		throw(ArgumentError("Optimizations are not of size 2: impossible to plot."))
+	end
+	# Function landscape
+	x = range(xlim..., gridsize)
+	y = range(ylim..., gridsize)
+	z = @. f(x', y)
+	# Constraint landscape
+	cin  = NaN
+	cout = sum(z) / length(z)
+	w = [all(i .> 0) ? cin : cout for i in @. c(x', y)]
+	# Optimization steps array
+	X = [o.steps[1,1] for o in opts]
+	Y = [o.steps[2,1] for o in opts]
+	# Black magic to animate optimization
+	for (i,o) in enumerate(opts)
+		for c in eachcol(o.steps)
+			X = [X X[:, end]]
+			Y = [Y Y[:, end]]
+			X[i, end] = c[1]
+			Y[i, end] = c[2]
+		end
+	end
+	# Dealing with the contour plots and the scatter plot
+	# (we don't want to update them in the animation)
+	X = [NaN; NaN; NaN; X]
+	Y = [NaN; NaN; NaN; Y]
+	# Plotting! (Finally)
+	plt = contourf(
+		x, y, w,
+		xlim=xlim,
+		ylim=ylim,
+		xlabel="x₁",
+		ylabel="x₂",
+		legend=:outertop,
+		legend_column = 2,
+		dpi=180,
+		fillalpha=.1
+	)
+	contour!(
+		plt,
+		x, y, z
+	)
+	scatter!(
+		plt,
+		truemin,
+		marker=:circle,
+		label="True min"
+	)
+	for o in opts
+		plot!(
+			plt,
+			1,
+			label=o.name
+		)
+	end
+	# Animation of minimization steps
+	@gif for (i, j) in zip(eachcol(X), eachcol(Y))
+		push!(plt, i, j)
+	end
+end
+
+# ╔═╡ 3585fba0-7595-44ff-9198-74584b7f6932
+f1(x1, x2) = (x1 - 4)^2 + x2^2
+
+# ╔═╡ 19215ef7-f847-458e-bc9e-d258c7644036
+c1(x1, x2) = [
+	x1
+	x2
+	2 - x1 - x2
+]
+
+# ╔═╡ 43c71951-875b-4847-9474-e61643d6fe4b
+plot_optimization(f1, c1, (2.0, 0.0), o1, xlim=(-.4, 2.4), ylim=(-.4,2.4))
 
 # ╔═╡ 4c2db206-10f1-40d9-85b9-aa3a852b9ccc
 md"""
@@ -2102,6 +2182,10 @@ version = "1.4.1+1"
 # ╟─24e9aec7-d21b-471e-b237-a3b897b94d32
 # ╠═13ae459d-3069-4ba6-8740-48d23825754e
 # ╠═8b1a81f1-d756-41f8-99b3-368e36ffc54e
+# ╠═dfa4de4b-3caa-4128-a035-05ffc2160dae
+# ╠═3585fba0-7595-44ff-9198-74584b7f6932
+# ╠═19215ef7-f847-458e-bc9e-d258c7644036
+# ╠═43c71951-875b-4847-9474-e61643d6fe4b
 # ╟─4c2db206-10f1-40d9-85b9-aa3a852b9ccc
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
