@@ -336,95 +336,181 @@ J_\mathbf{c}(\mathbf{x}^{(k)}) & 0 & -I \\
 (It can be approximated by removing the hessian of the constraints)
 """
 
-# ╔═╡ e965ff1e-a0f4-4957-a7c0-8e64cd4c3ab3
+# ╔═╡ 094c87eb-1ba7-4655-a47b-1a9fed727307
 md"""
 Considering our specific cases, for the first problem we have
 
-$\begin{align}
-f(x_1, x_2) &= (x_1 - 4)^2 + x_2^2\\
-\mathbf{c}(x_1, x_2) &= 
+$f(x_1, x_2) = (x_1 - 4)^2 + x_2^2$
+"""
+
+# ╔═╡ 8101487e-f632-415d-bab9-62c546f70cc4
+f₁(x) = (x[1] - 4)^2 + x[2]^2
+
+# ╔═╡ e965ff1e-a0f4-4957-a7c0-8e64cd4c3ab3
+md"""
+$\mathbf{c}(x_1, x_2) = 
 \begin{cases}
 c_1(x_1, x_2) = x_1\\
 c_2(x_1, x_2) = x_2\\
-c_3(x_1, x_2) = 2 - x_1 - x_2 \end{cases}
-\end{align}$
+c_3(x_1, x_2) = 2 - x_1 - x_2 \end{cases}$
 """
+
+# ╔═╡ f2635565-31b7-48c7-a14b-afa6aca05a97
+c₁(x) = [
+	x[1]
+	x[2]
+	2 - x[1] - x[2]
+]
+
+# ╔═╡ 22ae7445-7b7e-47bc-b518-f6b96e61c9a4
+md"""
+hence
+
+$\nabla f(x_1, x_2) =
+\begin{pmatrix}
+2x_1 - 8 \\
+2x_2\end{pmatrix}$
+"""
+
+# ╔═╡ 26950cc9-b609-4854-91e2-c7f2f004a7d3
+∇f₁(x) = [
+	2x[1] - 8
+	2x[2]
+]
+
+# ╔═╡ 5590f33b-d790-4ad5-b105-0590ef009917
+md"""
+$\nabla^2 f(x_1, x_2) =
+\begin{bmatrix}
+2 & 0 \\
+0 & 2\end{bmatrix}$
+"""
+
+# ╔═╡ acb242d8-afe0-4f78-8b56-42798b802233
+∇²f₁(x) = [
+	2 0
+	0 2
+]
+
+# ╔═╡ e9f04cb9-7b92-4ec7-9c42-8cf41a25f444
+md"""
+$J_c(x_1, x_2) =
+\begin{bmatrix}
+1 & 0 \\
+0 & 1 \\
+-1 & -1\end{bmatrix}$
+"""
+
+# ╔═╡ f1dc6cfe-e541-462a-9187-c5ee8168dfef
+Jc₁(x) = [
+	 1  0
+	 0  1
+	-1 -1
+]
 
 # ╔═╡ fa2b934a-e5e6-4e4b-9104-64a3c3e2c45f
 md"""
-hence
-
-$\begin{align}
-&\nabla f(x_1, x_2) =
-\begin{pmatrix}
-2x_1 - 8 \\
-2x_2\end{pmatrix}
-\\\\
-&\nabla^2 f(x_1, x_2) =
-\begin{bmatrix}
-2 & 0 \\
-0 & 2\end{bmatrix}
-\\\\
-&J_c(x_1, x_2) =
-\begin{bmatrix}
-1 & 0 \\
-0 & 1 \\
--1 & -1\end{bmatrix}
-\\\\
-&\nabla^2 c_i(x_1, x_2) =
+$\nabla^2 c_i(x_1, x_2) =
 \begin{bmatrix}
 0 & 0 \\
-0 & 0\end{bmatrix} \quad\forall i
-\end{align}$
+0 & 0\end{bmatrix} \quad\forall i$
 """
 
-# ╔═╡ 416915cd-148b-4cf3-b883-dc6779533801
+# ╔═╡ d79ff1a7-b46b-4369-b478-b6a525c1609a
+∇²c₁(x) = (zeros(2,2) for _ in 1:3)
+
+# ╔═╡ 03c2c135-fa19-4cdd-baf4-4cffa091f0b3
 md"""
 While for the second problem we have
 
-$\begin{align}
-f(x_1, x_2) &= 2x_1 - x_2^2\\
-\mathbf{c}(x_1, x_2) &= 
+$f(x_1, x_2) = 2x_1 - x_2^2$
+"""
+
+# ╔═╡ 16313b21-242c-40d5-b94f-18fe71b08d7e
+f₂(x) = 2x[1] - x[2]^2
+
+# ╔═╡ 416915cd-148b-4cf3-b883-dc6779533801
+md"""
+$\mathbf{c}(x_1, x_2) = 
 \begin{cases}
 c_1(x_1, x_2) = x_1\\
 c_2(x_1, x_2) = x_2\\
-c_3(x_1, x_2) = 1 - x_1^2 - x_2^2 \end{cases}
-\end{align}$
+c_3(x_1, x_2) = 1 - x_1^2 - x_2^2 \end{cases}$
 """
 
-# ╔═╡ 8a2c8b7f-d2f5-42c9-a592-44b310f58e53
+# ╔═╡ 4b077fb7-9f1a-4fb1-94ea-2fb6d85d8ffd
+c₂(x) = [
+	x[1]
+	x[2]
+	1 - x[1]^2 - x[2]^2
+]
+
+# ╔═╡ 8e0edcc8-5f1d-407a-bcf4-a7dae7a4c6e7
 md"""
 hence
 
-$\begin{align}
-&\nabla f(x_1, x_2) =
+$\nabla f(x_1, x_2) =
 \begin{pmatrix}
 2 \\
--2x_2\end{pmatrix}
-\\\\
-&\nabla^2 f(x_1, x_2) =
+-2x_2\end{pmatrix}$
+"""
+
+# ╔═╡ 672a59c7-089f-47b3-928b-79c5270cd02c
+∇f₂(x) = [
+	2
+	-2x[2]
+]
+
+# ╔═╡ 007d8f6e-4707-4800-a275-08990de9a5cb
+md"""
+$\nabla^2 f(x_1, x_2) =
 \begin{bmatrix}
 0 & 0 \\
-0 & -2\end{bmatrix}
-\\\\
-&J_c(x_1, x_2) =
+0 & -2\end{bmatrix}$
+"""
+
+# ╔═╡ cc22b280-f914-46f6-8962-2341c44d3f82
+∇²f₂(x) = [
+	0  0
+	0 -2
+]
+
+# ╔═╡ 83a9c82b-d716-4754-ad27-63c9447f16a9
+md"""
+$J_c(x_1, x_2) =
 \begin{bmatrix}
 1 & 0 \\
 0 & 1 \\
--2x_1 & -2x_2\end{bmatrix}
-\\\\
-&\nabla^2 c_1(x_1, x_2) =
+-2x_1 & -2x_2\end{bmatrix}$
+"""
+
+# ╔═╡ fe580828-88c3-49d3-90b3-7fcc56f54d19
+Jc₂(x) = [
+	     1      0
+	     0      1
+	-2x[1] -2x[2]
+]
+
+# ╔═╡ 8a2c8b7f-d2f5-42c9-a592-44b310f58e53
+md"""
+$\nabla^2 c_1(x_1, x_2) =
 \nabla^2 c_2(x_1, x_2) =
 \begin{bmatrix}
 0 & 0 \\
 0 & 0\end{bmatrix}
-\\\\
-&\nabla^2 c_3(x_1, x_2) =
+\quad
+\nabla^2 c_3(x_1, x_2) =
 \begin{bmatrix}
 -2 & 0 \\
-0 & -2\end{bmatrix}
-\end{align}$
+0 & -2\end{bmatrix}$
 """
+
+# ╔═╡ 7a5c4081-d3b4-472d-a547-677bfaf79e8c
+∇²c₂(x) = (
+	zeros(2,2),
+	zeros(2,2),
+	-2 * I(2)
+)
 
 # ╔═╡ 4244e788-4b09-4f36-8e40-433ee07d390d
 md"""
@@ -438,7 +524,7 @@ In order to implement an optimization routine that can solve a given constrained
 
 # ╔═╡ 6b967062-7262-4ac5-b9f6-376a08d45a09
 md"""
-### The search direction
+### Search direction and regularization
 """
 
 # ╔═╡ ff94aa9a-d724-4dab-89c2-a74b014dc5a2
@@ -457,7 +543,7 @@ J_\mathbf{c}(\mathbf{x}^{(k)}) & 0 & -I \\
 \delta\mathbf{x}^{(k)}\\ -\delta\boldsymbol{\lambda}^{(k)}\\ \delta\mathbf{z}^{(k)}
 \end{pmatrix}
 =\\
-\begin{pmatrix}
+-\begin{pmatrix}
 \nabla f(\mathbf{x}^{(k)}) - [J_\mathbf{c}(\mathbf{x}^{(k)}]^T\boldsymbol{\lambda}^{(k)}\\
 \mathbf{z}^{(k)} - \mathbf{c}(\mathbf{x}^{(k)})\\
 \boldsymbol{\lambda}^{(k)} - \mu [Z^{(k)}]^{-1}\mathbf{e}
@@ -465,8 +551,65 @@ J_\mathbf{c}(\mathbf{x}^{(k)}) & 0 & -I \\
 \end{multline}$
 """
 
+# ╔═╡ 667582ba-3bbf-4c0d-bae3-12a84fe78bc5
+md"""
+From eq (19.24) of [1] we know that the solution of the system above is a descent direction if the number of positive, negative and zero eigenvalues (the *inertia*) of our symmetrized $J_F$ are respectively
+
+$(n+m, m, 0)$
+
+where n is the number of variables and m the number of inequality constraints.
+"""
+
+# ╔═╡ a5bb6844-a966-4209-9e0d-a3bffe376415
+md"""
+To check if this is indeed the case, we use the $LBL^T$ Bunch-Kaufman factorization of a symmetric indefinite matrix into a (lower) triangular matrix $L$ and in a block diagonal one, $B$. The max size of a block is $2\times 2$ and each of these blocks corresponds to a positive and a negative eigenvalue. 
+"""
+
+# ╔═╡ 4dd6f8f9-2d8c-4c86-85b1-10900160ee44
+function inertia(b::BunchKaufman)
+	md  = diag(b.D)
+	ld = diag(b.D, -1)
+	ud = diag(b.D, +1)
+	N = size(md) 
+	peigs  = 0
+	meigs = 0
+	zeigs  = 0
+	for i in 1:N-1
+		# if it is not a 2x2 block check
+		# the sign of main diagonal elements
+		if ld[i] == 0 && ud[i] == 0
+			for e in (md[i], md[i+1])
+				if e > 0
+					peigs += 1
+				elseif e < 0
+					meigs += 1
+				else
+					zeigs +=1
+				end
+			end
+		else
+			peigs += 1
+			meigs += 1
+		end
+	end
+	if meigs + peigs + zeigs ≠ N
+		throw(ErrorException("eigenvalues don't add up to the matrix size."))
+	end
+	return peigs, meigs, zeigs
+end
+
+# ╔═╡ da6f2e25-b967-4879-8e52-185235d59759
+md"""
+If the condition on the inertia is not satisfied, we add a factor $\delta I$ to the first block of $J_F$ adapting the regularization procedure shown in the Appendix B of [1].
+"""
+
+# ╔═╡ 3761f952-5300-4cb9-8798-1e479bb93c27
+md"""
+The complete routine for determine the direction is then
+"""
+
 # ╔═╡ 6f9dbe0b-ae68-4def-833d-fdc8a795b6ed
-function direction(zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ, ∇²cₖ, μ)
+function direction(zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ, ∇²cₖ, μ, δ)
 	n = length(∇fₖ)
 	m = length(zₖ)
 	Fx = gₖ .- Jcₖ' * λₖ
@@ -479,27 +622,27 @@ function direction(zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ, ∇²cₖ, μ)
 	]
 	∇²ₓₓ𝓛 = ∇²fₖ + sum(λₖ .* ∇²cₖ)
 	JFₖ = [
-		∇²ₓₓ𝓛        Jcₖ'             zeros(m,m)
-		Jcₖ          zeros(m,m)            -I(m)
-		zeros(m,m)   -I(m)       diagm(λₖ ./ zₖ)
+		∇²ₓₓ𝓛       Jcₖ'             zeros(m,m)
+		Jcₖ         zeros(m,m)            -I(m)
+		zeros(m,m)  -I(m)       diagm(λₖ ./ zₖ)
 	]
-	Cₖ = 
-		try 
-			cholesky(Symmetric(JFₖ))
-		catch e
-			if e isa(PosDefException)
-				throw(
-					DomainError("Primal Dual system is not positive definite at $xₖ.")
-				)
-			else
-				throw(e)
-			end
-		end
-	δₖ = -(Cₖ \ Fₖ)
-	δxₖ =  δₖ[1:n]
-	δλₖ = -δₖ[n+1:n+m]
-	δzₖ =  δₖ[n+m+1:end]
-	return δxₖ, δλₖ, δzₖ
+	Bₖ = bunchkaufman(JFₖ)
+	δₐ = δ == 0 ? 1e-4 : δ/2
+	while inertia(Bₖ) ≠ (n + m, m, 0)
+		JFₖ = [
+			∇²ₓₓ𝓛 + δₐ * I(n)  Jcₖ'             zeros(m,m)
+			Jcₖ               zeros(m,m)            -I(m)
+			zeros(m,m)        -I(m)       diagm(λₖ ./ zₖ)
+		]
+		Bₖ = bunchkaufman(JFₖ)
+		δ = δₐ
+		δₐ = 10δ
+	end
+	δpₖ = -(Bₖ \ Fₖ)
+	δxₖ =  δpₖ[1:n]
+	δλₖ = -δpₖ[n+1:n+m]
+	δzₖ =  δpₖ[n+m+1:end]
+	return δxₖ, δλₖ, δzₖ, δ
 end
 
 # ╔═╡ 4bf04b78-0fc9-48ea-a39e-56b708a12fe6
@@ -575,7 +718,7 @@ $\phi_\nu(\mathbf{x}, \mathbf{z}) = f(\mathbf{x}) - \mu \sum_{i=1}^m\log(z_i) + 
 """
 
 # ╔═╡ 512ad415-dd84-4f35-bcf0-b64777f4c657
-merit(f, c, x, z, μ, ν) = f(x) - μ * sum(log.(z)) + ν * norm(c(x) - z, 1)
+merit(f, c, xₖ, zₖ, μ, ν) = f(xₖ) - μ * sum(log.(zₖ)) + ν * norm(c(xₖ) - zₖ, 1)
 
 # ╔═╡ f14ba32d-fafe-4f27-80a5-31cb9ff753cf
 md"""
@@ -2345,14 +2488,39 @@ version = "1.4.1+1"
 # ╠═abe22439-4801-4416-9bfe-ae35b231d959
 # ╠═3d982bb9-8fc0-4a1b-a2d8-606f33026a74
 # ╠═d7c8ab1b-e81d-4089-889d-5524a9d200ab
+# ╠═094c87eb-1ba7-4655-a47b-1a9fed727307
+# ╠═8101487e-f632-415d-bab9-62c546f70cc4
 # ╠═e965ff1e-a0f4-4957-a7c0-8e64cd4c3ab3
+# ╠═f2635565-31b7-48c7-a14b-afa6aca05a97
+# ╠═22ae7445-7b7e-47bc-b518-f6b96e61c9a4
+# ╠═26950cc9-b609-4854-91e2-c7f2f004a7d3
+# ╠═5590f33b-d790-4ad5-b105-0590ef009917
+# ╠═acb242d8-afe0-4f78-8b56-42798b802233
+# ╠═e9f04cb9-7b92-4ec7-9c42-8cf41a25f444
+# ╠═f1dc6cfe-e541-462a-9187-c5ee8168dfef
 # ╠═fa2b934a-e5e6-4e4b-9104-64a3c3e2c45f
+# ╠═d79ff1a7-b46b-4369-b478-b6a525c1609a
+# ╠═03c2c135-fa19-4cdd-baf4-4cffa091f0b3
+# ╠═16313b21-242c-40d5-b94f-18fe71b08d7e
 # ╠═416915cd-148b-4cf3-b883-dc6779533801
+# ╠═4b077fb7-9f1a-4fb1-94ea-2fb6d85d8ffd
+# ╠═8e0edcc8-5f1d-407a-bcf4-a7dae7a4c6e7
+# ╠═672a59c7-089f-47b3-928b-79c5270cd02c
+# ╠═007d8f6e-4707-4800-a275-08990de9a5cb
+# ╠═cc22b280-f914-46f6-8962-2341c44d3f82
+# ╠═83a9c82b-d716-4754-ad27-63c9447f16a9
+# ╠═fe580828-88c3-49d3-90b3-7fcc56f54d19
 # ╠═8a2c8b7f-d2f5-42c9-a592-44b310f58e53
+# ╠═7a5c4081-d3b4-472d-a547-677bfaf79e8c
 # ╟─4244e788-4b09-4f36-8e40-433ee07d390d
 # ╠═6b755d03-8345-40dd-b044-43d816a11c0a
 # ╟─6b967062-7262-4ac5-b9f6-376a08d45a09
 # ╠═ff94aa9a-d724-4dab-89c2-a74b014dc5a2
+# ╠═667582ba-3bbf-4c0d-bae3-12a84fe78bc5
+# ╠═a5bb6844-a966-4209-9e0d-a3bffe376415
+# ╠═4dd6f8f9-2d8c-4c86-85b1-10900160ee44
+# ╠═da6f2e25-b967-4879-8e52-185235d59759
+# ╠═3761f952-5300-4cb9-8798-1e479bb93c27
 # ╠═6f9dbe0b-ae68-4def-833d-fdc8a795b6ed
 # ╠═4bf04b78-0fc9-48ea-a39e-56b708a12fe6
 # ╠═126da2ac-3179-47f3-b2b6-8381d3c5a419
