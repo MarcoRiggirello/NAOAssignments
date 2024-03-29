@@ -573,7 +573,7 @@ function inertia(b::BunchKaufman)
 	md  = diag(b.D)
 	ld = [0; diag(b.D, -1); 0]
 	ud = [0; diag(b.D, +1); 0]
-	N = size(md) 
+	N = length(md) 
 	peigs  = 0
 	meigs = 0
 	zeigs  = 0
@@ -614,7 +614,7 @@ The complete routine for determine the direction is then
 function direction_regularized(zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ, ∇²cₖ, μ, δ)
 	n = length(∇fₖ)
 	m = length(zₖ)
-	Fx = gₖ .- Jcₖ' * λₖ
+	Fx = ∇fₖ .- Jcₖ' * λₖ
 	Fλ = zₖ .- cₖ
 	Fz = λₖ .- μ ./ zₖ
 	Fₖ = [
@@ -624,9 +624,9 @@ function direction_regularized(zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ, ∇
 	]
 	∇²ₓₓ𝓛 = ∇²fₖ + sum(λₖ .* ∇²cₖ)
 	JFₖ = [
-		∇²ₓₓ𝓛       Jcₖ'             zeros(m,m)
+		∇²ₓₓ𝓛       Jcₖ'             zeros(n,m)
 		Jcₖ         zeros(m,m)            -I(m)
-		zeros(m,m)  -I(m)       diagm(λₖ ./ zₖ)
+		zeros(m,n)  -I(m)       diagm(λₖ ./ zₖ)
 	]
 	Bₖ = bunchkaufman(JFₖ)
 	δₐ = δ == 0 ? 1e-4 : δ/2
@@ -693,7 +693,7 @@ function maxstep(qₖ, pₖ; τ=0.995)
 	u = 1.0
 	l = 2.0^(-N)
 	for _ in 1:N
-		α = (l + u) / 2
+		@show α = (l + u) / 2
 		if all(qₖ + α * pₖ .≥ (1 - τ) * qₖ)
 			l = α
 		else
@@ -760,9 +760,11 @@ function backtracking(f, ∇f, c, xₖ, zₖ, δxₖ, δzₖ, μ, ν; η=.5, ρ=
 	α = α₀
 	ϕₖ  = merit(f, c, xₖ, zₖ, μ, ν)
 	∇fₖ = ∇f(xₖ)
+	cₖ  = c(xₖ)
 	Dϕₖ = dirder(δxₖ, δzₖ, zₖ, ∇fₖ, cₖ, μ, ν) 
 	ϕₜ = merit(f, c, xₖ + α * δxₖ, zₖ + α * δzₖ, μ, ν)
 	while ϕₜ > ϕₖ + η * α * Dϕₖ
+		@info "$α"
 		α *= ρ
 		fₜ = merit(f, c, xₖ + α * δxₖ, zₖ + α * δzₖ, μ, ν)
 	end
@@ -797,7 +799,7 @@ $\sigma = \begin{cases}
 function update_nu(ν, δxₖ, zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, ∇²cₖ; ρ = .5)
 	∇²𝓛 = ∇²fₖ + sum(λₖ .* ∇²cₖ)
 	s = dot(δxₖ, ∇²𝓛, δxₖ)
-	σ = c > 0 ? 1 : 0
+	σ = s > 0 ? 1 : 0
 	n = (dot(∇fₖ, δxₖ) + (σ * s)/2)/((1 - ρ) * norm(norm(cₖ - zₖ, 1)))
 	if ν ≥ n
 		return ν
@@ -898,13 +900,17 @@ function optimize(f, ∇f, ∇²f, c, Jc, ∇²c, x₀; μ₀=1e-2, ν₀=1e-1, 
 	converged = false
 	while k ≤ maxitr && !converged
 		k += 1
+		@info "step $k"
 		# Search direction and regularization
 		δxₖ, δλₖ, δzₖ, δ = direction_regularized(zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ, ∇²cₖ, μ, δ)
+		@info "direction found"
 		# Maxmimum steplength computation
 		αₛ = maxstep(zₖ, δzₖ)
 		αₗ = maxstep(λₖ, δλₖ)
+		@info "maxstep found"
 		# Merit function and line search
 		αₛ = linesearch ? backtracking(f, ∇f, c, xₖ, zₖ, δxₖ, δzₖ, μ, ν, α₀=αₛ) : αₛ
+		@info "linesearch done"
 		# Updates
 		xₖ  .+= αₛ * δxₖ
 		λₖ  .+= αₗ * δλₖ
@@ -913,7 +919,7 @@ function optimize(f, ∇f, ∇²f, c, Jc, ∇²c, x₀; μ₀=1e-2, ν₀=1e-1, 
 		∇²fₖ .= ∇²f(xₖ)
 		cₖ   .= c(xₖ)
 		Jcₖ  .= Jc(xₖ)
-		∇²cₖ .= ∇²c(xₖ)
+		∇²cₖ = ∇²c(xₖ)
 		μ = update_mu(μ, xₖ, zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ)
 		ν = update_nu(ν, δxₖ, zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, ∇²cₖ)
 		# Saving step
@@ -933,6 +939,14 @@ function optimize(f, ∇f, ∇²f, c, Jc, ∇²c, x₀; μ₀=1e-2, ν₀=1e-1, 
 		values
 	)
 end
+
+# ╔═╡ 24e9aec7-d21b-471e-b237-a3b897b94d32
+md"""
+### Numerical optimization
+"""
+
+# ╔═╡ 13ae459d-3069-4ba6-8740-48d23825754e
+optimize(f₁, ∇f₁, ∇²f₁, c₁, Jc₁, ∇²c₁, [.5, .5])
 
 # ╔═╡ 4c2db206-10f1-40d9-85b9-aa3a852b9ccc
 md"""
@@ -2083,6 +2097,8 @@ version = "1.4.1+1"
 # ╠═616ac1db-0421-4bb4-ab96-52f002bd2ed2
 # ╟─754e562b-34d7-49f0-9751-76b510fe170a
 # ╠═795b3837-b5a2-4b57-b888-67a81cbf3f96
+# ╟─24e9aec7-d21b-471e-b237-a3b897b94d32
+# ╠═13ae459d-3069-4ba6-8740-48d23825754e
 # ╟─4c2db206-10f1-40d9-85b9-aa3a852b9ccc
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
