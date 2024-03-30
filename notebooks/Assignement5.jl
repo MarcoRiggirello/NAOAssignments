@@ -7,14 +7,52 @@ using InteractiveUtils
 # ╔═╡ ddc3476e-19e9-492a-b34e-140bbc848310
 using LinearAlgebra, Plots
 
-# ╔═╡ 37bd1fe6-eb92-11ee-11b5-c79f0842f455
+# ╔═╡ a2b32d4b-44e2-4837-9232-28fafb9a27d0
+function plot_problem(f, c; xlim=(-10,10), ylim=(-10,10), gridsize=1000)
+	# Function landscape
+	x = range(xlim..., gridsize)
+	y = range(ylim..., gridsize)
+	z = @. f(x', y)
+	# Constraint landscape
+	cin  = NaN                # black magic to colour
+	cout = sum(z) / length(z) # infeasible region
+	w = [all(i .> 0) ? cin : cout for i in @. c(x', y)]
+	# Plotting!
+	plt = contourf(
+		x, y, w,
+		xlim=xlim,
+		ylim=ylim,
+		xlabel="x₁",
+		ylabel="x₂",
+		fillalpha=.1,
+		aspect_ratio=:equal
+	)
+	contour!(
+		plt,
+		x, y, z
+	)
+end
+
+# ╔═╡ 7f1d0b2b-fd4a-4fb2-9e4e-b558dc63c12a
 md"""
 # Assignment 5
+"""
 
+# ╔═╡ 78d2a636-7aef-45e8-bc64-80d1e66e7f43
+md"""
 ## Problem 1
+"""
 
+# ╔═╡ a120c6cd-53dd-4f1e-9fe9-ccf6ab8e5a00
+md"""
 $f(x_1, x_2) = (x_1 - 4)^2 + x_2^2$
+"""
 
+# ╔═╡ 3585fba0-7595-44ff-9198-74584b7f6932
+f1(x₁, x₂) = (x₁ - 4)^2 + x₂^2
+
+# ╔═╡ bc022a7a-54dd-4511-830c-2a1919345cc0
+md"""
 Subject to
 
 $\begin{cases}
@@ -22,50 +60,135 @@ $\begin{cases}
 - x_2 \leq 0 \\
 x_1 + x_2 - 2 \leq 0
 \end{cases}$
-
-
-![Immagine del set di vincoli](link-alla-tua-immagine)
-
-$L(x_1, x_2, \lambda_1, \lambda_2, \lambda_3) = (x_1 - 4)^2 + x_2^2 + \lambda_1(-x_1) + \lambda_2(-x_2) + \lambda_3(x_1 + x_2 - 2)$
-
-The function $f$ is convex, & the constraints too (see each $c_i$) and the set is bounded (see figure) $\Rightarrow$ there is a unique solution.
-
 """
 
-# ╔═╡ ae8744a8-81c0-475a-81b5-7b5c39d44a5d
-md"""
-**KKT Conditions**
+# ╔═╡ 19215ef7-f847-458e-bc9e-d258c7644036
+# the constraints written in this form will be useful later
+c1(x₁, x₂) = [
+	x₁
+	x₂
+	2 - x₁ - x₂
+]
 
-*Stationarity*
+# ╔═╡ 083fccb6-ff87-4361-817d-e775859ad947
+plot_problem(f1, c1, xlim=(-0.4,2.4), ylim=(-0.4,2.4))
+
+# ╔═╡ 7c66f91a-6428-4aa4-903c-1b4f2624f559
+md"""
+The function $f$ is convex, as well as the constraints (each $c_i$ is convex) and the feasible set $\mathscr{C}$ is bounded (see figure) hence we know that there will be a unique solution.
+"""
+
+# ╔═╡ 64eb0bf1-051a-480f-9d78-b2937e5af986
+md"""
+### Lagrangian and KKT conditions
+"""
+
+# ╔═╡ 37bd1fe6-eb92-11ee-11b5-c79f0842f455
+md"""
+The Lagrangian of the problem is
+
+$L(x_1, x_2, \lambda_1, \lambda_2, \lambda_3) = (x_1 - 4)^2 + x_2^2 + \lambda_1(-x_1) + \lambda_2(-x_2) + \lambda_3(x_1 + x_2 - 2)$
+"""
+
+# ╔═╡ d3d4ef20-eb2c-4f5a-93a5-62b67fd6d24e
+md"""
+Hence, the KKT conditions are
+
+- *Stationarity*
 
 $\frac{\partial L}{\partial x_1} = 2(x_1 - 4) - \lambda_1 + \lambda_3 = 0$ 
 
 $\frac{\partial L}{\partial x_2} = 2x_2 - \lambda_2 + \lambda_3 = 0$
+"""
 
-*Primal feasibility*
+# ╔═╡ ff33da39-34d5-4c22-bc24-f2abdb4fe5d8
+md"""
+- *Primal feasibility*
 
 $\begin{cases}
 x_1 \leq 0 \\
 x_2 \leq 0 \\
 x_1 + x_2 - 2 \leq 0
 \end{cases}$
+"""
 
-*Dual feasibility*
+# ╔═╡ 35958ad8-0d2f-461d-89b2-407c29ad987f
+md"""
+- *Dual feasibility*
 
 $\begin{cases}
 \lambda_1 \geq 0 \\
 \lambda_2 \geq 0 \\
 \lambda_3 \geq 0
 \end{cases}$
+"""
 
-*Complementarity* ("slackness")
+# ╔═╡ ae8744a8-81c0-475a-81b5-7b5c39d44a5d
+md"""
+- *Complementarity*
 
 $\begin{cases}
 \lambda_1 x_1 = 0 \\
 \lambda_2 x_2 = 0 \\
 \lambda_3(x_1 + x_2 - 2) = 0
-\end{cases}$ 
+\end{cases}$
+"""
 
+# ╔═╡ cdb6920a-908f-47b6-982e-4da05bf99b63
+md"""
+### Complementarity conditions discussion
+"""
+
+# ╔═╡ a48c4048-aa7e-4ab2-86c7-b5fb8a4a2175
+md"""
+1. $\lambda_1 = 0, \lambda_2 = 0, \lambda_3 = 0$
+
+No active constraints, minimum unconstrained.
+
+$\arg\min f(x_1, x_2) = (4, 0)$
+
+But this unconstrained minimum is clearly outside $\mathscr{C}$, hence this case is not the solution.
+"""
+
+# ╔═╡ 67d5144c-08a0-47cc-b92f-104e4ab971d8
+md"""
+2. $\lambda_1 \neq 0, \lambda_2 = \lambda_3 = 0$
+
+Only the first constraint is active, thus the function becomes
+
+$f(x_1=0, x_2) = x_2^2 + 16$
+
+which is minimized by
+
+$\arg \min f(x_1=0, x_2) = (0,0) \longrightarrow f(0,0) = 16$
+
+Note that in that point the second constraint is active too.
+"""
+
+# ╔═╡ 6ab66925-ac15-436a-b925-538172aa1ffc
+md"""
+3. $\lambda_1 = 0, \lambda_2 \neq 0, \lambda_3 = 0$
+
+Only the second constraint is active
+
+$\arg \min f(x_1, x_2=0) = (x_1 - 4)^2 = (4, 0)$
+
+which is again outside of $\mathscr{C}$ $\Rightarrow$ not a candidate solution.
+"""
+
+# ╔═╡ 9ea1b1a1-fb63-490b-a572-87a02b9656da
+md"""
+4. $\lambda_1 = 0, \lambda_2 = 0, \lambda_3 \neq 0$
+
+$f\left(x_1, \frac{x_2}{x_1+x_2-2}=1\right) = (x_1-4)^2 + (2-x_1)^2$
+
+$= 2x_1^2 + 20 - 12x_1 = 2(x_1^2 - 6x_1 + 10)$
+
+min at $x_1 = 3 \Rightarrow$ outside $C$
+
+inside $C$ the min is at $x_1 = 2$
+
+=> constraint 2 active => $f = 4$
 """
 
 # ╔═╡ c3f81986-e050-4256-95be-ee07ce22d6f8
@@ -122,20 +245,7 @@ Like case 3$^\circ$ excluded from $C$
 
 Impossible
 
-**Case 8**: $\lambda_1 = 0, \lambda_2 = 0, \lambda_3 = 0$
 
-No active constraints, minimum unconstrained.
-
-(Note: the non-mathematical text in the upper right is partially visible and seems to be a comment or note.)
-min $f$ unconstrained $(x_1=4, x_2=0)$
-
-inside $C \Rightarrow$ the minimum is at
-
-$x_2 = 0, x_1 = 2 \Rightarrow f = 4$
-
-outside $C \Rightarrow$ returns to a previous case
-
-constraint, returns to a previous case
 
 **CONCLUSIONS**
 
@@ -145,6 +255,40 @@ $x_2 = 0, x_1 = 2 \Rightarrow f = 4$
 
 
 """
+
+# ╔═╡ c1d70bb6-9bcc-4f3c-af70-56719a136f5b
+md"""
+## Problem 2
+"""
+
+# ╔═╡ 81d94b7a-ccbf-49cd-bf59-e6c6cf3d53df
+md"""
+$f(x_1, x_2) = 2x_1 - x_2^2$
+"""
+
+# ╔═╡ 25960e66-ba19-4172-833b-d7942b096baa
+f2(x₁, x₂) = 2x₁ - x₂^2
+
+# ╔═╡ 7dc664ae-1581-4122-941b-db46e6ea2f61
+md"""
+such that
+
+$\begin{cases}
+x_1^2 + x_2^2 \leq 1 \\
+x_1 \geq 0 \\
+x_2 \geq 0
+\end{cases}$
+"""
+
+# ╔═╡ e3cec0b8-4d31-40ac-bf7d-723f0c9962ee
+c2(x₁, x₂) = [
+	x₁
+	x₂
+	1 - x₁^2 - x₂^2
+]
+
+# ╔═╡ 4b0b93a7-e808-40e8-bc43-32a8abf8a524
+plot_problem(f2, c2, xlim=(-0.2,1.2), ylim=(-0.2,1.2))
 
 # ╔═╡ 5d9fb406-8d80-4996-b318-eb318be541cc
 md"""
@@ -955,16 +1099,13 @@ o2 = optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₁, [1., 0.], linese
 
 # ╔═╡ dfa4de4b-3caa-4128-a035-05ffc2160dae
 function plot_optimization(f, c, truemin, opts...; xlim=(-10,10), ylim=(-10,10), gridsize=400)
-	if any(j -> size(j.steps, 1) != 2, opts)
-		throw(ArgumentError("Optimizations are not of size 2: impossible to plot."))
-	end
 	# Function landscape
 	x = range(xlim..., gridsize)
 	y = range(ylim..., gridsize)
 	z = @. f(x', y)
 	# Constraint landscape
-	cin  = NaN
-	cout = sum(z) / length(z)
+	cin  = NaN                # black magic to colour
+	cout = sum(z) / length(z) # infeasible region
 	w = [all(i .> 0) ? cin : cout for i in @. c(x', y)]
 	# Optimization steps array
 	X = [o.steps[1,1] for o in opts]
@@ -1016,16 +1157,6 @@ function plot_optimization(f, c, truemin, opts...; xlim=(-10,10), ylim=(-10,10),
 		push!(plt, i, j)
 	end
 end
-
-# ╔═╡ 3585fba0-7595-44ff-9198-74584b7f6932
-f1(x1, x2) = (x1 - 4)^2 + x2^2
-
-# ╔═╡ 19215ef7-f847-458e-bc9e-d258c7644036
-c1(x1, x2) = [
-	x1
-	x2
-	2 - x1 - x2
-]
 
 # ╔═╡ 43c71951-875b-4847-9474-e61643d6fe4b
 plot_optimization(f1, c1, (2.0, 0.0), o1, xlim=(-.4, 2.4), ylim=(-.4,2.4))
@@ -2100,9 +2231,33 @@ version = "1.4.1+1"
 
 # ╔═╡ Cell order:
 # ╠═ddc3476e-19e9-492a-b34e-140bbc848310
-# ╠═37bd1fe6-eb92-11ee-11b5-c79f0842f455
-# ╠═ae8744a8-81c0-475a-81b5-7b5c39d44a5d
+# ╠═a2b32d4b-44e2-4837-9232-28fafb9a27d0
+# ╟─7f1d0b2b-fd4a-4fb2-9e4e-b558dc63c12a
+# ╟─78d2a636-7aef-45e8-bc64-80d1e66e7f43
+# ╟─a120c6cd-53dd-4f1e-9fe9-ccf6ab8e5a00
+# ╠═3585fba0-7595-44ff-9198-74584b7f6932
+# ╟─bc022a7a-54dd-4511-830c-2a1919345cc0
+# ╠═19215ef7-f847-458e-bc9e-d258c7644036
+# ╠═083fccb6-ff87-4361-817d-e775859ad947
+# ╟─7c66f91a-6428-4aa4-903c-1b4f2624f559
+# ╟─64eb0bf1-051a-480f-9d78-b2937e5af986
+# ╟─37bd1fe6-eb92-11ee-11b5-c79f0842f455
+# ╟─d3d4ef20-eb2c-4f5a-93a5-62b67fd6d24e
+# ╟─ff33da39-34d5-4c22-bc24-f2abdb4fe5d8
+# ╟─35958ad8-0d2f-461d-89b2-407c29ad987f
+# ╟─ae8744a8-81c0-475a-81b5-7b5c39d44a5d
+# ╟─cdb6920a-908f-47b6-982e-4da05bf99b63
+# ╠═a48c4048-aa7e-4ab2-86c7-b5fb8a4a2175
+# ╠═67d5144c-08a0-47cc-b92f-104e4ab971d8
+# ╠═6ab66925-ac15-436a-b925-538172aa1ffc
+# ╠═9ea1b1a1-fb63-490b-a572-87a02b9656da
 # ╠═c3f81986-e050-4256-95be-ee07ce22d6f8
+# ╠═c1d70bb6-9bcc-4f3c-af70-56719a136f5b
+# ╠═81d94b7a-ccbf-49cd-bf59-e6c6cf3d53df
+# ╠═25960e66-ba19-4172-833b-d7942b096baa
+# ╠═7dc664ae-1581-4122-941b-db46e6ea2f61
+# ╠═e3cec0b8-4d31-40ac-bf7d-723f0c9962ee
+# ╠═4b0b93a7-e808-40e8-bc43-32a8abf8a524
 # ╠═5d9fb406-8d80-4996-b318-eb318be541cc
 # ╠═c26ca080-9ca3-4d2d-b1f8-922275a752a1
 # ╠═4aa72c1b-145e-4f0b-8a1b-748ccd0a6f87
@@ -2183,8 +2338,6 @@ version = "1.4.1+1"
 # ╠═13ae459d-3069-4ba6-8740-48d23825754e
 # ╠═8b1a81f1-d756-41f8-99b3-368e36ffc54e
 # ╠═dfa4de4b-3caa-4128-a035-05ffc2160dae
-# ╠═3585fba0-7595-44ff-9198-74584b7f6932
-# ╠═19215ef7-f847-458e-bc9e-d258c7644036
 # ╠═43c71951-875b-4847-9474-e61643d6fe4b
 # ╟─4c2db206-10f1-40d9-85b9-aa3a852b9ccc
 # ╟─00000000-0000-0000-0000-000000000001
