@@ -162,7 +162,7 @@ which is minimized by
 
 $\arg \min f(x_1=0, x_2) = (0,0) \longrightarrow f(0,0) = 16$
 
-Note that in that point the second constraint is active too.
+Note that in this point the second constraint is active too, so we found the case $\lambda_1 \neq 0, \lambda_2 \neq 0,  \lambda_3 = 0$.
 """
 
 # ╔═╡ 6ab66925-ac15-436a-b925-538172aa1ffc
@@ -171,89 +171,59 @@ md"""
 
 Only the second constraint is active
 
-$\arg \min f(x_1, x_2=0) = (x_1 - 4)^2 = (4, 0)$
+$\arg \min f(x_1, x_2=0) = \arg\min (x_1 - 4)^2 = (4, 0)$
 
 which is again outside of $\mathscr{C}$ $\Rightarrow$ not a candidate solution.
 """
 
 # ╔═╡ 9ea1b1a1-fb63-490b-a572-87a02b9656da
 md"""
-4. $\lambda_1 = 0, \lambda_2 = 0, \lambda_3 \neq 0$
+4. $\lambda_1 = \lambda_2 = 0, \lambda_3 \neq 0$
 
-$f\left(x_1, \frac{x_2}{x_1+x_2-2}=1\right) = (x_1-4)^2 + (2-x_1)^2$
+Only the third constraint is active, hence
 
-$= 2x_1^2 + 20 - 12x_1 = 2(x_1^2 - 6x_1 + 10)$
+$f\left(x_1, x_2=2-x_1\right) = (x_1-4)^2 + (2-x_1)^2$
 
-min at $x_1 = 3 \Rightarrow$ outside $C$
+hence
 
-inside $C$ the min is at $x_1 = 2$
+$\arg\min_{x_1 + x_2 = 2} f(x_1, x_2) = (3, -1)$
 
-=> constraint 2 active => $f = 4$
+which is again outside $\mathscr{C}$.
+"""
+
+# ╔═╡ 8b26888a-9991-479b-a3df-f3c9da7a3840
+md"""
+5. $\lambda_1 \neq 0, \lambda_2 \neq 0, \lambda_3 = 0$
+
+The only point that satisfy both condition 1 and 2 is $(0,0)$ in which, as we already seen, the function takes value 16.
+"""
+
+# ╔═╡ ed4c7fb8-b0ac-4c3f-8bfa-f4d8198eccb2
+md"""
+6. $\lambda_1 \neq 0, \lambda_2 = 0, \lambda_3 \neq 0$
+
+It is the point $(0,2)$ where $f(x_1,x_2) = 20$.
+"""
+
+# ╔═╡ a59933a6-90b2-4858-8107-92b104887fb0
+md"""
+7. $\lambda_1 = 0, \lambda_2 \neq 0, \lambda_3 \neq 0$
+
+It is the point $(2,0)$ where $f(x_1, x_2)=4$.
+"""
+
+# ╔═╡ 84c67ba9-e150-4183-95bf-e8508e4368ce
+md"""
+8. $\lambda_1 \neq 0, \lambda_2 \neq 0, \lambda_3 \neq 0$
+
+No point can saturate all the three inequalities simultaneously.
 """
 
 # ╔═╡ c3f81986-e050-4256-95be-ee07ce22d6f8
 md"""
-**Case 1**: $\lambda_1 \neq 0, \lambda_2 = 0 = \lambda_3$
+#### Conclusions
 
-Only the first constraint is active, it is solved by
-
-$f(x_1=0, x_2) = x_2^2 + 16$
-
-which has a minimum at $x_2 = 0 \Rightarrow f = 16$
-
-=> The second constraint is also active.
-
-**Case 2**: $\lambda_1 = 0, \lambda_2 \neq 0, \lambda_3 = 0$
-
-Only the second constraint is active, it is solved by
-
-$f(x_1, x_2=0) = (x_1 - 4)^2$
-
-which has a minimum at $x_1 = 4 \Rightarrow$ outside of $C$!
-
-=> inside $C$ the minimum is at $x_1 = 2 \Rightarrow f = 4$
-
-=> the third constraint is also active
-
-**Case 3**: $\lambda_1 = 0, \lambda_2 = 0, \lambda_3 \neq 0$
-
-$f\left(x_1, \frac{x_2}{x_1+x_2-2}=1\right) = (x_1-4)^2 + (2-x_1)^2$
-
-$= 2x_1^2 + 20 - 12x_1 = 2(x_1^2 - 6x_1 + 10)$
-
-min at $x_1 = 3 \Rightarrow$ outside $C$
-
-inside $C$ the min is at $x_1 = 2$
-
-=> constraint 2 active => $f = 4$
-
-**Case 4**: $\lambda_1 \neq 0, \lambda_2 \neq 0, \lambda_3 = 0$
-
-Like case 1, $x_1 = x_2 = 0$
-
-**Case 5**: $\lambda_1 \neq 0, \lambda_2 = 0, \lambda_3 \neq 0$
-
-It is the point $x_1 = 0, x_2 = 2$
-
-$f = 20$
-
-**Case 6**: $\lambda_1 = 0, \lambda_2 \neq 0, \lambda_3 \neq 0$
-
-Like case 3$^\circ$ excluded from $C$
-
-**Case 7**: $\lambda_1 \neq 0, \lambda_2 \neq 0, \lambda_3 \neq 0$
-
-Impossible
-
-
-
-**CONCLUSIONS**
-
-The minimum is at
-
-$x_2 = 0, x_1 = 2 \Rightarrow f = 4$
-
-
+$\arg\min_{(x_1,x_2)\in\mathscr{C}}f(x_1,x_2) = (2,0)\qquad f(2,0)=4$
 """
 
 # ╔═╡ c1d70bb6-9bcc-4f3c-af70-56719a136f5b
@@ -290,97 +260,144 @@ c2(x₁, x₂) = [
 # ╔═╡ 4b0b93a7-e808-40e8-bc43-32a8abf8a524
 plot_problem(f2, c2, xlim=(-0.2,1.2), ylim=(-0.2,1.2))
 
-# ╔═╡ 5d9fb406-8d80-4996-b318-eb318be541cc
+# ╔═╡ 7f7eaece-8e84-438a-8b33-65d1cd6f8332
 md"""
-## Problem 2
+Differently from Problem 1, $f$ is not convex thus there might *not* be a unique solution.
+"""
 
-$f(x_1, x_2) = 2x_1 - x_2^2$ s.t.
+# ╔═╡ 9b157ddc-7632-498e-93eb-84ccad9d0171
+md"""
+### Lagrangian and KKT conditions
+"""
 
-$\begin{cases}
-x_1^2 + x_2^2 \leq 1 \\
-x_1 \geq 0 \\
-x_2 \geq 0
-\end{cases}$
-
-![Immagine del set di vincoli](link-alla-tua-immagine)
-
-Differently from Problem 1, $f$ is concave $\Rightarrow x^*$ is **NOT** unique. The Lagrangian for this problem is:
+# ╔═╡ 6763e926-fe00-46de-af35-07b63343847a
+md"""
+The lagrangian is
 
 $L(x_1, x_2, \lambda_1, \lambda_2, \lambda_3) = 2x_1 - x_2^2 - \lambda_1x_1 - \lambda_2x_2 + \lambda_3(x_1^2+x_2^2-1)$
+"""
 
-**KKT**
+# ╔═╡ 354209e5-3e73-4d46-894d-6c53c20db59b
+md"""
+hence, the KKT conditions are
+
+- *Stationarity*
 
 $\begin{cases}
 \frac{\partial L}{\partial x_1} = 2 - \lambda_1 - 2\lambda_3x_1 = 0 \\
 \frac{\partial L}{\partial x_2} = -2x_2 - \lambda_2 + 2\lambda_3x_2 = 0
 \end{cases}$
+"""
 
-$\begin{cases}
-- \lambda_1x_1 \geq 0 \\
-- \lambda_2x_2 \geq 0 \\
-\lambda_3(x_1^2+x_2^2-1) \geq 0
-\end{cases}$
+# ╔═╡ d6ee74ad-d0b7-4f24-ba05-528586805a2a
+md"""
+- *Primal feasibility*
 
 $\begin{cases}
 - x_1 \leq 0 \\
 - x_2 \leq 0 \\
 x_1^2+x_2^2-1 \leq 0
 \end{cases}$
+"""
+
+# ╔═╡ cc357d29-5228-4a84-9ef2-74b1e9112034
+md"""
+- *Dual feasibility*
 
 $\begin{cases}
 \lambda_1 \geq 0 \\
 \lambda_2 \geq 0 \\
 \lambda_3 \geq 0
 \end{cases}$
+"""
 
+# ╔═╡ c2d67056-8414-472e-81e3-754bcb45ebb7
+md"""
+- *Complementarity*
+
+$\begin{cases}
+- \lambda_1x_1 \geq 0 \\
+- \lambda_2x_2 \geq 0 \\
+\lambda_3(x_1^2+x_2^2-1) \geq 0
+\end{cases}$
+"""
+
+# ╔═╡ 5d9fb406-8d80-4996-b318-eb318be541cc
+md"""
+### Complementarity conditions discussion
+"""
+
+# ╔═╡ 118d3146-9c4a-4a78-ab85-a0f993e8f978
+md"""
+1. $\lambda_1 = \lambda_2 = \lambda_3 = 0$
+
+No active constraints
+
+$\arg\min f(x_1, x_2) = (-\infty, \pm\infty)$ 
+
+which of course is outside $\mathscr{C}$.
+"""
+
+# ╔═╡ bc06ff77-34ba-4631-8b58-1924598f5348
+md"""
+2. $\lambda_1 \neq 0, \lambda_2 = \lambda_3 = 0$
+
+$\arg\min_{x_1 = 0} f(x_1, x_2) = (0, \pm \infty)$ 
+
+Again, outside $\mathscr{C}$.
+"""
+
+# ╔═╡ a0f6adea-6ebd-46b4-aaed-d04d1dfa49b7
+md"""
+3. $\lambda_1 = 0, \lambda_2 \neq 0, \lambda_3 = 0$
+
+$\arg\min_{x_2=0} f(x_1, x_2) = (-\infty, 0)$
+
+which is outside $\mathscr{C}$.
+"""
+
+# ╔═╡ 9ffb01f4-42f7-4cb3-8ee2-9276acde9ff2
+md"""
+4. $\lambda_1 = 0, \lambda_2 = 0, \lambda_3 \neq 0$
+
+$\arg\min_{x_1^2 + x_2^2 = 1} f(x_1, x_2) = (-1, 0)$
+
+Outside $\mathscr{C}$.
+"""
+
+# ╔═╡ e8b22312-bda0-44ff-9f80-ee1b50f1c7b8
+md"""
+5. $\lambda_1 \neq 0, \lambda_2 \neq 0, \lambda_3 = 0$
+
+The only point that satisfies both condition is$(0,0) \longrightarrow f(0,0) = 0$.
 """
 
 # ╔═╡ c26ca080-9ca3-4d2d-b1f8-922275a752a1
 md"""
-### Studying the admissibility conditions
+6. $\lambda_1 \neq 0, \lambda_2 = 0, \lambda_3 \neq 0$
 
-**Case 1**: $\lambda_1 = \lambda_2 = \lambda_3 = 0$
+Both conditions are satisfied only in the point $(0,1) \longrightarrow f(0,1) = -1$.
+"""
 
-No active constraints
+# ╔═╡ a53a9347-ae5a-4705-941d-aaa57f41f006
+md"""
+7. $\lambda_1 \neq 0, \lambda_2 \neq 0, \lambda_3 \neq 0$
 
-min $f \rightarrow x_1 = -\infty, x_2 = +\infty$ outside $C$
+It is the point $(1,0) \longrightarrow f(1,0) = 2$.
+"""
 
-**Case 2**: $\lambda_1 \neq 0, \lambda_2 = \lambda_3 = 0$
+# ╔═╡ ed192e12-b4ab-46fa-8d14-ee957da1b9f6
+md"""
+8. $\lambda_1 \neq 0, \lambda_2 \neq 0, \lambda_3 \neq 0$
 
-min $f(x_1 = 0, x_2) = -x_2^2 \rightarrow x_2 = \pm \infty$ outside $C$
-
-**Case 3**: $\lambda_1 = 0, \lambda_2 \neq 0, \lambda_3 = 0$
-
-min $f(x_1, x_2 = 0) = 2x_1$, unbounded below, outside $C$
-
-**Case 4**: $\lambda_1 = 0, \lambda_2 = 0, \lambda_3 \neq 0$
-
-min $f(x_1) = 2x_1 + 1 - x_2$ then $x_1 =1$, $f = 3$
-
-**Case 5**: $\lambda_1 \neq 0, \lambda_2 \neq 0, \lambda_3 = 0$
-
-At the point $(0,0) \Rightarrow f = 0$
-
-**Case 6**: $\lambda_1 \neq 0, \lambda_2 = 0, \lambda_3 \neq 0$
-
-At the point $(0,1) \Rightarrow f = -1$
-
+In no point all three conditions are saturated.
 """
 
 # ╔═╡ 4aa72c1b-145e-4f0b-8a1b-748ccd0a6f87
 md"""
-**Case 7**: $\lambda_1 \neq 0, \lambda_2 \neq 0, \lambda_3 \neq 0$
+#### Conclusion
 
-At the point $(1,0) \Rightarrow f = 2$
-
-**Case 8**: $\lambda_1 \neq 0, \lambda_2 \neq 0, \lambda_3 \neq 0$
-
-Does not exist
-
-**Conclusion**
-
-The minimum of $f$ in $(C,0)$ is $f = -1$
-
+$\arg\min_{(x_1,x_2)\in\mathscr{C}}f(x_1,x_2) = (0,1)\qquad f(0,1)=-1$
 """
 
 # ╔═╡ 53b89c03-be61-4d45-96d0-c9ee3bc56416
@@ -823,7 +840,7 @@ $\begin{align}
 
 # ╔═╡ 91a7944b-d148-49a5-9a0b-81e3757b06f0
 md"""
-Where the $\geq$ comparison is element-wise and $\tau$ is a constant, usually 0.995. This prevents to reach the lower bound too quickly.
+Where the $\geq$ comparison is element-wise and $\tau$ is a constant, usually 0.995. This prevents to reach the lower bound of $z_i$ and $\lambda_i$ too quickly.
 """
 
 # ╔═╡ 964defb4-1696-48dd-bfea-ef87ff4175ed
@@ -849,7 +866,7 @@ end
 
 # ╔═╡ 463cb596-fb13-464d-bfeb-42ab3186e3ac
 md"""
-Note that this approach is not a proper line search, nor it ensures that each step will be inside the feasible region. To acheive this we need to introduce the *merit function*. 
+Note that this approach is not a proper line search, nor it ensures that each step will be inside the feasible region. To achieve this we need to introduce a *merit function* to evaluate the goodness of the update for a given step length. 
 """
 
 # ╔═╡ 7c31fb85-f06d-4d10-917e-1aa31432e25e
@@ -971,7 +988,7 @@ Such that the convergence is reached when $E(\mathbf{x}^{(k)}, \boldsymbol{\lamb
 function error(xₖ, zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ, μ)
 	e1 = norm(∇fₖ - Jcₖ' * λₖ, 1)
 	e2 = norm(zₖ - cₖ, 1)
-	e3 = norm(zₖ .* λₖ .- μ)
+	e3 = norm(zₖ .* λₖ .- μ, 1)
 	return max(e1, e2, e3)
 end
 
@@ -1009,6 +1026,7 @@ struct OptimizationResults
 	argmin::Vector
 	n_iterations::Int
 	last_tolerance::Real
+	regularizations::Vector
 	multipliers::Matrix
 	steps::Matrix
 	values::Vector
@@ -1022,22 +1040,23 @@ Note that to use an approximate jacobian one has to simply pass a null `Hc`.
 """
 
 # ╔═╡ 795b3837-b5a2-4b57-b888-67a81cbf3f96
-function optimize(f, ∇f, ∇²f, c, Jc, ∇²c, x₀; μ₀=1e-2, ν₀=1e-1, δ₀=0, tol=1e-7, maxitr=1000, update_tol=true, linesearch=true)
+function optimize(f, ∇f, ∇²f, c, Jc, ∇²c, x₀; μ₀=1e-2, ν₀=42., δ₀=0., tol=1e-8, maxitr=1000, update_tol=true, linesearch=true)
 	n = length(x₀)
 	m = length(c(x₀))
 	# Array initialization
 	xₖ   = copy(x₀)
 	zₖ   = 1e-2ones(m)
-	λₖ   = 1e-1ones(m)
+	λₖ   = μ₀ ./ zₖ
 	∇fₖ  = ∇f(x₀)
 	∇²fₖ = ∇²f(x₀)
 	cₖ   = c(x₀)
 	Jcₖ  = Jc(x₀)
 	∇²cₖ = ∇²c(x₀)
 	# History registers
-	steps       = copy(xₖ)
-	multipliers = copy(λₖ)
-	values      = [f(xₖ)]
+	steps           = copy(xₖ)
+	regularizations = [δ₀]
+	multipliers     = copy(λₖ)
+	values          = [f(xₖ)]
 	# Barriers and other control parameters
 	μ = μ₀
 	δ = δ₀
@@ -1069,6 +1088,7 @@ function optimize(f, ∇f, ∇²f, c, Jc, ∇²c, x₀; μ₀=1e-2, ν₀=1e-1, 
 		steps       = [steps xₖ]
 		multipliers = [multipliers λₖ]
 		push!(values, f(xₖ))
+		push!(regularizations, δ)
 		# Convergence check
 		e = error(xₖ, zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ, 0)
 		converged = e < tol
@@ -1080,6 +1100,7 @@ function optimize(f, ∇f, ∇²f, c, Jc, ∇²c, x₀; μ₀=1e-2, ν₀=1e-1, 
 		xₖ,
 		k,
 		e,
+		regularizations,
 		multipliers,
 		steps,
 		values
@@ -1091,11 +1112,160 @@ md"""
 ### Numerical optimization
 """
 
-# ╔═╡ 13ae459d-3069-4ba6-8740-48d23825754e
-o1 = optimize(f₁, ∇f₁, ∇²f₁, c₁, Jc₁, ∇²c₁, [0., 0.])
+# ╔═╡ fd495b86-0b9b-4326-af92-1f8dbe926b19
+md"""
+#### Problem 1
+"""
 
-# ╔═╡ 8b1a81f1-d756-41f8-99b3-368e36ffc54e
-o2 = optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₁, [1., 0.], linesearch=true)
+# ╔═╡ 35cefa98-e1ad-4419-bfea-971ce24d71c3
+md"""
+We start with a fixed barrier parameter and no line search from a point inside the feasible set.
+"""
+
+# ╔═╡ 77f69c4a-3434-436d-b114-f57618b1b78c
+o1_a = optimize(f₁, ∇f₁, ∇²f₁, c₁, Jc₁, ∇²c₁, [0.3, 0.3], μ₀=1e-9, update_tol=false, linesearch=false)
+
+# ╔═╡ 4d4c914f-1375-45e6-b737-abd916b88d03
+md"""
+The routine indeed converges to the true minimum within the tolerance of the same order of magnitude of the barrier parameter set. Note also that the second and the third multipliers are, as expected, $>0$ since we are very near to the active constraints. 
+"""
+
+# ╔═╡ 56b42883-ff9f-4d6d-831e-28002eb086a1
+md"""
+Now we leave the barrier parameter free to change, starting with a less stringent barrier parameter.
+"""
+
+# ╔═╡ 1ca7c775-077a-4656-9cf8-f8764d10caaf
+o1_b = optimize(f₁, ∇f₁, ∇²f₁, c₁, Jc₁, ∇²c₁, [0.3, 0.3], μ₀=1e-2, linesearch=false)
+
+# ╔═╡ 54d06789-1c01-452d-a23b-b035f56b8684
+md"""
+The number of step has increased but we are still able to reach the true minimum within the given tolerance.
+"""
+
+# ╔═╡ f3e47bb5-b138-4ada-99c4-da49a34848bc
+md"""
+If we add the line search in this well behaved contex (convex function), we do not get any significant improvement.
+"""
+
+# ╔═╡ c495825c-3f3f-48ab-a345-5c63ee95fde4
+o1_c = optimize(f₁, ∇f₁, ∇²f₁, c₁, Jc₁, ∇²c₁, [0.3, 0.3])
+
+# ╔═╡ f5ed870d-ea91-4741-8153-bd2dad6b471a
+md"""
+The convergence is reached even when we start from the border of the feasible set.
+"""
+
+# ╔═╡ 13ae459d-3069-4ba6-8740-48d23825754e
+o1_d = optimize(f₁, ∇f₁, ∇²f₁, c₁, Jc₁, ∇²c₁, [0., 1.])
+
+# ╔═╡ ed1378e8-c259-475d-88a5-f21da5c4e224
+md"""
+Again, removing the line search has no sensible effect on the convergence
+"""
+
+# ╔═╡ 94aae27c-fca8-442f-a7ec-c3241fc3dc33
+o1_e = optimize(f₁, ∇f₁, ∇²f₁, c₁, Jc₁, ∇²c₁, [0., 1.], linesearch=false)
+
+# ╔═╡ f9eefed6-ace9-441d-8327-27a312fb93cc
+md"""
+#### Problem 2
+"""
+
+# ╔═╡ 02874fcb-fa97-4a95-bd3d-bdc7ce3b4f9f
+md"""
+As before, we start with a fixed barrier parameter and no line search.
+"""
+
+# ╔═╡ 984ce6ee-1c72-43f3-9b82-35b5f63ab17c
+o2_a = optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₂, [0.3, 0.3], μ₀=1e-9, update_tol=false, linesearch=false)
+
+# ╔═╡ cf395d8d-add8-45f4-a22e-5ff201d7b579
+md"""
+The convergence is reached provided that the Jacobian is regularized.
+"""
+
+# ╔═╡ 96ca3eb2-cdbb-42f2-b7f4-f897b1d3cf44
+md"""
+Now we try to use an approximated Jacobian, passing the `∇²c₁` function since it has the same dimension of `∇²c₂` but it has all components equal to the zero.
+"""
+
+# ╔═╡ 8367f959-8273-4373-8838-5a58593decdc
+optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₁, [0.3, 0.3], μ₀=1e-9, update_tol=false, linesearch=false)
+
+# ╔═╡ 90fc4d1f-873b-4aed-a316-7fc5bcd2d689
+md"""
+There is no much difference with respect to using the exact Jacobian. This is not a surprise, since the `∇²ₓₓ𝓛 + δₐ * I(n)` block of the Jacobian is dominated by the regularization factor.
+"""
+
+# ╔═╡ e3afbac9-12b9-47da-9ea5-1979710ef9b5
+md"""
+Using the barrier update increase the number of steps needed to converge, but the regularization parameter remains smaller:
+"""
+
+# ╔═╡ 56ebb5c0-894a-492f-9b84-8b241e44feef
+o2_c = optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₂, [0.75, 0.50], linesearch=false)
+
+# ╔═╡ 25f03419-771a-45ca-8775-9e18d07765f0
+md"""
+We note also that some steps are outside of the feasible region (see for example the fifth step `[0.00011, 1.1]`). We then use the line search which should ensure that all the steps are inside the feasible region.
+"""
+
+# ╔═╡ 0b8cb7f7-3860-4395-8ace-2837d1dde1b0
+optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₂, [0.75, 0.50])
+
+# ╔═╡ 39425b7a-e134-43f0-bee7-b9e8349ee544
+md"""
+In this case, the number of steps has increased by an order of magnitude. If we use the static barrier, the number of steps returns small.
+"""
+
+# ╔═╡ 676b565b-f319-41fe-9589-fe2017d1c236
+o2_d = optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₂, [0.75, 0.50],  μ₀=1e-9, update_tol=false)
+
+# ╔═╡ c5c8025f-2b27-420d-92fd-bffa560f0298
+md"""
+We we use the dynamic update, but we start from a more restrictive value, the number of steps is under control:
+"""
+
+# ╔═╡ f9d4557a-9bec-44a5-8235-154f3e57a33a
+optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₂, [0.75, 0.50],  μ₀=1e-5)
+
+# ╔═╡ bc8b25ca-3d0d-41dd-bc74-07ef2462f6aa
+md"""
+Last, we start the optimization from a point into one active constraint. If we start with a too loose barrier, we need lots of steps to converge:
+"""
+
+# ╔═╡ 7076d941-c4ac-4d4f-8cad-4c8e1f594a51
+optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₂, [0.9682, 0.25], μ₀=1e-2)
+
+# ╔═╡ 590672b6-071e-4405-8189-42c6ac738a27
+md"""
+A smaller barrier initial value lends to a reasonable amount of steps:
+"""
+
+# ╔═╡ 1cd43a57-9d7c-4524-9543-2244f98c566e
+o2_e = optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₂, [0.9682, 0.25],  μ₀=1e-4)
+
+# ╔═╡ 29716a71-a946-4717-ae63-b6c3ee7e91b5
+md"""
+However, starting from $(1,0)$ (two constraints active) needs many steps even with a more stringent barrier.
+"""
+
+# ╔═╡ 5fa6be64-fb3b-4bdd-9301-acda6121d692
+o2_f = optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₂, [1.0, 0.0], μ₀=1e-4)
+
+# ╔═╡ 43ab4ee5-0a3a-43a5-b069-f8ddbb0dd1b2
+md"""
+If we decrease the barrier too much, the algorithm fails.
+"""
+
+# ╔═╡ b93e9ecd-56c0-41d2-b96e-e7054a4d9bdf
+optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₂, [1.0, 0.0], μ₀=1e-6)
+
+# ╔═╡ 3fe3d150-7ea1-43da-9a02-7b3031c6fba9
+md"""
+#### Optimization plots
+"""
 
 # ╔═╡ dfa4de4b-3caa-4128-a035-05ffc2160dae
 function plot_optimization(f, c, truemin, opts...; xlim=(-10,10), ylim=(-10,10), gridsize=400)
@@ -1133,6 +1303,7 @@ function plot_optimization(f, c, truemin, opts...; xlim=(-10,10), ylim=(-10,10),
 		legend=:outertop,
 		legend_column = 2,
 		dpi=180,
+		aspect_ratio=:equal,
 		fillalpha=.1
 	)
 	contour!(
@@ -1159,7 +1330,24 @@ function plot_optimization(f, c, truemin, opts...; xlim=(-10,10), ylim=(-10,10),
 end
 
 # ╔═╡ 43c71951-875b-4847-9474-e61643d6fe4b
-plot_optimization(f1, c1, (2.0, 0.0), o1, xlim=(-.4, 2.4), ylim=(-.4,2.4))
+plot_optimization(f1, c1, (2.0, 0.0), o1_a, o1_b, o1_c, o1_d, o1_e, xlim=(-.4, 2.4), ylim=(-.4,2.4))
+
+# ╔═╡ 2a89cd5f-70a3-4da8-8887-2b1123b6ca38
+plot_optimization(f2, c2, (0.0, 1.0), o2_a, o2_c, o2_d, o2_e, o2_f, xlim=(-.2, 1.2), ylim=(-.2,1.2))
+
+# ╔═╡ 4b912e07-cb1c-476f-ba2f-d13c91eab3b3
+md"""
+## Conclusions
+"""
+
+# ╔═╡ b7ccc3e4-cad5-43f2-9b4a-6595c42a75aa
+md"""
+Constrained optimization problems need many attentions in order to be solved numerically. As we saw, the number of nontrivial precautions that are needed for a practical implementation of the Interior Point algorithm is considerable.
+
+While for the first, convex problem we reached convergence in any setting, the second problem needed special attention on the choice of the solver parameters.
+
+Without the usage of the merit function for the line search procedure, some step can be outside of the feasible region. On the other hand, this attention on the feasibility can lend to an order of magnitude more steps to converge. This issue is worse if the starting point is on one of more active set.
+"""
 
 # ╔═╡ 4c2db206-10f1-40d9-85b9-aa3a852b9ccc
 md"""
@@ -1167,6 +1355,24 @@ md"""
 
 [1] J. Nocedal and S. J. Wright, *Numerical Optimization*, 2006
 """
+
+# ╔═╡ 11b6d969-6e40-4562-aa89-ef1b858f71d7
+md"""
+## Appendix: the directional derivative of the merit function
+"""
+
+# ╔═╡ db5c333f-dccc-4a79-aa6e-c67913136f6c
+md"""
+Using the Taylor expansion of $\phi_\nu$, we have
+
+$\begin{multline}\phi_\nu(\mathbf{x} + h\delta\mathbf{x}, \mathbf{z} + h\delta\mathbf{z}) - \phi_\nu(\mathbf{x}, \mathbf{z})
+\leq\\\leq
+h\nabla f(\mathbf{x})^T\delta\mathbf{x} - μ\sum_{i=1}^m \frac{h\delta z_i}{z_i}
+\end{multline}$
+"""
+
+# ╔═╡ c6d8c3ee-3187-47c0-9c17-aaecbc6d6000
+
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2247,20 +2453,38 @@ version = "1.4.1+1"
 # ╟─35958ad8-0d2f-461d-89b2-407c29ad987f
 # ╟─ae8744a8-81c0-475a-81b5-7b5c39d44a5d
 # ╟─cdb6920a-908f-47b6-982e-4da05bf99b63
-# ╠═a48c4048-aa7e-4ab2-86c7-b5fb8a4a2175
-# ╠═67d5144c-08a0-47cc-b92f-104e4ab971d8
-# ╠═6ab66925-ac15-436a-b925-538172aa1ffc
-# ╠═9ea1b1a1-fb63-490b-a572-87a02b9656da
-# ╠═c3f81986-e050-4256-95be-ee07ce22d6f8
-# ╠═c1d70bb6-9bcc-4f3c-af70-56719a136f5b
-# ╠═81d94b7a-ccbf-49cd-bf59-e6c6cf3d53df
+# ╟─a48c4048-aa7e-4ab2-86c7-b5fb8a4a2175
+# ╟─67d5144c-08a0-47cc-b92f-104e4ab971d8
+# ╟─6ab66925-ac15-436a-b925-538172aa1ffc
+# ╟─9ea1b1a1-fb63-490b-a572-87a02b9656da
+# ╟─8b26888a-9991-479b-a3df-f3c9da7a3840
+# ╟─ed4c7fb8-b0ac-4c3f-8bfa-f4d8198eccb2
+# ╟─a59933a6-90b2-4858-8107-92b104887fb0
+# ╟─84c67ba9-e150-4183-95bf-e8508e4368ce
+# ╟─c3f81986-e050-4256-95be-ee07ce22d6f8
+# ╟─c1d70bb6-9bcc-4f3c-af70-56719a136f5b
+# ╟─81d94b7a-ccbf-49cd-bf59-e6c6cf3d53df
 # ╠═25960e66-ba19-4172-833b-d7942b096baa
-# ╠═7dc664ae-1581-4122-941b-db46e6ea2f61
+# ╟─7dc664ae-1581-4122-941b-db46e6ea2f61
 # ╠═e3cec0b8-4d31-40ac-bf7d-723f0c9962ee
 # ╠═4b0b93a7-e808-40e8-bc43-32a8abf8a524
-# ╠═5d9fb406-8d80-4996-b318-eb318be541cc
-# ╠═c26ca080-9ca3-4d2d-b1f8-922275a752a1
-# ╠═4aa72c1b-145e-4f0b-8a1b-748ccd0a6f87
+# ╟─7f7eaece-8e84-438a-8b33-65d1cd6f8332
+# ╟─9b157ddc-7632-498e-93eb-84ccad9d0171
+# ╟─6763e926-fe00-46de-af35-07b63343847a
+# ╟─354209e5-3e73-4d46-894d-6c53c20db59b
+# ╟─d6ee74ad-d0b7-4f24-ba05-528586805a2a
+# ╟─cc357d29-5228-4a84-9ef2-74b1e9112034
+# ╟─c2d67056-8414-472e-81e3-754bcb45ebb7
+# ╟─5d9fb406-8d80-4996-b318-eb318be541cc
+# ╟─118d3146-9c4a-4a78-ab85-a0f993e8f978
+# ╟─bc06ff77-34ba-4631-8b58-1924598f5348
+# ╟─a0f6adea-6ebd-46b4-aaed-d04d1dfa49b7
+# ╟─9ffb01f4-42f7-4cb3-8ee2-9276acde9ff2
+# ╟─e8b22312-bda0-44ff-9f80-ee1b50f1c7b8
+# ╟─c26ca080-9ca3-4d2d-b1f8-922275a752a1
+# ╟─a53a9347-ae5a-4705-941d-aaa57f41f006
+# ╟─ed192e12-b4ab-46fa-8d14-ee957da1b9f6
+# ╟─4aa72c1b-145e-4f0b-8a1b-748ccd0a6f87
 # ╟─53b89c03-be61-4d45-96d0-c9ee3bc56416
 # ╟─8ba63e4e-a958-404e-a309-e4c62bda32a9
 # ╟─de5c1548-3919-40d2-b365-761cdaa198f9
@@ -2335,10 +2559,51 @@ version = "1.4.1+1"
 # ╟─754e562b-34d7-49f0-9751-76b510fe170a
 # ╠═795b3837-b5a2-4b57-b888-67a81cbf3f96
 # ╟─24e9aec7-d21b-471e-b237-a3b897b94d32
+# ╟─fd495b86-0b9b-4326-af92-1f8dbe926b19
+# ╟─35cefa98-e1ad-4419-bfea-971ce24d71c3
+# ╠═77f69c4a-3434-436d-b114-f57618b1b78c
+# ╟─4d4c914f-1375-45e6-b737-abd916b88d03
+# ╟─56b42883-ff9f-4d6d-831e-28002eb086a1
+# ╠═1ca7c775-077a-4656-9cf8-f8764d10caaf
+# ╟─54d06789-1c01-452d-a23b-b035f56b8684
+# ╟─f3e47bb5-b138-4ada-99c4-da49a34848bc
+# ╠═c495825c-3f3f-48ab-a345-5c63ee95fde4
+# ╟─f5ed870d-ea91-4741-8153-bd2dad6b471a
 # ╠═13ae459d-3069-4ba6-8740-48d23825754e
-# ╠═8b1a81f1-d756-41f8-99b3-368e36ffc54e
+# ╟─ed1378e8-c259-475d-88a5-f21da5c4e224
+# ╠═94aae27c-fca8-442f-a7ec-c3241fc3dc33
+# ╟─f9eefed6-ace9-441d-8327-27a312fb93cc
+# ╟─02874fcb-fa97-4a95-bd3d-bdc7ce3b4f9f
+# ╠═984ce6ee-1c72-43f3-9b82-35b5f63ab17c
+# ╟─cf395d8d-add8-45f4-a22e-5ff201d7b579
+# ╟─96ca3eb2-cdbb-42f2-b7f4-f897b1d3cf44
+# ╠═8367f959-8273-4373-8838-5a58593decdc
+# ╟─90fc4d1f-873b-4aed-a316-7fc5bcd2d689
+# ╟─e3afbac9-12b9-47da-9ea5-1979710ef9b5
+# ╠═56ebb5c0-894a-492f-9b84-8b241e44feef
+# ╟─25f03419-771a-45ca-8775-9e18d07765f0
+# ╠═0b8cb7f7-3860-4395-8ace-2837d1dde1b0
+# ╟─39425b7a-e134-43f0-bee7-b9e8349ee544
+# ╠═676b565b-f319-41fe-9589-fe2017d1c236
+# ╟─c5c8025f-2b27-420d-92fd-bffa560f0298
+# ╠═f9d4557a-9bec-44a5-8235-154f3e57a33a
+# ╟─bc8b25ca-3d0d-41dd-bc74-07ef2462f6aa
+# ╠═7076d941-c4ac-4d4f-8cad-4c8e1f594a51
+# ╟─590672b6-071e-4405-8189-42c6ac738a27
+# ╠═1cd43a57-9d7c-4524-9543-2244f98c566e
+# ╟─29716a71-a946-4717-ae63-b6c3ee7e91b5
+# ╠═5fa6be64-fb3b-4bdd-9301-acda6121d692
+# ╟─43ab4ee5-0a3a-43a5-b069-f8ddbb0dd1b2
+# ╠═b93e9ecd-56c0-41d2-b96e-e7054a4d9bdf
+# ╟─3fe3d150-7ea1-43da-9a02-7b3031c6fba9
 # ╠═dfa4de4b-3caa-4128-a035-05ffc2160dae
 # ╠═43c71951-875b-4847-9474-e61643d6fe4b
+# ╠═2a89cd5f-70a3-4da8-8887-2b1123b6ca38
+# ╟─4b912e07-cb1c-476f-ba2f-d13c91eab3b3
+# ╟─b7ccc3e4-cad5-43f2-9b4a-6595c42a75aa
 # ╟─4c2db206-10f1-40d9-85b9-aa3a852b9ccc
+# ╟─11b6d969-6e40-4562-aa89-ef1b858f71d7
+# ╠═db5c333f-dccc-4a79-aa6e-c67913136f6c
+# ╠═c6d8c3ee-3187-47c0-9c17-aaecbc6d6000
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
