@@ -5,7 +5,10 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ ddc3476e-19e9-492a-b34e-140bbc848310
-using LinearAlgebra, Plots
+using LinearAlgebra, Plots, PlutoUI
+
+# ╔═╡ a454dc6a-deff-47bb-9af8-ad72dafdce30
+TableOfContents()
 
 # ╔═╡ a2b32d4b-44e2-4837-9232-28fafb9a27d0
 function plot_problem(f, c; xlim=(-10,10), ylim=(-10,10), gridsize=1000)
@@ -17,25 +20,24 @@ function plot_problem(f, c; xlim=(-10,10), ylim=(-10,10), gridsize=1000)
 	cin  = NaN                # black magic to colour
 	cout = sum(z) / length(z) # infeasible region
 	w = [all(i .> 0) ? cin : cout for i in @. c(x', y)]
-	# Plotting!
+	# Plotting
 	plt = contourf(
 		x, y, w,
-		xlim=xlim,
-		ylim=ylim,
-		xlabel="x₁",
-		ylabel="x₂",
-		fillalpha=.1,
-		aspect_ratio=:equal
+		xlim=xlim, ylim=ylim,
+		xlabel="x₁", ylabel="x₂",
+		fillalpha=.1, aspect_ratio=:equal
 	)
-	contour!(
-		plt,
-		x, y, z
-	)
+	contour!(plt, x, y, z)
 end
 
 # ╔═╡ 7f1d0b2b-fd4a-4fb2-9e4e-b558dc63c12a
 md"""
-# Assignment 5
+# Numerical Analysis and Optimization Project 5
+"""
+
+# ╔═╡ 95a8f152-c427-4581-b541-8f1695a43686
+md"""
+Marco Riggirello, Francesco Vaselli
 """
 
 # ╔═╡ 78d2a636-7aef-45e8-bc64-80d1e66e7f43
@@ -63,7 +65,6 @@ x_1 + x_2 - 2 \leq 0
 """
 
 # ╔═╡ 19215ef7-f847-458e-bc9e-d258c7644036
-# the constraints written in this form will be useful later
 c1(x₁, x₂) = [
 	x₁
 	x₂
@@ -485,12 +486,12 @@ J_\mathbf{c}(\mathbf{x}^{(k)}) & 0 & -I \\
 0 & Z^{(k)} & \Lambda^{(k)}
 \end{bmatrix}$
 
-(It can be approximated by removing the hessian of the constraints)
+(It can be approximated by removing the hessian of the constraints).
 """
 
 # ╔═╡ 3a892931-bd9b-4734-a85a-51edd6291afa
 md"""
-#### First problem reformulation
+### First problem reformulation
 """
 
 # ╔═╡ 094c87eb-1ba7-4655-a47b-1a9fed727307
@@ -578,7 +579,7 @@ $\nabla^2 c_i(x_1, x_2) =
 
 # ╔═╡ 0fd46dc9-575b-4d87-b9f7-fb331a3efa5e
 md"""
-#### Second problem reformulation
+### Second problem reformulation
 """
 
 # ╔═╡ 03c2c135-fa19-4cdd-baf4-4cffa091f0b3
@@ -713,7 +714,7 @@ J_\mathbf{c}(\mathbf{x}^{(k)}) & 0 & -I \\
 
 # ╔═╡ 667582ba-3bbf-4c0d-bae3-12a84fe78bc5
 md"""
-From eq (19.24) of [1] we know that the solution of the system above is a descent direction if the number of positive, negative and zero eigenvalues (the *inertia*) of our symmetrized $J_F$ are respectively
+From eq (19.24) of [[1]](https://doi.org/10.1007/978-0-387-40065-5) we know that the solution of the system above is a descent direction if the number of positive, negative and zero eigenvalues (the *inertia*) of our symmetrized $J_F$ are respectively
 
 $(n+m, m, 0)$
 
@@ -726,7 +727,7 @@ To check if this is indeed the case, we use the Bunch-Kaufman factorization of a
 
 $S = LBL^T$
 
-We know that $S$ and $B$ have the same eigenvalues. The max size of a block in B is $2\times 2$ and to each of these blocks corresponds a positive and a negative eigenvalue by construction. This offers an handy way of computing the inertia by checking the number of $2\times 2$ blocks and the single element blocks of $B$.
+We know that $S$ and $B$ have the same eigenvalues. The max size of a block in B is $2\times 2$ and to each of these size 2 blocks corresponds a positive and a negative eigenvalue by construction. This offers an handy way of computing the inertia by checking the number of $2\times 2$ blocks and the single element blocks of $B$.
 """
 
 # ╔═╡ 4dd6f8f9-2d8c-4c86-85b1-10900160ee44
@@ -754,9 +755,6 @@ function inertia(b::BunchKaufman)
 				zeigs +=1
 			end
 		end
-	end
-	if meigs + peigs + zeigs ≠ N
-		throw(ErrorException("eigenvalues don't add up to the matrix size."))
 	end
 	return peigs, meigs, zeigs
 end
@@ -816,7 +814,7 @@ md"""
 
 # ╔═╡ 126da2ac-3179-47f3-b2b6-8381d3c5a419
 md"""
-Another difference of our implementation from the naive one is the choice of the steplength: following section 19.2 of Nocedal, we use a steplength for $x, z$ and a different one for $\lambda$ 
+Another difference of our implementation from the naive one is the choice of the steplength: following section 19.2 [[1]](https://doi.org/10.1007/978-0-387-40065-5), we use a steplength for $x, z$ and a different one for $\lambda$ 
 
 $\begin{align}
 \mathbf{x}^{(k+1)} &= \mathbf{x}^{(k)} + \tilde{\alpha}_s^{(k)}\delta\mathbf{x}^{(k)}
@@ -994,7 +992,7 @@ end
 
 # ╔═╡ ba0b228f-993f-4211-93ef-d203be9b315b
 md"""
-The barrier parameter is updated using the *Fiacco-McCormik approach* (see Algorithm 19.1 from [[1]](https://doi.org/10.1007/978-0-387-40065-5)): for a given $\mu^{(i)}$, the values $\mathbf{x}^{(k)}, \boldsymbol{\lambda}^{(k)}, \mathbf{z}^{(k)}$ are updated until $E(\mathbf{x}^{(k)}, \boldsymbol{\lambda}^{(k)}, \mathbf{z}^{(k)}; \mu_i) \leq \mu^{(i)}$.
+The barrier parameter is updated using the *Fiacco-McCormik approach* (see Algorithm 19.1 from [[1]](https://doi.org/10.1007/978-0-387-40065-5)): for a given $\mu^{(i)}$, the values $\mathbf{x}^{(k)}, \boldsymbol{\lambda}^{(k)}, \mathbf{z}^{(k)}$ are updated until $E(\mathbf{x}^{(k)}, \boldsymbol{\lambda}^{(k)}, \mathbf{z}^{(k)}; \mu^{(i)}) \leq \mu^{(i)}$.
 
 When the condition is reached a new barrier parameter is set: $\mu^{(j+1)}=\sigma\mu^{(j)}$, with $\sigma$ a constant $< 1$, usally 0.2.
 """
@@ -1026,7 +1024,9 @@ struct OptimizationResults
 	argmin::Vector
 	n_iterations::Int
 	last_tolerance::Real
-	regularizations::Vector
+	δs::Vector
+	μs::Vector
+	νs::Vector
 	multipliers::Matrix
 	steps::Matrix
 	values::Vector
@@ -1053,10 +1053,12 @@ function optimize(f, ∇f, ∇²f, c, Jc, ∇²c, x₀; μ₀=1e-2, ν₀=42., �
 	Jcₖ  = Jc(x₀)
 	∇²cₖ = ∇²c(x₀)
 	# History registers
-	steps           = copy(xₖ)
-	regularizations = [δ₀]
-	multipliers     = copy(λₖ)
-	values          = [f(xₖ)]
+	steps       = copy(xₖ)
+	δs          = [δ₀]
+	μs          = [μ₀]
+	νs          = [ν₀]
+	multipliers = copy(λₖ)
+	values      = [f(xₖ)]
 	# Barriers and other control parameters
 	μ = μ₀
 	δ = δ₀
@@ -1088,7 +1090,9 @@ function optimize(f, ∇f, ∇²f, c, Jc, ∇²c, x₀; μ₀=1e-2, ν₀=42., �
 		steps       = [steps xₖ]
 		multipliers = [multipliers λₖ]
 		push!(values, f(xₖ))
-		push!(regularizations, δ)
+		push!(δs, δ)
+		push!(μs, μ)
+		push!(νs, ν)
 		# Convergence check
 		e = error(xₖ, zₖ, λₖ, ∇fₖ, ∇²fₖ, cₖ, Jcₖ, 0)
 		converged = e < tol
@@ -1100,7 +1104,9 @@ function optimize(f, ∇f, ∇²f, c, Jc, ∇²c, x₀; μ₀=1e-2, ν₀=42., �
 		xₖ,
 		k,
 		e,
-		regularizations,
+		δs,
+		μs,
+		νs,
 		multipliers,
 		steps,
 		values
@@ -1110,6 +1116,11 @@ end
 # ╔═╡ 24e9aec7-d21b-471e-b237-a3b897b94d32
 md"""
 ### Numerical optimization
+"""
+
+# ╔═╡ b609d489-2277-4fea-9543-d2b3af445c15
+md"""
+We suggest to click on the `‣OptimizationResults` shown in the output of the code blocks to expand the results and have a clear view of all the details.
 """
 
 # ╔═╡ fd495b86-0b9b-4326-af92-1f8dbe926b19
@@ -1145,7 +1156,7 @@ The number of step has increased but we are still able to reach the true minimum
 
 # ╔═╡ f3e47bb5-b138-4ada-99c4-da49a34848bc
 md"""
-If we add the line search in this well behaved contex (convex function), we do not get any significant improvement.
+If we add the line search in this well behaved contex (convex function), we do not get any significant improvement:
 """
 
 # ╔═╡ c495825c-3f3f-48ab-a345-5c63ee95fde4
@@ -1153,7 +1164,7 @@ o1_c = optimize(f₁, ∇f₁, ∇²f₁, c₁, Jc₁, ∇²c₁, [0.3, 0.3])
 
 # ╔═╡ f5ed870d-ea91-4741-8153-bd2dad6b471a
 md"""
-The convergence is reached even when we start from the border of the feasible set.
+The convergence is reached even when we start from the border of the feasible set:
 """
 
 # ╔═╡ 13ae459d-3069-4ba6-8740-48d23825754e
@@ -1161,7 +1172,7 @@ o1_d = optimize(f₁, ∇f₁, ∇²f₁, c₁, Jc₁, ∇²c₁, [0., 1.])
 
 # ╔═╡ ed1378e8-c259-475d-88a5-f21da5c4e224
 md"""
-Again, removing the line search has no sensible effect on the convergence
+Again, removing the line search has no sensible effect on the convergence:
 """
 
 # ╔═╡ 94aae27c-fca8-442f-a7ec-c3241fc3dc33
@@ -1182,7 +1193,7 @@ o2_a = optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₂, [0.3, 0.3], μ
 
 # ╔═╡ cf395d8d-add8-45f4-a22e-5ff201d7b579
 md"""
-The convergence is reached provided that the Jacobian is regularized.
+The convergence is reached provided that the Jacobian is regularized (see the values of `δs`).
 """
 
 # ╔═╡ 96ca3eb2-cdbb-42f2-b7f4-f897b1d3cf44
@@ -1224,7 +1235,7 @@ o2_d = optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₂, [0.75, 0.50], 
 
 # ╔═╡ c5c8025f-2b27-420d-92fd-bffa560f0298
 md"""
-We we use the dynamic update, but we start from a more restrictive value, the number of steps is under control:
+If we use the dynamic update, but we start from a more restrictive value, the number of steps returns under control:
 """
 
 # ╔═╡ f9d4557a-9bec-44a5-8235-154f3e57a33a
@@ -1232,7 +1243,7 @@ optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₂, [0.75, 0.50],  μ₀=
 
 # ╔═╡ bc8b25ca-3d0d-41dd-bc74-07ef2462f6aa
 md"""
-Last, we start the optimization from a point into one active constraint. If we start with a too loose barrier, we need lots of steps to converge:
+At last, we start the optimization from a point into one active constraint. If we start with a too loose barrier, we need lots of steps to converge:
 """
 
 # ╔═╡ 7076d941-c4ac-4d4f-8cad-4c8e1f594a51
@@ -1248,7 +1259,7 @@ o2_e = optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₂, [0.9682, 0.25]
 
 # ╔═╡ 29716a71-a946-4717-ae63-b6c3ee7e91b5
 md"""
-However, starting from $(1,0)$ (two constraints active) needs many steps even with a more stringent barrier.
+However, starting from $(1,0)$ (two constraints active), one needs many steps even with a more stringent barrier:
 """
 
 # ╔═╡ 5fa6be64-fb3b-4bdd-9301-acda6121d692
@@ -1264,7 +1275,7 @@ optimize(f₂, ∇f₂, ∇²f₂, c₂, Jc₂, ∇²c₂, [1.0, 0.0], μ₀=1e-
 
 # ╔═╡ 3fe3d150-7ea1-43da-9a02-7b3031c6fba9
 md"""
-#### Optimization plots
+### Optimization plots
 """
 
 # ╔═╡ dfa4de4b-3caa-4128-a035-05ffc2160dae
@@ -1346,7 +1357,7 @@ Constrained optimization problems need many attentions in order to be solved num
 
 While for the first, convex problem we reached convergence in any setting, the second problem needed special attention on the choice of the solver parameters.
 
-Without the usage of the merit function for the line search procedure, some step can be outside of the feasible region. On the other hand, this attention on the feasibility can lend to an order of magnitude more steps to converge. This issue is worse if the starting point is on one of more active set.
+Without the usage of the merit function for the line search procedure, some step can be outside of the feasible region. On the other hand, this attention on the feasibility can lend to an order of magnitude more steps to converge. This issue is worse if the starting point is at the border of the feasible region.
 """
 
 # ╔═╡ 4c2db206-10f1-40d9-85b9-aa3a852b9ccc
@@ -1431,7 +1442,7 @@ h\left[\nabla f(\mathbf{x})^T\delta\mathbf{x}
 
 # ╔═╡ 3805b3f2-633b-409b-a2cd-3424cc868ead
 md"""
-So, from the definition of directional derivative, we get
+In conclusion, from the definition of directional derivative, we get
 
 $\begin{multline}
 D_{\delta\mathbf{x},\delta\mathbf{z}}\,\phi_\nu(\mathbf{x}, \mathbf{z})
@@ -1452,6 +1463,11 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+
+[compat]
+Plots = "~1.40.1"
+PlutoUI = "~0.7.58"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -1460,7 +1476,13 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.2"
 manifest_format = "2.0"
-project_hash = "320aae5ec2ce416d12e4b46d4fb39a856c9641d0"
+project_hash = "61a469e9f8bf865c14c3910a62433e26b22ec13d"
+
+[[deps.AbstractPlutoDingetjes]]
+deps = ["Pkg"]
+git-tree-sha1 = "0f748c81756f2e5e6854298f11ad8b2dfae6911a"
+uuid = "6e696c72-6542-2067-7265-42206c756150"
+version = "1.3.0"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -1699,6 +1721,24 @@ git-tree-sha1 = "129acf094d168394e80ee1dc4bc06ec835e510a3"
 uuid = "2e76f6c2-a576-52d4-95c1-20adfe4de566"
 version = "2.8.1+1"
 
+[[deps.Hyperscript]]
+deps = ["Test"]
+git-tree-sha1 = "179267cfa5e712760cd43dcae385d7ea90cc25a4"
+uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
+version = "0.0.5"
+
+[[deps.HypertextLiteral]]
+deps = ["Tricks"]
+git-tree-sha1 = "7134810b1afce04bbc1045ca1985fbe81ce17653"
+uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
+version = "0.9.5"
+
+[[deps.IOCapture]]
+deps = ["Logging", "Random"]
+git-tree-sha1 = "8b72179abc660bfab5e28472e019392b97d0985c"
+uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
+version = "0.2.4"
+
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
@@ -1879,6 +1919,11 @@ git-tree-sha1 = "c1dd6d7978c12545b4179fb6153b9250c96b0075"
 uuid = "e6f89c97-d47a-5376-807f-9c37f3926c36"
 version = "1.0.3"
 
+[[deps.MIMEs]]
+git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
+uuid = "6c6e2e6c-3030-632d-7369-2d6c69616d65"
+version = "0.1.4"
+
 [[deps.MacroTools]]
 deps = ["Markdown", "Random"]
 git-tree-sha1 = "2fa9ee3e63fd3a4f7a9a4f4744a52f4856de82df"
@@ -2025,6 +2070,12 @@ version = "1.40.1"
     IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a"
     ImageInTerminal = "d8c32880-2388-543b-8c61-d9f865259254"
     Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+
+[[deps.PlutoUI]]
+deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
+git-tree-sha1 = "71a22244e352aa8c5f0f2adde4150f62368a3f2e"
+uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+version = "0.7.58"
 
 [[deps.PrecompileTools]]
 deps = ["Preferences"]
@@ -2173,6 +2224,11 @@ weakdeps = ["Random", "Test"]
 
     [deps.TranscodingStreams.extensions]
     TestExt = ["Test", "Random"]
+
+[[deps.Tricks]]
+git-tree-sha1 = "eae1bb484cd63b36999ee58be2de6c178105112f"
+uuid = "410a4b4d-49e4-4fbc-ab6d-cb71b17b3775"
+version = "0.1.8"
 
 [[deps.URIs]]
 git-tree-sha1 = "67db6cc7b3821e19ebe75791a9dd19c9b1188f2b"
@@ -2510,8 +2566,10 @@ version = "1.4.1+1"
 
 # ╔═╡ Cell order:
 # ╠═ddc3476e-19e9-492a-b34e-140bbc848310
+# ╠═a454dc6a-deff-47bb-9af8-ad72dafdce30
 # ╠═a2b32d4b-44e2-4837-9232-28fafb9a27d0
 # ╟─7f1d0b2b-fd4a-4fb2-9e4e-b558dc63c12a
+# ╟─95a8f152-c427-4581-b541-8f1695a43686
 # ╟─78d2a636-7aef-45e8-bc64-80d1e66e7f43
 # ╟─a120c6cd-53dd-4f1e-9fe9-ccf6ab8e5a00
 # ╠═3585fba0-7595-44ff-9198-74584b7f6932
@@ -2632,6 +2690,7 @@ version = "1.4.1+1"
 # ╟─754e562b-34d7-49f0-9751-76b510fe170a
 # ╠═795b3837-b5a2-4b57-b888-67a81cbf3f96
 # ╟─24e9aec7-d21b-471e-b237-a3b897b94d32
+# ╟─b609d489-2277-4fea-9543-d2b3af445c15
 # ╟─fd495b86-0b9b-4326-af92-1f8dbe926b19
 # ╟─35cefa98-e1ad-4419-bfea-971ce24d71c3
 # ╠═77f69c4a-3434-436d-b114-f57618b1b78c
