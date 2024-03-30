@@ -681,7 +681,7 @@ md"""
 
 # ╔═╡ 6b755d03-8345-40dd-b044-43d816a11c0a
 md"""
-In order to implement an optimization routine that can solve a given constrained problem from any starting point, we need to exploit some techniques adapted from the lectures and from Chapter 3, 18, 19 and Appendix B of [1].
+In order to implement an optimization routine that can solve a given constrained problem from any starting point, we need to exploit some techniques adapted from the lectures and from Chapter 3, 18, 19 and Appendix B of [[1]](https://doi.org/10.1007/978-0-387-40065-5).
 """
 
 # ╔═╡ 6b967062-7262-4ac5-b9f6-376a08d45a09
@@ -763,7 +763,7 @@ end
 
 # ╔═╡ da6f2e25-b967-4879-8e52-185235d59759
 md"""
-If the condition on the inertia is not satisfied, we add a factor $\delta I$ to the first block of $J_F$ adapting the regularization procedure shown in the Appendix B of [1].
+If the condition on the inertia is not satisfied, we add a factor $\delta I$ to the first block of $J_F$ adapting the regularization procedure shown in the Appendix B of [[1]](https://doi.org/10.1007/978-0-387-40065-5).
 """
 
 # ╔═╡ 3761f952-5300-4cb9-8798-1e479bb93c27
@@ -876,7 +876,7 @@ md"""
 
 # ╔═╡ c865a351-db61-40a7-84d6-20d6112f5b8e
 md"""
-Following chapter 19 of [1], we define a *merit function*:
+Following chapter 19 of [[1]](https://doi.org/10.1007/978-0-387-40065-5), we define a *merit function*:
 
 $\phi_\nu(\mathbf{x}, \mathbf{z}) = f(\mathbf{x}) - \mu \sum_{i=1}^m\log(z_i) + \nu ||\mathbf{c}(\mathbf{x}) - \mathbf{z}||_1$
 """
@@ -902,7 +902,7 @@ Where $D_{\delta\mathbf{x}^{(k)},\delta\mathbf{z}^{(k)}}\phi_\nu(\mathbf{x}^{(k)
 
 $D_{\delta\mathbf{x},\delta\mathbf{z}}\,\phi_\nu(\mathbf{x}, \mathbf{z}) = \nabla f(\mathbf{x})^T\delta\mathbf{x}  - \mu \mathbf{e}^TZ^{-1}\delta\mathbf{z} - \nu||\mathbf{c}(\mathbf{x}) - \mathbf{z}||_1$
 
-	For a derivation, see the Appendix (FORSE)
+(For a derivation, see the Appendix).
 """
 
 # ╔═╡ 62fe2adf-6f64-43a0-9c6a-4828ae056caa
@@ -938,7 +938,7 @@ md"""
 
 # ╔═╡ 5013e2e4-c100-434f-935e-4fe079aef97b
 md"""
-Adapting the strategy outlined in eqq (18.36) and (18.37) of [1], we increase the $\nu$ barried parameter if the condition 
+Adapting the strategy outlined in eqq (18.36) and (18.37) of [[1]](https://doi.org/10.1007/978-0-387-40065-5), we increase the $\nu$ barried parameter if the condition 
 
 $\nu \geq \frac{\nabla f(\mathbf{x})^T\delta\mathbf{x} + \frac{\sigma}{2}\delta\mathbf{x}^T\left[\nabla^2f(\mathbf{x}^{(k)}) + \sum_{i=1}^m \lambda_i^{(k)} \nabla^2c_i(\mathbf{x}^{(k)})\right]\delta\mathbf{x}}{(1 - \rho)||\mathbf{c}(\mathbf{x}) - \mathbf{z}||_1}$
 
@@ -975,7 +975,7 @@ md"""
 
 # ╔═╡ 8649a2d0-774c-459a-b4e8-84fa67e2a4bc
 md"""
-To provide a convergence criterion, we defined the following error function (see eq (19.10) in [1])
+To provide a convergence criterion, we defined the following error function (see eq (19.10) in [[1]](https://doi.org/10.1007/978-0-387-40065-5))
 
 $E(\mathbf{x}, \boldsymbol{\lambda}, \mathbf{z}; \mu) = \max\{||\nabla f(\mathbf{x}) - [J_\mathbf{c}(\mathbf{x})]^T\boldsymbol{\lambda}||_1,
 ||\mathbf{z} - \mathbf{c}(\mathbf{x})||_1,
@@ -994,7 +994,7 @@ end
 
 # ╔═╡ ba0b228f-993f-4211-93ef-d203be9b315b
 md"""
-The barrier parameter is updated using the *Fiacco-McCormik approach* (see Algorithm 19.1 from [1]): for a given $\mu^{(i)}$, the values $\mathbf{x}^{(k)}, \boldsymbol{\lambda}^{(k)}, \mathbf{z}^{(k)}$ are updated until $E(\mathbf{x}^{(k)}, \boldsymbol{\lambda}^{(k)}, \mathbf{z}^{(k)}; \mu_i) \leq \mu^{(i)}$.
+The barrier parameter is updated using the *Fiacco-McCormik approach* (see Algorithm 19.1 from [[1]](https://doi.org/10.1007/978-0-387-40065-5)): for a given $\mu^{(i)}$, the values $\mathbf{x}^{(k)}, \boldsymbol{\lambda}^{(k)}, \mathbf{z}^{(k)}$ are updated until $E(\mathbf{x}^{(k)}, \boldsymbol{\lambda}^{(k)}, \mathbf{z}^{(k)}; \mu_i) \leq \mu^{(i)}$.
 
 When the condition is reached a new barrier parameter is set: $\mu^{(j+1)}=\sigma\mu^{(j)}$, with $\sigma$ a constant $< 1$, usally 0.2.
 """
@@ -1034,7 +1034,7 @@ end
 
 # ╔═╡ 754e562b-34d7-49f0-9751-76b510fe170a
 md"""
-Inspired by Algorithm 19.2 from [1] we implement an inequality constrained interior point algorithm with the possibility of using a line search algorithm to ensure that we are inside the feasibility set.
+Inspired by Algorithm 19.2 from [[1]](https://doi.org/10.1007/978-0-387-40065-5) we implement an inequality constrained interior point algorithm with the possibility of using a line search algorithm to ensure that we are inside the feasibility set.
 
 Note that to use an approximate jacobian one has to simply pass a null `Hc`.
 """
@@ -1353,12 +1353,17 @@ Without the usage of the merit function for the line search procedure, some step
 md"""
 ## References
 
-[1] J. Nocedal and S. J. Wright, *Numerical Optimization*, 2006
+[[1] J. Nocedal and S. J. Wright, *Numerical Optimization*, 2006](https://doi.org/10.1007/978-0-387-40065-5)
 """
 
 # ╔═╡ 11b6d969-6e40-4562-aa89-ef1b858f71d7
 md"""
 ## Appendix: the directional derivative of the merit function
+"""
+
+# ╔═╡ 163e7b76-ac9d-4965-9913-c0fbb48599ac
+md"""
+This derivation is adapted from Theorem 18.2 of [[1]](https://doi.org/10.1007/978-0-387-40065-5).
 """
 
 # ╔═╡ db5c333f-dccc-4a79-aa6e-c67913136f6c
@@ -1368,11 +1373,79 @@ Using the Taylor expansion of $\phi_\nu$, we have
 $\begin{multline}\phi_\nu(\mathbf{x} + h\delta\mathbf{x}, \mathbf{z} + h\delta\mathbf{z}) - \phi_\nu(\mathbf{x}, \mathbf{z})
 \leq\\\leq
 h\nabla f(\mathbf{x})^T\delta\mathbf{x} - μ\sum_{i=1}^m \frac{h\delta z_i}{z_i}
++\\+
+\nu||\mathbf{c}(\mathbf{x}) - \mathbf{z} + h\left(J_c(\mathbf{x})^T\delta\mathbf{x} - \delta\mathbf{z}\right)||_1
+- ||\mathbf{c}(\mathbf{x}) - \mathbf{z}||_1
++\\+
+\gamma h^2\left(||\delta\mathbf{x}||_2^2 + ||\delta\mathbf{z}||_2^2\right)
+\end{multline}$
+"""
+
+# ╔═╡ 7b3b65df-9f70-40bd-b60f-d3f580195fd7
+md"""
+From the matrix equation $J_F\begin{pmatrix}\delta\mathbf{x},\delta\boldsymbol{\lambda},\delta\mathbf{z}\end{pmatrix}=-F$ we have that
+
+$\begin{multline}
+||\mathbf{c}(\mathbf{x}) - \mathbf{z} + h\left(J_c(\mathbf{x})^T\delta\mathbf{x} - \delta\mathbf{z}\right)||_1
+=\\=
+||(1-h)(\mathbf{c}(\mathbf{x}) - \mathbf{z})||_1
+\leq
+||(\mathbf{c}(\mathbf{x}) - \mathbf{z})||_1
+-
+||h(\mathbf{c}(\mathbf{x}) - \mathbf{z})||_1
 \end{multline}$
 """
 
 # ╔═╡ c6d8c3ee-3187-47c0-9c17-aaecbc6d6000
+md"""
+hence
 
+$\begin{multline}\phi_\nu(\mathbf{x} + h\delta\mathbf{x}, \mathbf{z} + h\delta\mathbf{z}) - \phi_\nu(\mathbf{x}, \mathbf{z})
+\leq\\\leq
+h\left[\nabla f(\mathbf{x})^T\delta\mathbf{x}
+-
+\mu\mathbf{e}^TZ^{-1}\delta\mathbf{z}
+-
+\nu||(\mathbf{c}(\mathbf{x}) - \mathbf{z})||_1\right]
++\\+
+\gamma h^2\left(||\delta\mathbf{x}||_2^2 + ||\delta\mathbf{z}||_2^2\right)
+\end{multline}$
+"""
+
+# ╔═╡ 8c5b3500-0de2-4843-a8b9-4d3f67e82730
+md"""
+With similar reasoning, we can get
+
+$\begin{multline}
+\phi_\nu(\mathbf{x} + h\delta\mathbf{x}, \mathbf{z} + h\delta\mathbf{z}) - \phi_\nu(\mathbf{x}, \mathbf{z})
+\geq\\\geq
+h\left[\nabla f(\mathbf{x})^T\delta\mathbf{x}
+-
+\mu\mathbf{e}^TZ^{-1}\delta\mathbf{z}
+-
+\nu||(\mathbf{c}(\mathbf{x}) - \mathbf{z})||_1\right]
++\\-
+\gamma h^2\left(||\delta\mathbf{x}||_2^2 + ||\delta\mathbf{z}||_2^2\right)
+\end{multline}$
+"""
+
+# ╔═╡ 3805b3f2-633b-409b-a2cd-3424cc868ead
+md"""
+So, from the definition of directional derivative, we get
+
+$\begin{multline}
+D_{\delta\mathbf{x},\delta\mathbf{z}}\,\phi_\nu(\mathbf{x}, \mathbf{z})
+=
+\lim_{h\to 0} \frac{\phi_\nu(\mathbf{x} + h\delta\mathbf{x}, \mathbf{z} + h\delta\mathbf{z}) - \phi_\nu(\mathbf{x}, \mathbf{z})}{h}
+=\\=
+\nabla f(\mathbf{x})^T\delta\mathbf{x}  - \mu \mathbf{e}^TZ^{-1}\delta\mathbf{z} - \nu||\mathbf{c}(\mathbf{x}) - \mathbf{z}||_1
+\end{multline}$
+"""
+
+# ╔═╡ 55ea7b94-9557-4a0b-a6d0-bb5ee68ff160
+md"""
+That is, the directional derivative of $\phi_\nu$ with respect to $\delta\mathbf{x},\delta\mathbf{z}$.
+"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2603,7 +2676,12 @@ version = "1.4.1+1"
 # ╟─b7ccc3e4-cad5-43f2-9b4a-6595c42a75aa
 # ╟─4c2db206-10f1-40d9-85b9-aa3a852b9ccc
 # ╟─11b6d969-6e40-4562-aa89-ef1b858f71d7
-# ╠═db5c333f-dccc-4a79-aa6e-c67913136f6c
-# ╠═c6d8c3ee-3187-47c0-9c17-aaecbc6d6000
+# ╟─163e7b76-ac9d-4965-9913-c0fbb48599ac
+# ╟─db5c333f-dccc-4a79-aa6e-c67913136f6c
+# ╟─7b3b65df-9f70-40bd-b60f-d3f580195fd7
+# ╟─c6d8c3ee-3187-47c0-9c17-aaecbc6d6000
+# ╟─8c5b3500-0de2-4843-a8b9-4d3f67e82730
+# ╟─3805b3f2-633b-409b-a2cd-3424cc868ead
+# ╟─55ea7b94-9557-4a0b-a6d0-bb5ee68ff160
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
